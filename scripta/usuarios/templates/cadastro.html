@@ -1,0 +1,125 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScriptA</title>
+    <link rel="stylesheet" href="{% static 'css/cadastro.css' %}">
+</head>
+
+<body>
+
+<header>
+    <img src="{% static 'imgs/logo.png' %}">
+    <h1>Participe da torcida</h1>
+</header>
+
+<main>
+
+    <section class="imagens">
+        <img src="{% static 'imgs/tigre.png' %}" alt="">
+        <img src="{% static 'imgs/cobra.png' %}" alt="">
+        <img src="{% static 'imgs/dragao.png' %}" alt="">
+        <img src="{% static 'imgs/cavalo.png' %}" alt="">
+    </section>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <section class="formula">
+
+            <div class="mat">
+                <p>Matrícula</p>
+                <input type="text" name="matricula" placeholder="Digite sua matrícula">
+            </div>
+
+            <div class="senha">
+                <p>Senha</p>
+
+                <div class="campo-senha">
+                    <input type="password" id="senha" name="senha" placeholder="Digite sua senha">
+
+                    <button type="button" id="mostrarSenha">
+                        <img src="{% static 'cadeado.png' %}" alt="">
+                    </button>
+                </div>
+            </div>
+
+            <!-- DIRETORIA -->
+            <div class="diretoria">
+                <p>Diretoria</p>
+
+                <div class="dropdown">
+
+                    <button type="button" class="dropdown-btn" id="abrirDiretoria">
+
+                        <span id="textoDiretoria">Selecione uma diretoria</span>
+
+                        <img class="seta" id="setaDiretoria"
+                             src="{% static 'imgs/seta-baixo.png' %}" alt="">
+                    </button>
+
+                    <div class="lista" id="listaDiretoria">
+
+                        <div class="opcao-diretoria">Diaren</div>
+                        <div class="opcao-diretoria">Diatinf</div>
+                        <div class="opcao-diretoria">Diacon</div>
+                        <div class="opcao-diretoria">Diacin</div>
+
+                    </div>
+                </div>
+            </div>
+
+            <input type="hidden" name="diretoria" id="diretoriaSelecionada">
+
+            <!-- ÁREAS -->
+            <div class="areas">
+                <p>Áreas</p>
+
+                <div class="dropdown">
+
+                    <button type="button" class="dropdown-btn" id="abrirAreas">
+
+                        <span>Selecione as áreas</span>
+
+                        <img class="seta" id="setaAreas"
+                             src="{% static 'imgs/seta-baixo.png' %}" alt="">
+                    </button>
+
+                    <div class="lista" id="listaAreas">
+
+                        <label><input type="checkbox" value="Cenário"> Cenário</label>
+                        <label><input type="checkbox" value="Staff"> Staff</label>
+                        <label><input type="checkbox" value="Figurino"> Figurino</label>
+                        <label><input type="checkbox" value="Dança"> Dança</label>
+                        <label><input type="checkbox" value="Sonoplastia"> Sonoplastia</label>
+                        <label><input type="checkbox" value="Roteiro"> Roteiro</label>
+                        <label><input type="checkbox" value="Tampinhas"> Tampinhas</label>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="butao">
+                <button type="submit">Cadastrar</button>
+            </div>
+
+        </section>
+    </form>
+
+</main>
+
+<footer>
+    <p>© 2026 ScriptA</p>
+</footer>
+
+<script>
+    const SETA_BAIXO = "{% static 'imgs/seta-baixo.png' %}";
+    const SETA_CIMA = "{% static 'imgs/seta-cima.png' %}";
+</script>
+
+<script src="{% static 'js/cadastro.js' %}"></script>
+
+</body>
+</html>

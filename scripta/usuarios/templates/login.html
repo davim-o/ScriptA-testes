@@ -5,37 +5,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ScriptA</title>
-    <link rel="stylesheet" href="{% static 'css/scripta_login.css' %}">
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
 </head>
 <body>
 
     <header>
-        <img src="imgs/logo.png" alt="">
+        <img src="{% static 'imgs/logo.png' %}">
         <h1>Participe da torcida</h1>
     </header>
 
     <main>
 
         <section class="imagens">
-            <img src="imgs/tigre.png" alt="Tigre">
-            <img src="imgs/cobra.png" alt="Cobra">
-            <img src="imgs/dragao.png" alt="Dragão">
-            <img src="imgs/cavalo.png" alt="Cavalo">
+            <img src="{% static 'imgs/tigre.png' %}" alt="Tigre">
+            <img src="{% static 'imgs/cobra.png' %}" alt="Cobra">
+            <img src="{% static 'imgs/dragao.png' %}" alt="Dragão">
+            <img src="{% static 'imgs/cavalo.png' %}" alt="Cavalo">
         </section>
 
-        <form action="">
+        <form method="post">
+            {% csrf_token %}
             <section class="formula">
 
                 <div class="mat">
                     <p>Matrícula</p>
                     <label for="matricula"></label>
-                    <input type="text" id="matricula" placeholder="Digite sua matrícula">
+                    <input type="text" id="matricula" name="matricula" placeholder="Digite sua matrícula">
                 </div>
 
                 <div class="senha">
                     <p>Senha</p>
                     <label for="password"></label>
-                    <input type="password" id="password" placeholder="Digite sua senha">
+                    <input type="password" id="password" name="senha" placeholder="Digite sua senha">
                  
                 </div>
 
