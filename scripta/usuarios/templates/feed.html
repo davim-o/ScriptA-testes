@@ -1,0 +1,155 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feed</title>
+
+    <link rel="stylesheet" href="{% static 'css/feed.css' %}">
+</head>
+
+<body>
+
+<aside class="sidebar">
+
+    <div>
+
+        <div class="usuario">
+
+            <div class="avatar">
+                {{ usuario.matricula|first }}
+            </div>
+
+            <div class="dados-usuario">
+                <h3>{{ usuario.matricula }}</h3>
+                <p>{{ usuario.diretoria }}</p>
+            </div>
+
+        </div>
+
+        <nav class="menu">
+
+            <a href="{% url 'feed' %}" class="ativo">
+
+                <img src="{% static 'imgs/feed.png' %}">
+                <span>Feed</span>
+
+            </a>
+
+        </nav>
+
+    </div>
+
+    <div class="rodape-sidebar">
+
+        <a href="{% url 'sair' %}">
+
+            <img src="{% static 'imgs/sair.png' %}">
+            <span>Sair</span>
+
+        </a>
+
+    </div>
+
+</aside>
+
+<main class="conteudo">
+
+    <h1>Torcida</h1>
+
+    <section class="nova-publicacao">
+
+        <form method="POST" action="{% url 'publicar' %}">
+
+            {% csrf_token %}
+
+            <div class="topo-publicacao">
+
+                <div class="avatar">
+                    {{ usuario.matricula|first }}
+                </div>
+
+                <textarea
+                    name="texto"
+                    placeholder="Compartilhe algo com a torcida..."
+                    required></textarea>
+
+            </div>
+
+            <button type="submit">
+                Publicar
+            </button>
+
+        </form>
+
+    </section>
+
+    <section class="feed">
+
+        {% for publicacao in publicacoes %}
+
+        <article class="card">
+
+            <div class="cabecalho">
+
+                <div class="avatar">
+                    {{ publicacao.usuario.matricula|first }}
+                </div>
+
+                <div class="dados-publicacao">
+
+                    <h3>{{ publicacao.usuario.matricula }}</h3>
+
+                    <p>{{ publicacao.usuario.diretoria }}</p>
+
+                    <small>{{ publicacao.data|date:"d/m/Y H:i" }}</small>
+
+                </div>
+
+            </div>
+
+            <div class="texto">
+
+                {{ publicacao.texto }}
+
+            </div>
+
+            <div class="rodape">
+
+                <form action="{% url 'curtir' publicacao.id %}" method="POST">
+
+                    {% csrf_token %}
+
+                    <button class="curtir">
+
+                        ❤
+
+                        <span>{{ publicacao.total_curtidas }}</span>
+
+                    </button>
+
+                </form>
+
+            </div>
+
+        </article>
+
+        {% empty %}
+
+        <div class="sem-publicacoes">
+
+            Nenhuma publicação encontrada.
+
+        </div>
+
+        {% endfor %}
+
+    </section>
+
+</main>
+
+</body>
+
+</html>
