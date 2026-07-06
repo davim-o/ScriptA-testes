@@ -57,6 +57,12 @@ form{
     border: 2px solid #171A3B;
 }
 
+#cadbutao{
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+}
+
 
 .mat{
     margin-bottom: 18px;
@@ -85,7 +91,7 @@ input{
 
 button{
     background-color: #9C85F9;
-    width: 24em;
+    width: 25em;
     height: 4em;
     border-radius: 1em;
     color: white;
@@ -104,5 +110,6 @@ footer{
     justify-content: center;
     align-items: center;
     margin-top: 10%;
+
 }
 

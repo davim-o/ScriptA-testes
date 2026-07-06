@@ -53,6 +53,13 @@ form{
     padding: 2em 0;
 }
 
+#cadbutao{
+    color: gray;
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+}
+
 .formula{
     width: 24em;
 }
@@ -76,7 +83,6 @@ form{
 }
 
 
-
 input{
     width: 25.5em;
     height: 3em;
@@ -92,19 +98,6 @@ input::placeholder{
     color: gray;
 }
 
-#mostrarSenha{
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: transparent;
-    border: none;
-    cursor: pointer;
-}
-
-#mostrarSenha img{
-    width: 20px;
-}
 
 .diretoria{
     margin-bottom: 18px;
