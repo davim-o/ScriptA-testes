@@ -1,50 +1,41 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.hashers import make_password, check_password
-
-from .models import Usuario
-from .models import Publicacao
-from .models import Curtida
+from django.shortcuts import render,redirect,get_object_or_404
+from django.http import JsonResponse
+from django.contrib.auth.hashers import make_password,check_password
+from .models import Usuario,Publicacao,Curtida
 
 
 def cadastro(request):
 
-    if request.method == "POST":
-
-        matricula = request.POST["matricula"]
-        senha = make_password(request.POST["senha"])
-        diretoria = request.POST["diretoria"]
-        areas = request.POST.getlist("areas")
+    if request.method=="POST":
 
         Usuario.objects.create(
-
-            matricula=matricula,
-            senha=senha,
-            diretoria=diretoria,
-            areas=",".join(areas)
-
+            matricula=request.POST["matricula"],
+            senha=make_password(request.POST["senha"]),
+            diretoria=request.POST["diretoria"],
+            areas=",".join(request.POST.getlist("areas"))
         )
 
         return redirect("login")
 
-    return render(request, "cadastro.html")
+    return render(request,"cadastro.html")
 
 
 def login_usuario(request):
 
-    if request.method == "POST":
-
-        matricula = request.POST["matricula"]
-        senha = request.POST["senha"]
+    if request.method=="POST":
 
         try:
 
-            usuario = Usuario.objects.get(
-                matricula=matricula
+            usuario=Usuario.objects.get(
+                matricula=request.POST["matricula"]
             )
 
-            if check_password(senha, usuario.senha):
+            if check_password(
+                request.POST["senha"],
+                usuario.senha
+            ):
 
-                request.session["usuario"] = usuario.id
+                request.session["usuario"]=usuario.id
 
                 return redirect("feed")
 
@@ -52,30 +43,38 @@ def login_usuario(request):
 
             pass
 
-    return render(request, "login.html")
+    return render(request,"login.html")
 
 
 def feed(request):
 
     if "usuario" not in request.session:
-
         return redirect("login")
 
-    usuario = Usuario.objects.get(
-        id=request.session["usuario"]
-    )
+    usuario=Usuario.objects.get(id=request.session["usuario"])
 
-    publicacoes = Publicacao.objects.all().order_by("-data")
+    publicacoes=Publicacao.objects.select_related(
+        "usuario"
+    ).prefetch_related(
+        "curtidas"
+    ).order_by("-data")
+
+    curtidas=Curtida.objects.filter(
+        usuario=usuario
+    ).values_list(
+        "publicacao_id",
+        flat=True
+    )
 
     return render(
         request,
         "feed.html",
         {
-            "usuario": usuario,
-            "publicacoes": publicacoes
+            "usuario":usuario,
+            "publicacoes":publicacoes,
+            "curtidas":curtidas
         }
     )
-
 
 def publicar(request):
 
@@ -83,38 +82,47 @@ def publicar(request):
 
         return redirect("login")
 
-    if request.method == "POST":
-
-        usuario = Usuario.objects.get(
-            id=request.session["usuario"]
-        )
-
-        texto = request.POST["texto"]
+    if request.method=="POST":
 
         Publicacao.objects.create(
-            usuario=usuario,
-            texto=texto
+
+            usuario=Usuario.objects.get(
+                id=request.session["usuario"]
+            ),
+
+            texto=request.POST["texto"]
+
         )
 
     return redirect("feed")
 
 
-def curtir(request, id_publicacao):
+def curtir(request,id_publicacao):
+
+    if request.method!="POST":
+
+        return JsonResponse(
+            {"erro":"Método inválido"},
+            status=405
+        )
 
     if "usuario" not in request.session:
 
-        return redirect("login")
+        return JsonResponse(
+            {"erro":"Sessão expirada"},
+            status=401
+        )
 
-    usuario = Usuario.objects.get(
+    usuario=Usuario.objects.get(
         id=request.session["usuario"]
     )
 
-    publicacao = get_object_or_404(
+    publicacao=get_object_or_404(
         Publicacao,
         id=id_publicacao
     )
 
-    curtida = Curtida.objects.filter(
+    curtida=Curtida.objects.filter(
         usuario=usuario,
         publicacao=publicacao
     )
@@ -123,12 +131,40 @@ def curtir(request, id_publicacao):
 
         curtida.delete()
 
+        curtido=False
+
     else:
 
         Curtida.objects.create(
             usuario=usuario,
             publicacao=publicacao
         )
+
+        curtido=True
+
+    return JsonResponse({
+
+        "curtido":curtido,
+
+        "curtidas":publicacao.total_curtidas()
+
+    })
+
+
+def excluir_publicacao(request,id_publicacao):
+
+    if "usuario" not in request.session:
+
+        return redirect("login")
+
+    publicacao=get_object_or_404(
+        Publicacao,
+        id=id_publicacao
+    )
+
+    if publicacao.usuario.id==request.session["usuario"]:
+
+        publicacao.delete()
 
     return redirect("feed")
 
