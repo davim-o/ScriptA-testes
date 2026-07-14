@@ -5,52 +5,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feed</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/feed.css' %}">
 </head>
 
 <body>
 
-<aside class="sidebar">
-
-    <div>
-
-        <div class="usuario">
-            <div class="avatar">{{ usuario.matricula|first }}</div>
-
-            <div class="dados-usuario">
-                <h3>{{ usuario.matricula }}</h3>
-                <p>{{ usuario.diretoria }}</p>
-            </div>
-
-        </div>
-
-        <nav class="menu">
-
-            <a href="{% url 'feed' %}" class="ativo">
-                <img src="{% static 'imgs/feed.png' %}" alt="">
-                <span>Feed</span>
-            </a>
-
-        </nav>
-
-    </div>
-
-    <div class="rodape-sidebar">
-
-        <a href="{% url 'sair' %}">
-            <img src="{% static 'imgs/sair.png' %}" alt="">
-            <span>Sair</span>
-        </a>
-
-    </div>
-
-</aside>
+{% include "_sidebar.html" with pagina_ativa="feed" %}
 
 <main class="conteudo">
 
-    <div class="container-feed">
+    <div class="container-pagina">
 
-        <div class="titulo-feed">
+        <div class="titulo-pagina">
             <h1>Torcida</h1>
         </div>
 

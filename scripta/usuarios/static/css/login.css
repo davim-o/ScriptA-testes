@@ -48,7 +48,8 @@ main{
 
 form{
     width: 26em;
-    height: 22em;
+    min-height: 22em;
+    padding: 20px 0;
     color: gray;
     border-radius: 2em;
     background-color: #0F1326;
@@ -56,6 +57,18 @@ form{
     align-items: center;
     justify-content: center;
     border: 2px solid #171A3B;
+}
+
+.erro-login{
+    width: 24em;
+    margin-bottom: 14px;
+    padding: 10px 12px;
+    border-radius: 0.6em;
+    background-color: rgba(224,76,76,0.12);
+    border: 1px solid #E04C4C;
+    color: #FF8A8A;
+    font-size: 0.85em;
+    text-align: center;
 }
 
 #cadbutao{

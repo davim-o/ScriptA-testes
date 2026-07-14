@@ -40,6 +40,10 @@
                  
                 </div>
 
+                {% if erro %}
+                <p class="erro-login">{{ erro }}</p>
+                {% endif %}
+
                 <div class="butao">
                     <button type="submit">Entrar</button>
                 </div>

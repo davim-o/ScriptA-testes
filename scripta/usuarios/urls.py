@@ -25,4 +25,28 @@ urlpatterns=[
 
     path("sair/",views.sair,name="sair"),
 
+    path(
+        "painel-administrativo/",
+        views.painel_administrativo,
+        name="painel_administrativo"
+    ),
+
+    path(
+        "painel-administrativo/aprovar/<int:id_usuario>/",
+        views.aprovar_membro,
+        name="aprovar_membro"
+    ),
+
+    path(
+        "painel-administrativo/recusar/<int:id_usuario>/",
+        views.recusar_membro,
+        name="recusar_membro"
+    ),
+
+    path(
+        "painel-administrativo/promover/",
+        views.promover_sublider,
+        name="promover_sublider"
+    ),
+
 ]

@@ -1,0 +1,47 @@
+{% load static %}
+<aside class="sidebar">
+
+    <div>
+
+        <div class="usuario">
+            <div class="avatar">{{ usuario.matricula|first }}</div>
+
+            <div class="dados-usuario">
+                <h3>{{ usuario.matricula }}</h3>
+                <p>{{ usuario.diretoria }}</p>
+            </div>
+
+        </div>
+
+        <nav class="menu">
+
+            <a href="{% url 'feed' %}" class="{% if pagina_ativa == 'feed' %}ativo{% endif %}">
+                <img src="{% static 'imgs/feed.png' %}" alt="">
+                <span>Feed</span>
+            </a>
+
+            {% if usuario.eh_administrador %}
+
+            <a href="{% url 'painel_administrativo' %}" class="{% if pagina_ativa == 'painel' %}ativo{% endif %}">
+                <svg class="icone-menu" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6V11h-6v9Zm0-16v5h6V4h-6Z" fill="currentColor"/>
+                </svg>
+                <span>Painel Administrativo</span>
+            </a>
+
+            {% endif %}
+
+        </nav>
+
+    </div>
+
+    <div class="rodape-sidebar">
+
+        <a href="{% url 'sair' %}">
+            <img src="{% static 'imgs/sair.png' %}" alt="">
+            <span>Sair</span>
+        </a>
+
+    </div>
+
+</aside>

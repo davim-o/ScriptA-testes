@@ -1,6 +1,7 @@
 from django.shortcuts import render,redirect,get_object_or_404
 from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password,check_password
+from django.db import models
 from .models import Usuario,Publicacao,Curtida
 
 
@@ -12,7 +13,8 @@ def cadastro(request):
             matricula=request.POST["matricula"],
             senha=make_password(request.POST["senha"]),
             diretoria=request.POST["diretoria"],
-            areas=",".join(request.POST.getlist("areas"))
+            areas=",".join(request.POST.getlist("areas")),
+            aprovado=False
         )
 
         return redirect("login")
@@ -22,7 +24,7 @@ def cadastro(request):
 
 def login_usuario(request):
 
-    
+    erro=None
 
     if request.method=="POST":
 
@@ -37,15 +39,25 @@ def login_usuario(request):
                 usuario.senha
             ):
 
-                request.session["usuario"]=usuario.id
+                if not usuario.aprovado:
 
-                return redirect("feed")
+                    erro="Seu cadastro ainda está aguardando aprovação da diretoria."
+
+                else:
+
+                    request.session["usuario"]=usuario.id
+
+                    return redirect("feed")
+
+            else:
+
+                erro="Matrícula ou senha inválida."
 
         except Usuario.DoesNotExist:
 
-            pass
+            erro="Matrícula ou senha inválida."
 
-    return render(request,"login.html")
+    return render(request,"login.html",{"erro":erro})
 
 
 def feed(request):
@@ -169,6 +181,123 @@ def excluir_publicacao(request,id_publicacao):
         publicacao.delete()
 
     return redirect("feed")
+
+
+def usuario_logado(request):
+
+    if "usuario" not in request.session:
+
+        return None
+
+    return Usuario.objects.get(id=request.session["usuario"])
+
+
+def painel_administrativo(request):
+
+    usuario=usuario_logado(request)
+
+    if usuario is None:
+
+        return redirect("login")
+
+    if not usuario.eh_administrador():
+
+        return redirect("feed")
+
+    membros=Usuario.objects.filter(
+        aprovado=True
+    ).order_by("matricula")
+
+    pendentes=Usuario.objects.filter(
+        aprovado=False
+    ).order_by("matricula")
+
+    total_doacoes=membros.aggregate(
+        total=models.Sum("doacao_tampinhas")
+    )["total"] or 0
+
+    return render(
+        request,
+        "admin.html",
+        {
+            "usuario":usuario,
+            "membros":membros,
+            "pendentes":pendentes,
+            "total_membros":membros.count(),
+            "total_pendentes":pendentes.count(),
+            "total_doacoes":total_doacoes,
+        }
+    )
+
+
+def aprovar_membro(request,id_usuario):
+
+    usuario=usuario_logado(request)
+
+    if usuario is None or not usuario.eh_administrador():
+
+        return redirect("login")
+
+    if request.method=="POST":
+
+        membro=get_object_or_404(Usuario,id=id_usuario)
+        membro.aprovado=True
+        membro.save()
+
+    return redirect("painel_administrativo")
+
+
+def recusar_membro(request,id_usuario):
+
+    usuario=usuario_logado(request)
+
+    if usuario is None or not usuario.eh_administrador():
+
+        return redirect("login")
+
+    if request.method=="POST":
+
+        membro=get_object_or_404(Usuario,id=id_usuario)
+        membro.delete()
+
+    return redirect("painel_administrativo")
+
+
+def promover_sublider(request):
+
+    usuario=usuario_logado(request)
+
+    if usuario is None or not usuario.eh_administrador():
+
+        return redirect("login")
+
+    if request.method=="POST":
+
+        try:
+
+            membro=Usuario.objects.get(
+                matricula=request.POST["matricula"],
+                aprovado=True
+            )
+
+            area=request.POST.get("area","")
+
+            areas_atuais=[a for a in membro.areas.split(",") if a]
+
+            if area and area not in areas_atuais:
+
+                areas_atuais.append(area)
+
+                membro.areas=",".join(areas_atuais)
+
+            membro.sub_lider=True
+            membro.save()
+
+        except Usuario.DoesNotExist:
+
+            pass
+
+    return redirect("painel_administrativo")
 
 
 def sair(request):

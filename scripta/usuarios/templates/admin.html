@@ -1,0 +1,176 @@
+{% load static %}
+{% load usuarios_extras %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+</head>
+
+<body>
+
+{% include "_sidebar.html" with pagina_ativa="painel" %}
+
+<main class="conteudo">
+
+    <div class="container-pagina container-admin">
+
+        <div class="titulo-pagina">
+            <h1>Painel Administrativo</h1>
+        </div>
+
+        <section class="stats-grid">
+
+            <div class="stat-card">
+                <p class="stat-rotulo">Membros</p>
+                <p class="stat-valor">{{ total_membros }}</p>
+            </div>
+
+            <div class="stat-card">
+                <p class="stat-rotulo">Pendentes</p>
+                <p class="stat-valor">{{ total_pendentes }}</p>
+            </div>
+
+            <div class="stat-card">
+                <p class="stat-rotulo">Doações</p>
+                <p class="stat-valor">{{ total_doacoes }}Kg</p>
+            </div>
+
+        </section>
+
+        <section class="painel-card">
+
+            <h2>Aprovação de membros</h2>
+
+            <div class="lista-pendentes">
+
+                {% for pendente in pendentes %}
+
+                <div class="item-pendente">
+
+                    <div class="cabecalho">
+
+                        <div class="avatar">{{ pendente.matricula|first }}</div>
+
+                        <div class="info">
+                            <h3>{{ pendente.matricula }}</h3>
+                            <p>{{ pendente.diretoria }}</p>
+                        </div>
+
+                    </div>
+
+                    <div class="acoes-pendente">
+
+                        <form
+                            action="{% url 'aprovar_membro' pendente.id %}"
+                            method="POST">
+
+                            {% csrf_token %}
+
+                            <button class="btn-icone btn-aprovar" title="Aprovar">✓</button>
+
+                        </form>
+
+                        <form
+                            action="{% url 'recusar_membro' pendente.id %}"
+                            method="POST"
+                            onsubmit="return confirm('Deseja recusar esta solicitação?')">
+
+                            {% csrf_token %}
+
+                            <button class="btn-icone btn-recusar" title="Recusar">✕</button>
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+                {% empty %}
+
+                <p class="sem-itens">Nenhuma solicitação pendente.</p>
+
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+        <section class="painel-card">
+
+            <h2>Promover Sub-Líderes</h2>
+
+            <form class="form-promover" action="{% url 'promover_sublider' %}" method="POST">
+
+                {% csrf_token %}
+
+                <input
+                    type="text"
+                    name="matricula"
+                    placeholder="Digite a matrícula..."
+                    required>
+
+                <select name="area" required>
+                    <option value="" disabled selected>Área</option>
+                    <option value="Cenário">Cenário</option>
+                    <option value="Staff">Staff</option>
+                    <option value="Figurino">Figurino</option>
+                    <option value="Dança">Dança</option>
+                    <option value="Sonoplastia">Sonoplastia</option>
+                    <option value="Roteiro">Roteiro</option>
+                    <option value="Tampinhas">Tampinhas</option>
+                </select>
+
+                <button type="submit">Promover</button>
+
+            </form>
+
+        </section>
+
+        <section class="painel-card">
+
+            <h2>Membros</h2>
+
+            <div class="lista-membros">
+
+                {% for membro in membros %}
+
+                <div class="item-membro">
+
+                    <div class="cabecalho">
+
+                        <div class="avatar">{{ membro.matricula|first }}</div>
+
+                        <div class="info">
+                            <h3>
+                                {{ membro.matricula }}
+                                {% if membro.sub_lider %}<span class="ponto-sublider" title="Sub-líder"></span>{% endif %}
+                            </h3>
+                            <p>{{ membro.diretoria }} · {{ membro.areas }}</p>
+                        </div>
+
+                    </div>
+
+                    <span class="badge-area">{{ membro.areas|primeira_area|default:"Sem área" }}</span>
+
+                </div>
+
+                {% empty %}
+
+                <p class="sem-itens">Nenhum membro aprovado ainda.</p>
+
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+    </div>
+
+</main>
+
+</body>
+</html>

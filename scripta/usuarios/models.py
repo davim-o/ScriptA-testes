@@ -18,6 +18,21 @@ class Usuario(models.Model):
 
     areas=models.TextField()
 
+    aprovado=models.BooleanField(
+        default=True
+    )
+
+    sub_lider=models.BooleanField(
+        default=False
+    )
+
+    doacao_tampinhas=models.FloatField(
+        default=0
+    )
+
+    def eh_administrador(self):
+        return self.matricula=="admin" or self.diretoria=="Líder"
+
     def __str__(self):
         return self.matricula
 

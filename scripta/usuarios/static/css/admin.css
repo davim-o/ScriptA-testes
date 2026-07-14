@@ -1,0 +1,165 @@
+.container-admin{ max-width:820px; display:flex; flex-direction:column; gap:20px; }
+
+.stats-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:16px;
+}
+
+.stat-card{
+    background:#1a1e34;
+    border:1px solid #34395e;
+    border-radius:10px;
+    padding:18px;
+}
+
+.stat-rotulo{
+    font-size:13px;
+    color:#9ca4c9;
+    margin-bottom:8px;
+}
+
+.stat-valor{
+    font-size:28px;
+    font-weight:bold;
+}
+
+
+.painel-card{
+    background:#1a1e34;
+    border:1px solid #34395e;
+    border-radius:10px;
+    padding:18px;
+}
+
+.painel-card h2{
+    font-size:17px;
+    margin-bottom:16px;
+}
+
+
+.lista-pendentes,
+.lista-membros{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.item-pendente,
+.item-membro{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px;
+    background:#232741;
+    border:1px solid #34395e;
+    border-radius:8px;
+}
+
+.item-pendente .cabecalho,
+.item-membro .cabecalho{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.item-pendente .info h3,
+.item-membro .info h3{
+    font-size:15px;
+    margin-bottom:2px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+}
+
+.item-pendente .info p,
+.item-membro .info p{
+    font-size:13px;
+    color:#9ca4c9;
+}
+
+.ponto-sublider{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#7766ef;
+    display:inline-block;
+}
+
+.acoes-pendente{
+    display:flex;
+    gap:8px;
+}
+
+.btn-icone{
+    width:30px;
+    height:30px;
+    border-radius:50%;
+    border:none;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:bold;
+    color:#fff;
+    transition:.2s;
+}
+
+.btn-aprovar{ background:#2fbf71; }
+.btn-aprovar:hover{ background:#3fd483; }
+
+.btn-recusar{ background:#e04c4c; }
+.btn-recusar:hover{ background:#ea6363; }
+
+.badge-area{
+    padding:5px 12px;
+    border-radius:20px;
+    background:rgba(224,76,76,.15);
+    border:1px solid #e04c4c;
+    color:#ff9c9c;
+    font-size:12px;
+    font-weight:bold;
+    white-space:nowrap;
+}
+
+
+.form-promover{
+    display:flex;
+    gap:10px;
+}
+
+.form-promover input,
+.form-promover select{
+    flex:1;
+    height:42px;
+    padding:0 12px;
+    border:1px solid #3d446b;
+    border-radius:8px;
+    background:#232741;
+    color:#fff;
+    font-size:14px;
+}
+
+.form-promover input::placeholder{ color:#9ca4c9; }
+
+.form-promover select{ flex:0 0 160px; cursor:pointer; }
+
+.form-promover button{
+    flex:0 0 120px;
+    height:42px;
+    border:none;
+    border-radius:8px;
+    background:#7766ef;
+    color:#fff;
+    font-weight:bold;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.form-promover button:hover{ background:#8a7cff; }
+
+
+.sem-itens{
+    color:#9ca4c9;
+    font-size:14px;
+    text-align:center;
+    padding:12px;
+}
