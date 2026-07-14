@@ -194,12 +194,9 @@ body{
 }
 
 .texto{
-    margin:14px 0 14px 54px;
     font-size:15px;
-    line-height:1.7;
     color:#ededed;
     white-space:pre-wrap;
-    word-break:break-word;
 }
 
 .rodape-card{
