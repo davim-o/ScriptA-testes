@@ -164,3 +164,18 @@
 </main>
 </body>
 </html>
+<script>
+// Busca de membros
+document.getElementById("search-membros").addEventListener("input", function(){
+    const termo = this.value.toLowerCase();
+    document.querySelectorAll(".lista-itens .item-linha").forEach(item => {
+        const nome = item.querySelector("h3").textContent.toLowerCase();
+        item.style.display = nome.includes(termo) ? "" : "none";
+    });
+});
+
+// Confirmação ao clicar em Sair acidentalmente
+document.querySelector(".rodape-sidebar a").addEventListener("click", function(e){
+    if(!confirm("Deseja realmente sair?")) e.preventDefault();
+});
+</script>
