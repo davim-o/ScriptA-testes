@@ -9,11 +9,13 @@ def cadastro(request):
 
     if request.method=="POST":
 
+        areas_selecionadas = request.POST.getlist("areas")
+
         Usuario.objects.create(
             matricula=request.POST["matricula"],
             senha=make_password(request.POST["senha"]),
             diretoria=request.POST["diretoria"],
-            areas=",".join(request.POST.getlist("areas")),
+            areas=",".join(areas_selecionadas),
             aprovado=False
         )
 
@@ -280,16 +282,15 @@ def promover_sublider(request):
                 aprovado=True
             )
 
-            area=request.POST.get("area","")
+            area=request.POST.get("area","").strip()
 
-            areas_atuais=[a for a in membro.areas.split(",") if a]
+            # BUG FIX: usar get_areas_list() para obter áreas limpas (sem espaços extras)
+            areas_atuais=membro.get_areas_list()
 
             if area and area not in areas_atuais:
-
                 areas_atuais.append(area)
 
-                membro.areas=",".join(areas_atuais)
-
+            membro.areas=",".join(areas_atuais)
             membro.sub_lider=True
             if area:
                 membro.sublider_de=area
@@ -308,6 +309,7 @@ def remover_sublider(request, id_usuario):
         return redirect("login")
     if request.method == "POST":
         membro = get_object_or_404(Usuario, id=id_usuario)
+        # BUG FIX: zerar AMBOS os campos de sub-líder
         membro.sub_lider = False
         membro.sublider_de = None
         membro.save()

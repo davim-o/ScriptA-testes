@@ -6,7 +6,7 @@
             <div class="avatar">{{ usuario.matricula|first|upper }}</div>
             <div class="dados-usuario">
                 <h3>{{ usuario.matricula }}</h3>
-                <p>{{ usuario.diretoria }} - {% if usuario.eh_administrador %}Líder{% else %}Membro{% endif %}</p>
+                <p>{{ usuario.diretoria }} - {% if usuario.eh_administrador %}Líder{% elif usuario.sub_lider %}Sub-Líder{% else %}Membro{% endif %}</p>
             </div>
         </div>
 
@@ -21,15 +21,12 @@
                     <style>
                         #pn{
                             color: #8A7EBE;
-                    
                         }
-                        
                     </style>
                     <img src="{% static 'imgs/icone-painel.png' %}" alt="Painel">
                     <span id="pn">Painel administrativo</span>
-    
                 </a>
-                 <style>#pj{margin-top: 1em;}</style>
+                <style>#pj{margin-top: 1em;}</style>
                 <a href="#" id="pj"><img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Cenário</span></a>
                 <a href="#"><img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Staff</span></a>
                 <a href="#"><img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Figurino</span></a>
@@ -40,8 +37,10 @@
                 {% for area in usuario.get_areas_list %}
                     <a href="#">
                         <img src="{% static 'imgs/icone-area.png' %}" alt="">
-                        <span>{{ area }}</span>
+                        <span>{{ area }}{% if usuario.sub_lider and area == usuario.sublider_de %} ★{% endif %}</span>
                     </a>
+                {% empty %}
+                    <p style="color: gray; font-size: 0.85em; padding: 8px 12px;">Nenhuma área cadastrada.</p>
                 {% endfor %}
             {% endif %}
         </nav>

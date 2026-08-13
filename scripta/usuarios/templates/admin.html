@@ -132,7 +132,7 @@
                         <div class="textos">
                             <div class="nome-badges">
                                 <h3>{{ membro.matricula }}</h3>
-                                {% if membro.sublider_de %}
+                                {% if membro.sub_lider %}
                                     <span class="badge-sublider">Sub-Líder</span>
                                     <form action="{% url 'remover_sublider' membro.id %}" method="POST" class="form-inline">
                                         {% csrf_token %}
