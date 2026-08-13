@@ -1,6 +1,5 @@
 from django.db import models
 
-
 class Usuario(models.Model):
 
     matricula=models.CharField(
@@ -26,12 +25,23 @@ class Usuario(models.Model):
         default=False
     )
 
+    sublider_de=models.CharField(
+        max_length=50,
+        null=True,
+        blank=True
+    )
+
     doacao_tampinhas=models.FloatField(
         default=0
     )
 
     def eh_administrador(self):
         return self.matricula=="admin" or self.diretoria=="Líder"
+
+    def get_areas_list(self):
+        if self.areas:
+            return [a.strip() for a in self.areas.split(",") if a.strip()]
+        return []
 
     def __str__(self):
         return self.matricula

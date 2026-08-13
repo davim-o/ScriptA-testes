@@ -2,46 +2,56 @@
 <aside class="sidebar">
 
     <div>
-
         <div class="usuario">
-            <div class="avatar">{{ usuario.matricula|first }}</div>
-
+            <div class="avatar">{{ usuario.matricula|first|upper }}</div>
             <div class="dados-usuario">
                 <h3>{{ usuario.matricula }}</h3>
-                <p>{{ usuario.diretoria }}</p>
+                <p>{{ usuario.diretoria }} - {% if usuario.eh_administrador %}Líder{% else %}Membro{% endif %}</p>
             </div>
-
         </div>
 
         <nav class="menu">
-
             <a href="{% url 'feed' %}" class="{% if pagina_ativa == 'feed' %}ativo{% endif %}">
-                <img src="{% static 'imgs/feed.png' %}" alt="">
+                <img src="{% static 'imgs/icone-feed.png' %}" alt="Feed">
                 <span>Feed</span>
             </a>
 
             {% if usuario.eh_administrador %}
-
-            <a href="{% url 'painel_administrativo' %}" class="{% if pagina_ativa == 'painel' %}ativo{% endif %}">
-                <svg class="icone-menu" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6V11h-6v9Zm0-16v5h6V4h-6Z" fill="currentColor"/>
-                </svg>
-                <span>Painel Administrativo</span>
-            </a>
-
+                <a href="{% url 'painel_administrativo' %}" class="{% if pagina_ativa == 'painel' %}ativo{% endif %}">
+                    <style>
+                        #pn{
+                            color: #8A7EBE;
+                    
+                        }
+                        
+                    </style>
+                    <img src="{% static 'imgs/icone-painel.png' %}" alt="Painel">
+                    <span id="pn">Painel administrativo</span>
+    
+                </a>
+                 <style>#pj{margin-top: 1em;}</style>
+                <a href="#" id="pj"><img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Cenário</span></a>
+                <a href="#"><img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Staff</span></a>
+                <a href="#"><img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Figurino</span></a>
+                <a href="#"><img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Dança</span></a>
+                <a href="#"><img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Sonoplastia</span></a>
+                <a href="#"><img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Roteiro</span></a>
+            {% else %}
+                {% for area in usuario.get_areas_list %}
+                    <a href="#">
+                        <img src="{% static 'imgs/icone-area.png' %}" alt="">
+                        <span>{{ area }}</span>
+                    </a>
+                {% endfor %}
             {% endif %}
-
         </nav>
-
     </div>
 
     <div class="rodape-sidebar">
-
         <a href="{% url 'sair' %}">
-            <img src="{% static 'imgs/sair.png' %}" alt="">
+            <img src="{% static 'imgs/icone-sair.png' %}" alt="Sair">
             <span>Sair</span>
         </a>
-
     </div>
 
 </aside>

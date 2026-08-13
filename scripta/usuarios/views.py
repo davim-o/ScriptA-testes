@@ -291,12 +291,36 @@ def promover_sublider(request):
                 membro.areas=",".join(areas_atuais)
 
             membro.sub_lider=True
+            if area:
+                membro.sublider_de=area
             membro.save()
 
         except Usuario.DoesNotExist:
 
             pass
 
+    return redirect("painel_administrativo")
+
+
+def remover_sublider(request, id_usuario):
+    usuario = usuario_logado(request)
+    if usuario is None or not usuario.eh_administrador():
+        return redirect("login")
+    if request.method == "POST":
+        membro = get_object_or_404(Usuario, id=id_usuario)
+        membro.sub_lider = False
+        membro.sublider_de = None
+        membro.save()
+    return redirect("painel_administrativo")
+
+
+def remover_membro(request, id_usuario):
+    usuario = usuario_logado(request)
+    if usuario is None or not usuario.eh_administrador():
+        return redirect("login")
+    if request.method == "POST":
+        membro = get_object_or_404(Usuario, id=id_usuario)
+        membro.delete()
     return redirect("painel_administrativo")
 
 

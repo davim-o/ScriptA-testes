@@ -15,162 +15,152 @@
 {% include "_sidebar.html" with pagina_ativa="painel" %}
 
 <main class="conteudo">
-
     <div class="container-pagina container-admin">
-
+        
         <div class="titulo-pagina">
             <h1>Painel Administrativo</h1>
         </div>
 
         <section class="stats-grid">
-
             <div class="stat-card">
                 <p class="stat-rotulo">Membros</p>
                 <p class="stat-valor">{{ total_membros }}</p>
             </div>
-
             <div class="stat-card">
                 <p class="stat-rotulo">Pendentes</p>
                 <p class="stat-valor">{{ total_pendentes }}</p>
             </div>
-
             <div class="stat-card">
                 <p class="stat-rotulo">Doações</p>
                 <p class="stat-valor">{{ total_doacoes }}Kg</p>
             </div>
-
         </section>
 
+        <!-- CARD: APROVAÇÃO -->
         <section class="painel-card">
+            <div class="card-header">
+                <img src="{% static 'imgs/icone-usuario.png' %}" alt="">
+                <h2>Aprovação de membros</h2>
+            </div>
 
-            <h2>Aprovação de membros</h2>
-
-            <div class="lista-pendentes">
-
+            <div class="lista-itens">
                 {% for pendente in pendentes %}
-
-                <div class="item-pendente">
-
-                    <div class="cabecalho">
-
-                        <div class="avatar">{{ pendente.matricula|first }}</div>
-
-                        <div class="info">
+                <div class="item-linha">
+                    <div class="info-principal">
+                        <div class="avatar avatar-roxo">{{ pendente.matricula|first|upper }}</div>
+                        <div class="textos">
                             <h3>{{ pendente.matricula }}</h3>
                             <p>{{ pendente.diretoria }}</p>
                         </div>
-
                     </div>
-
-                    <div class="acoes-pendente">
-
-                        <form
-                            action="{% url 'aprovar_membro' pendente.id %}"
-                            method="POST">
-
+                    <div class="acoes">
+                        <form action="{% url 'aprovar_membro' pendente.id %}" method="POST">
                             {% csrf_token %}
-
-                            <button class="btn-icone btn-aprovar" title="Aprovar">✓</button>
-
+                            <button type="submit" class="btn-icon"><img src="{% static 'imgs/icone-check-verde.png' %}" alt="Aprovar"></button>
                         </form>
-
-                        <form
-                            action="{% url 'recusar_membro' pendente.id %}"
-                            method="POST"
-                            onsubmit="return confirm('Deseja recusar esta solicitação?')">
-
+                        <form action="{% url 'recusar_membro' pendente.id %}" method="POST" onsubmit="return confirm('Deseja recusar esta solicitação?')">
                             {% csrf_token %}
-
-                            <button class="btn-icone btn-recusar" title="Recusar">✕</button>
-
+                            <button type="submit" class="btn-icon"><img src="{% static 'imgs/icone-cross-vermelho.png' %}" alt="Recusar"></button>
                         </form>
-
                     </div>
-
                 </div>
-
                 {% empty %}
-
                 <p class="sem-itens">Nenhuma solicitação pendente.</p>
-
                 {% endfor %}
-
             </div>
-
         </section>
 
+        <!-- CARD: PROMOVER -->
         <section class="painel-card">
-
-            <h2>Promover Sub-Líderes</h2>
+            <div class="card-header">
+                <img src="{% static 'imgs/icone-promover.png' %}" alt="">
+                <h2>Promover Sub-Líderes</h2>
+            </div>
 
             <form class="form-promover" action="{% url 'promover_sublider' %}" method="POST">
-
                 {% csrf_token %}
-
-                <input
-                    type="text"
-                    name="matricula"
-                    placeholder="Digite a matrícula..."
-                    required>
-
-                <select name="area" required>
-                    <option value="" disabled selected>Área</option>
-                    <option value="Cenário">Cenário</option>
-                    <option value="Staff">Staff</option>
-                    <option value="Figurino">Figurino</option>
-                    <option value="Dança">Dança</option>
-                    <option value="Sonoplastia">Sonoplastia</option>
-                    <option value="Roteiro">Roteiro</option>
-                    <option value="Tampinhas">Tampinhas</option>
-                </select>
-
-                <button type="submit">Promover</button>
-
-            </form>
-
-        </section>
-
-        <section class="painel-card">
-
-            <h2>Membros</h2>
-
-            <div class="lista-membros">
-
-                {% for membro in membros %}
-
-                <div class="item-membro">
-
-                    <div class="cabecalho">
-
-                        <div class="avatar">{{ membro.matricula|first }}</div>
-
-                        <div class="info">
-                            <h3>
-                                {{ membro.matricula }}
-                                {% if membro.sub_lider %}<span class="ponto-sublider" title="Sub-líder"></span>{% endif %}
-                            </h3>
-                            <p>{{ membro.diretoria }} · {{ membro.areas }}</p>
+                <div class="form-inputs-row">
+                    <div class="form-group">
+                        <label>Matrícula</label>
+                        <div class="input-with-icon">
+                            <img src="{% static 'imgs/icone-usuario.png' %}" alt="">
+                            <input type="text" name="matricula" placeholder="Digite o nome..." required>
                         </div>
-
                     </div>
 
-                    <span class="badge-area">{{ membro.areas|primeira_area|default:"Sem área" }}</span>
-
+                    <div class="form-group">
+                        <label>Áreas</label>
+                        <div class="input-with-icon">
+                            <img src="{% static 'imgs/icone-area.png' %}" alt="">
+                            <select name="area" required>
+                                <option value="" disabled selected>Selecione...</option>
+                                <option value="Cenário">Cenário</option>
+                                <option value="Staff">Staff</option>
+                                <option value="Figurino">Figurino</option>
+                                <option value="Dança">Dança</option>
+                                <option value="Sonoplastia">Sonoplastia</option>
+                                <option value="Roteiro">Roteiro</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
-                {% empty %}
+                <div class="form-actions">
+                    <button type="submit" class="btn-roxo">Promover</button>
+                </div>
+            </form>
+        </section>
 
-                <p class="sem-itens">Nenhum membro aprovado ainda.</p>
-
-                {% endfor %}
-
+        <!-- CARD: MEMBROS -->
+        <section class="painel-card">
+            <div class="card-header flex-between">
+                <div class="titulo-icone">
+                    <img src="{% static 'imgs/icone-equipe.png' %}" alt="">
+                    <h2>Membros</h2>
+                </div>
+                <div class="search-box">
+                    <img src="{% static 'imgs/icone-search.png' %}" alt="">
+                    <input type="text" id="search-membros" placeholder="Pesquisar membros">
+                </div>
             </div>
 
+            <div class="lista-itens">
+                {% for membro in membros %}
+                <div class="item-linha">
+                    <div class="info-principal">
+                        <div class="avatar avatar-verde">{{ membro.matricula|first|upper }}</div>
+                        <div class="textos">
+                            <div class="nome-badges">
+                                <h3>{{ membro.matricula }}</h3>
+                                {% if membro.sublider_de %}
+                                    <span class="badge-sublider">Sub-Líder</span>
+                                    <form action="{% url 'remover_sublider' membro.id %}" method="POST" class="form-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-lixeira">
+                                            <img src="{% static 'imgs/icone-lixeira.png' %}" alt="Remover cargo">
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                            <p>{{ membro.matricula }} - {{ membro.areas }}</p>
+                        </div>
+                    </div>
+                    <div class="acoes">
+                        {% if not membro.eh_administrador %}
+                        <form action="{% url 'remover_membro' membro.id %}" method="POST" onsubmit="return confirm('Deseja realmente remover este membro?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-remover">Remover</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <p class="sem-itens">Nenhum membro aprovado ainda.</p>
+                {% endfor %}
+            </div>
         </section>
 
     </div>
-
 </main>
-
 </body>
 </html>

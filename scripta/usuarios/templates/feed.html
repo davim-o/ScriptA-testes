@@ -21,6 +21,7 @@
             <h1>Torcida</h1>
         </div>
 
+        <!-- Bloco para criar publicação -->
         <section class="nova-publicacao">
 
             <form action="{% url 'publicar' %}" method="POST">
@@ -30,7 +31,7 @@
                 <div class="topo-publicacao">
 
                     <div class="avatar">
-                        {{ usuario.matricula|first }}
+                        {{ usuario.matricula|first|upper }}
                     </div>
 
                     <textarea
@@ -48,6 +49,7 @@
 
         </section>
 
+        <!-- Lista de publicações -->
         <section class="feed">
 
             {% for publicacao in publicacoes %}
@@ -57,7 +59,7 @@
                 <div class="cabecalho">
 
                     <div class="avatar">
-                        {{ publicacao.usuario.matricula|first }}
+                        {{ publicacao.usuario.matricula|first|upper }}
                     </div>
 
                     <div class="info">
@@ -72,22 +74,25 @@
 
                 </div>
 
-                <div class="texto">
-                    {{ publicacao.texto }}
-                </div>
+                <div class="texto">{{ publicacao.texto }}</div>
 
                 <div class="rodape-card">
 
+                    <!-- Botão de Curtir acionado pelo feed.js -->
                     <button
                         class="curtir"
                         data-id="{{ publicacao.id }}">
 
-                        <img class="icone-curtir" src="{% if publicacao.id in curtidas %}{% static 'imgs/coracao-vermelho.png' %}{% else %}{% static 'imgs/coracao-cinza.png' %}{% endif %}" alt="">
+                        <img 
+                            class="icone-curtir" 
+                            src="{% if publicacao.id in curtidas %}{% static 'imgs/coracao-vermelho.png' %}{% else %}{% static 'imgs/coracao-cinza.png' %}{% endif %}" 
+                            alt="Curtir">
                         
                         <span>{{ publicacao.total_curtidas }}</span>
 
                     </button>
 
+                    <!-- Botão de Excluir (apenas para o autor da postagem) -->
                     {% if publicacao.usuario.id == usuario.id %}
 
                     <form
@@ -97,13 +102,11 @@
 
                         {% csrf_token %}
 
-                        <button
-                            class="excluir"
-                            onclick="return confirm('Deseja excluir esta publicação?')">
+                        <button type="submit" class="excluir">
 
                             <img
                                 src="{% static 'imgs/lixeira.png' %}"
-                                alt="">
+                                alt="Excluir">
 
                         </button>
 

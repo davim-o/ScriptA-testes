@@ -49,4 +49,16 @@ urlpatterns=[
         name="promover_sublider"
     ),
 
+    path(
+        "painel-administrativo/remover-sublider/<int:id_usuario>/",
+        views.remover_sublider,
+        name="remover_sublider"
+    ),
+
+    path(
+        "painel-administrativo/remover-membro/<int:id_usuario>/",
+        views.remover_membro,
+        name="remover_membro"
+    ),
+
 ]
