@@ -2,7 +2,13 @@ document.addEventListener("DOMContentLoaded",()=>{
 
     document.querySelectorAll(".curtir").forEach(botao=>{
 
+        let processando=false;
+
         botao.addEventListener("click",async()=>{
+
+            if(processando) return;
+            processando=true;
+            botao.disabled=true;
 
             const id=botao.dataset.id;
 
@@ -15,6 +21,13 @@ document.addEventListener("DOMContentLoaded",()=>{
                         "X-Requested-With":"XMLHttpRequest"
                     }
                 });
+
+                if(!resposta.ok){
+                    if(resposta.status===401){
+                        return;
+                    }
+                    throw new Error("Erro na requisição");
+                }
 
                 const dados=await resposta.json();
 
@@ -29,6 +42,11 @@ document.addEventListener("DOMContentLoaded",()=>{
             }catch{
 
                 alert("Erro ao curtir a publicação.");
+
+            }finally{
+
+                processando=false;
+                botao.disabled=false;
 
             }
 
