@@ -88,10 +88,4 @@ function getCookie(nome){
 
 }
 
-// Confirmação ao clicar em Sair acidentalmente
-const linkSair = document.querySelector(".rodape-sidebar a");
-if(linkSair){
-    linkSair.addEventListener("click", function(e){
-        if(!confirm("Deseja realmente sair?")) e.preventDefault();
-    });
-}
+

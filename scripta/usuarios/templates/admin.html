@@ -36,7 +36,6 @@
             </div>
         </section>
 
-        <!-- CARD: APROVAÇÃO -->
         <section class="painel-card">
             <div class="card-header">
                 <img src="{% static 'imgs/icone-usuario.png' %}" alt="">
@@ -70,7 +69,7 @@
             </div>
         </section>
 
-        <!-- CARD: PROMOVER -->
+
         <section class="painel-card">
             <div class="card-header">
                 <img src="{% static 'imgs/icone-promover.png' %}" alt="">
@@ -111,7 +110,6 @@
             </form>
         </section>
 
-        <!-- CARD: MEMBROS -->
         <section class="painel-card">
             <div class="card-header flex-between">
                 <div class="titulo-icone">
@@ -165,7 +163,7 @@
 </body>
 </html>
 <script>
-// Busca de membros
+
 document.getElementById("search-membros").addEventListener("input", function(){
     const termo = this.value.toLowerCase();
     document.querySelectorAll(".lista-itens .item-linha").forEach(item => {
@@ -174,8 +172,4 @@ document.getElementById("search-membros").addEventListener("input", function(){
     });
 });
 
-// Confirmação ao clicar em Sair acidentalmente
-document.querySelector(".rodape-sidebar a").addEventListener("click", function(e){
-    if(!confirm("Deseja realmente sair?")) e.preventDefault();
-});
 </script>
