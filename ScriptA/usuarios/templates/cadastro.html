@@ -11,17 +11,17 @@
 <body>
 
 <header>
-    <img src="{% static 'imgs/logo.png' %}">
+    <img src="{% static 'imgs/logo.png' %}" alt="Logo ScriptA">
     <h1>Participe da torcida</h1>
 </header>
 
 <main>
 
     <section class="imagens">
-        <img src="{% static 'imgs/tigre.png' %}" alt="">
-        <img src="{% static 'imgs/cobra.png' %}" alt="">
-        <img src="{% static 'imgs/dragao.png' %}" alt="">
-        <img src="{% static 'imgs/cavalo.png' %}" alt="">
+        <img src="{% static 'imgs/tigre.png' %}" alt="Tigre">
+        <img src="{% static 'imgs/cobra.png' %}" alt="Cobra">
+        <img src="{% static 'imgs/dragao.png' %}" alt="Dragão">
+        <img src="{% static 'imgs/cavalo.png' %}" alt="Cavalo">
     </section>
 
     <form method="POST">
@@ -36,7 +36,6 @@
 
             <div class="senha">
                 <p>Senha</p>
-
                 <div class="campo-senha">
                     <input type="password" id="senha" name="senha" placeholder="Digite sua senha">
                 </div>
@@ -44,24 +43,16 @@
 
             <div class="diretoria">
                 <p>Diretoria</p>
-
                 <div class="dropdown">
-
                     <button type="button" class="dropdown-btn" id="abrirDiretoria">
-
                         <span id="textoDiretoria">Selecione uma diretoria</span>
-
-                        <img class="seta" id="setaDiretoria"
-                             src="{% static 'imgs/seta-baixo.png' %}" alt="">
+                        <img class="seta" id="setaDiretoria" src="{% static 'imgs/seta-baixo.png' %}" alt="">
                     </button>
-
                     <div class="lista" id="listaDiretoria">
-
                         <div class="opcao-diretoria">Diaren</div>
                         <div class="opcao-diretoria">Diatinf</div>
                         <div class="opcao-diretoria">Diacon</div>
                         <div class="opcao-diretoria">Diacin</div>
-
                     </div>
                 </div>
             </div>
@@ -70,19 +61,12 @@
 
             <div class="areas">
                 <p>Áreas</p>
-
                 <div class="dropdown">
-
                     <button type="button" class="dropdown-btn" id="abrirAreas">
-
                         <span>Selecione as áreas</span>
-
-                        <img class="seta" id="setaAreas"
-                             src="{% static 'imgs/seta-baixo.png' %}" alt="">
+                        <img class="seta" id="setaAreas" src="{% static 'imgs/seta-baixo.png' %}" alt="">
                     </button>
-
                     <div class="lista" id="listaAreas">
-
                         <label><input type="checkbox" name="areas" value="Cenário"> Cenário</label>
                         <label><input type="checkbox" name="areas" value="Staff"> Staff</label>
                         <label><input type="checkbox" name="areas" value="Figurino"> Figurino</label>
@@ -90,7 +74,6 @@
                         <label><input type="checkbox" name="areas" value="Sonoplastia"> Sonoplastia</label>
                         <label><input type="checkbox" name="areas" value="Roteiro"> Roteiro</label>
                         <label><input type="checkbox" name="areas" value="Tampinhas"> Tampinhas</label>
-
                     </div>
                 </div>
             </div>
@@ -98,7 +81,8 @@
             <div class="butao">
                 <button type="submit">Cadastrar</button>
             </div>
-            <p id="cadbutao">Já possui conta?<a href="{% url 'login' %}">Entrar</a></p>
+
+            <p id="cadbutao">Já possui conta? <a href="{% url 'login' %}">Entrar</a></p>
 
         </section>
     </form>
@@ -113,7 +97,6 @@
     const SETA_BAIXO = "{% static 'imgs/seta-baixo.png' %}";
     const SETA_CIMA = "{% static 'imgs/seta-cima.png' %}";
 </script>
-
 <script src="{% static 'js/cadastro.js' %}"></script>
 
 </body>

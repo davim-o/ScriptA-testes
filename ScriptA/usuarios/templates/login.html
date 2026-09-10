@@ -10,7 +10,7 @@
 <body>
 
     <header>
-        <img src="{% static 'imgs/logo.png' %}">
+        <img src="{% static 'imgs/logo.png' %}" alt="Logo ScriptA">
         <h1>Participe da torcida</h1>
     </header>
 
@@ -29,15 +29,12 @@
 
                 <div class="mat">
                     <p>Matrícula</p>
-                    <label for="matricula"></label>
                     <input type="text" id="matricula" name="matricula" placeholder="Digite sua matrícula">
                 </div>
 
                 <div class="senha">
                     <p>Senha</p>
-                    <label for="password"></label>
                     <input type="password" id="password" name="senha" placeholder="Digite sua senha">
-                 
                 </div>
 
                 {% if erro %}
@@ -47,10 +44,12 @@
                 <div class="butao">
                     <button type="submit">Entrar</button>
                 </div>
-                <p id="cadbutao">Não possui conta?<a href="{% url 'cadastro' %}">Cadastra-se</a></p>
+
+                <p id="cadbutao">Não possui conta? <a href="{% url 'cadastro' %}">Cadastra-se</a></p>
 
             </section>
         </form>
+
     </main>
 
     <footer>

@@ -16,7 +16,7 @@
 
 <main class="conteudo">
     <div class="container-pagina container-admin">
-        
+
         <div class="titulo-pagina">
             <h1>Painel Administrativo</h1>
         </div>
@@ -55,11 +55,15 @@
                     <div class="acoes">
                         <form action="{% url 'aprovar_membro' pendente.id %}" method="POST">
                             {% csrf_token %}
-                            <button type="submit" class="btn-icon"><img src="{% static 'imgs/icone-check-verde.png' %}" alt="Aprovar"></button>
+                            <button type="submit" class="btn-icon">
+                                <img src="{% static 'imgs/icone-check-verde.png' %}" alt="Aprovar">
+                            </button>
                         </form>
                         <form action="{% url 'recusar_membro' pendente.id %}" method="POST" onsubmit="return confirm('Deseja recusar esta solicitação?')">
                             {% csrf_token %}
-                            <button type="submit" class="btn-icon"><img src="{% static 'imgs/icone-cross-vermelho.png' %}" alt="Recusar"></button>
+                            <button type="submit" class="btn-icon">
+                                <img src="{% static 'imgs/icone-cross-vermelho.png' %}" alt="Recusar">
+                            </button>
                         </form>
                     </div>
                 </div>
@@ -68,7 +72,6 @@
                 {% endfor %}
             </div>
         </section>
-
 
         <section class="painel-card">
             <div class="card-header">
@@ -160,16 +163,16 @@
 
     </div>
 </main>
-</body>
-</html>
-<script>
 
-document.getElementById("search-membros").addEventListener("input", function(){
+<script>
+document.getElementById("search-membros").addEventListener("input", function() {
     const termo = this.value.toLowerCase();
     document.querySelectorAll(".lista-itens .item-linha").forEach(item => {
         const nome = item.querySelector("h3").textContent.toLowerCase();
         item.style.display = nome.includes(termo) ? "" : "none";
     });
 });
-
 </script>
+
+</body>
+</html>
