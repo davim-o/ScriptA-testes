@@ -1,0 +1,351 @@
+{% load static %}
+{% load usuarios_extras %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+</head>
+
+<body>
+
+{% include "_sidebar.html" with pagina_ativa="painel" %}
+
+<main class="conteudo">
+    <div class="container-pagina container-admin">
+
+        <div class="titulo-pagina">
+            <h1>Painel Administrativo</h1>
+        </div>
+
+        <section class="stats-grid">
+            <div class="stat-card">
+                <p class="stat-rotulo">Membros</p>
+                <p class="stat-valor">0</p>
+            </div>
+            <div class="stat-card">
+                <p class="stat-rotulo">Pendentes</p>
+                <p class="stat-valor">0</p>
+            </div>
+            <div class="stat-card">
+                <p class="stat-rotulo">Doações</p>
+                <p class="stat-valor">0Kg</p>
+            </div>
+        </section>
+
+        {% if usuario.eh_administrador %}
+        <!-- ── Seções exclusivas do Líder ── -->
+        <section class="painel-card">
+            <div class="card-header">
+                <img src="{% static 'imgs/icone-usuario.png' %}" alt="">
+                <h2>Aprovação de membros</h2>
+            </div>
+
+            <div class="lista-itens">
+                {% for pendente in pendentes %}
+                <div class="item-linha">
+                    <div class="info-principal">
+                        <div class="avatar avatar-roxo">{{ pendente.matricula|first|upper }}</div>
+                        <div class="textos">
+                            <h3>{{ pendente.matricula }}</h3>
+                            <p>{{ pendente.diretoria }}</p>
+                        </div>
+                    </div>
+                    <div class="acoes">
+                        <form action="{% url 'aprovar_membro' pendente.id %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-icon">
+                                <img src="{% static 'imgs/icone-check-verde.png' %}" alt="Aprovar">
+                            </button>
+                        </form>
+                        <form action="{% url 'recusar_membro' pendente.id %}" method="POST" onsubmit="return confirm('Deseja recusar esta solicitação?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-icon">
+                                <img src="{% static 'imgs/icone-cross-vermelho.png' %}" alt="Recusar">
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="sem-itens">Nenhuma solicitação pendente.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="painel-card">
+            <div class="card-header">
+                <img src="{% static 'imgs/icone-promover.png' %}" alt="">
+                <h2>Promover Sub-Líderes</h2>
+            </div>
+
+            <form class="form-promover" action="{% url 'promover_sublider' %}" method="POST">
+                {% csrf_token %}
+                <div class="form-inputs-row">
+                    <div class="form-group">
+                        <label>Matrícula</label>
+                        <div class="input-with-icon">
+                            <img src="{% static 'imgs/icone-usuario.png' %}" alt="">
+                            <input type="text" name="matricula" placeholder="Digite o nome..." required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Áreas</label>
+                        <div class="input-with-icon">
+                            <img src="{% static 'imgs/icone-area.png' %}" alt="">
+                            <select name="area" required>
+                                <option value="" disabled selected>Selecione...</option>
+                                <option value="Cenário">Cenário</option>
+                                <option value="Staff">Staff</option>
+                                <option value="Figurino">Figurino</option>
+                                <option value="Dança">Dança</option>
+                                <option value="Sonoplastia">Sonoplastia</option>
+                                <option value="Roteiro">Roteiro</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-roxo">Promover</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="painel-card">
+            <div class="card-header flex-between">
+                <div class="titulo-icone">
+                    <img src="{% static 'imgs/icone-equipe.png' %}" alt="">
+                    <h2>Membros</h2>
+                </div>
+                <div class="search-box">
+                    <img src="{% static 'imgs/icone-search.png' %}" alt="">
+                    <input type="text" id="search-membros" placeholder="Pesquisar membros">
+                </div>
+            </div>
+
+            <div class="lista-itens">
+                {% for membro in membros %}
+                <div class="item-linha">
+                    <div class="info-principal">
+                        <div class="avatar avatar-verde">{{ membro.matricula|first|upper }}</div>
+                        <div class="textos">
+                            <div class="nome-badges">
+                                <h3>{{ membro.matricula }}</h3>
+                                {% if membro.sub_lider %}
+                                    <span class="badge-sublider">Sub-Líder</span>
+                                    <form action="{% url 'remover_sublider' membro.id %}" method="POST" class="form-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-lixeira">
+                                            <img src="{% static 'imgs/icone-lixeira.png' %}" alt="Remover cargo">
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                            <p>{{ membro.matricula }} - {{ membro.areas }}</p>
+                        </div>
+                    </div>
+                    <div class="acoes">
+                        {% if not membro.eh_administrador %}
+                        <form action="{% url 'remover_membro' membro.id %}" method="POST" onsubmit="return confirm('Deseja realmente remover este membro?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-remover">Remover</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <p class="sem-itens">Nenhum membro aprovado ainda.</p>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- ── Criar Tarefa (visível apenas para Sub-Líder) ── -->
+        {% if usuario.sub_lider %}
+        <section class="painel-card">
+            <div class="card-header">
+                <img src="{% static 'imgs/icone-tarefa.png' %}" alt="">
+                <h2>Criar tarefas</h2>
+            </div>
+
+            <form class="form-tarefa" action="{% url 'criar_tarefa' %}" method="POST" id="form-criar-tarefa">
+                {% csrf_token %}
+
+                <div class="form-tarefa-grid">
+                    <div class="form-group">
+                        <label>Título</label>
+                        <input type="text" name="titulo" placeholder="Nome da tarefa" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tipo de tarefa</label>
+                        <div class="select-wrapper">
+                            <select name="tipo" id="tipo-tarefa" required>
+                                <option value="prolongada">Prolongada</option>
+                                <option value="fixa">Fixa</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Campos para tarefa PROLONGADA -->
+                <div class="form-tarefa-grid" id="campos-prolongada">
+                    <div class="form-group">
+                        <label>Data</label>
+                        <div class="input-calendario">
+                            <input type="date" name="data_inicio" placeholder="dd/mm/aaaa">
+                            <img src="{% static 'imgs/icone-calendario.png' %}" alt="" class="icone-input">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Prazo</label>
+                        <div class="input-calendario">
+                            <input type="date" name="data_fim" placeholder="dd/mm/aaaa">
+                            <img src="{% static 'imgs/icone-calendario.png' %}" alt="" class="icone-input">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Campos para tarefa FIXA -->
+                <div class="form-tarefa-grid" id="campos-fixa" style="display:none;">
+                    <div class="form-group">
+                        <label>Data</label>
+                        <div class="input-calendario">
+                            <input type="date" name="data">
+                            <img src="{% static 'imgs/icone-calendario.png' %}" alt="" class="icone-input">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Horário</label>
+                        <div class="input-calendario">
+                            <input type="time" name="horario" placeholder="--:-- --">
+                            <img src="{% static 'imgs/icone-relogio.png' %}" alt="" class="icone-input">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-tarefa-grid">
+                    <div class="form-group">
+                        <label>Descrição</label>
+                        <input type="text" name="descricao" placeholder="Onde será?">
+                    </div>
+                    <div class="form-group">
+                        <label>Limite de participantes</label>
+                        <div class="input-contador">
+                            <input type="number" name="limite_participantes" id="limite-input" value="2" min="1">
+                            <button type="button" class="btn-contador" onclick="alterarContador(-1)">-</button>
+                            <button type="button" class="btn-contador" onclick="alterarContador(1)">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-roxo">Criar tarefa</button>
+                </div>
+            </form>
+        </section>
+
+        {% endif %}
+
+        <!-- ── Tarefas pendentes (apenas Sub-Líder) ── -->
+        {% if usuario.sub_lider %}
+        <section class="painel-card">
+            <div class="card-header">
+                <img src="{% static 'imgs/icone-calendario.png' %}" alt="">
+                <h2>Tarefas pendentes</h2>
+            </div>
+
+            <div class="lista-tarefas">
+                {% for tarefa in tarefas %}
+                <div class="tarefa-card">
+                    <div class="tarefa-header">
+                        <div class="tarefa-info">
+                            <h3 class="tarefa-titulo">{{ tarefa.titulo }}</h3>
+                            <p class="tarefa-local">
+                                {% if tarefa.descricao %}{{ tarefa.descricao }}{% endif %}
+                                {% if tarefa.tipo == "fixa" and tarefa.horario %}
+                                    &nbsp;&ndash; {{ tarefa.horario|time:"H:i" }}
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="tarefa-data">
+                            <img src="{% static 'imgs/icone-calendario.png' %}" alt="">
+                            {% if tarefa.tipo == "fixa" %}
+                                {% if tarefa.data %}{{ tarefa.data|date:"j/n" }}{% endif %}
+                            {% else %}
+                                {% if tarefa.data_inicio and tarefa.data_fim %}
+                                    {{ tarefa.data_inicio|date:"j/n" }} - {{ tarefa.data_fim|date:"j/n" }}
+                                {% elif tarefa.data_inicio %}
+                                    {{ tarefa.data_inicio|date:"j/n" }}
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="tarefa-acoes">
+                        <form action="{% url 'encerrar_tarefa' tarefa.id %}" method="POST" class="form-inline" onsubmit="return confirm('Deseja encerrar esta tarefa?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-encerrar">Encerrar</button>
+                        </form>
+                        {% if usuario.sub_lider %}
+                        <a href="{% url 'editar_tarefa' tarefa.id %}" class="btn-participantes">
+                            Editar
+                        
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <p class="sem-itens">Nenhuma tarefa pendente.</p>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+    </div>
+</main>
+
+<script>
+// Alternância dos campos de acordo com o tipo de tarefa
+const tipoSelect = document.getElementById("tipo-tarefa");
+const camposProlongada = document.getElementById("campos-prolongada");
+const camposFixa = document.getElementById("campos-fixa");
+
+function atualizarCamposTipo() {
+    if (tipoSelect.value === "fixa") {
+        camposFixa.style.display = "";
+        camposProlongada.style.display = "none";
+    } else {
+        camposProlongada.style.display = "";
+        camposFixa.style.display = "none";
+    }
+}
+
+tipoSelect.addEventListener("change", atualizarCamposTipo);
+atualizarCamposTipo();
+
+// Contador de participantes
+function alterarContador(delta) {
+    const input = document.getElementById("limite-input");
+    const novoValor = Math.max(1, parseInt(input.value || 1) + delta);
+    input.value = novoValor;
+}
+
+{% if usuario.eh_administrador %}
+// Pesquisa de membros
+document.getElementById("search-membros").addEventListener("input", function() {
+    const termo = this.value.toLowerCase();
+    document.querySelectorAll(".lista-itens .item-linha").forEach(item => {
+        const nome = item.querySelector("h3").textContent.toLowerCase();
+        item.style.display = nome.includes(termo) ? "" : "none";
+    });
+});
+{% endif %}
+</script>
+
+</body>
+</html>

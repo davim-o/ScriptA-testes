@@ -1,0 +1,128 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feed</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/feed.css' %}">
+</head>
+
+<body>
+
+{% include "_sidebar.html" with pagina_ativa="feed" %}
+
+<main class="conteudo">
+
+    <div class="container-pagina">
+
+        <div class="titulo-pagina">
+            <h1>Torcida</h1>
+        </div>
+
+        <!-- Bloco para criar publicação -->
+        <section class="nova-publicacao">
+
+            <form action="{% url 'publicar' %}" method="POST">
+
+                {% csrf_token %}
+
+                <div class="topo-publicacao">
+
+                    <div class="avatar">
+                        {{ usuario.matricula|first|upper }}
+                    </div>
+
+                    <textarea
+                        name="texto"
+                        placeholder="Compartilhe algo com a torcida..."
+                        required></textarea>
+
+                </div>
+
+                <div class="acoes-publicacao">
+                    <button type="submit">Publicar</button>
+                </div>
+
+            </form>
+
+        </section>
+
+        <!-- Lista de publicações -->
+        <section class="feed">
+
+            {% for publicacao in publicacoes %}
+
+            <article class="card">
+
+                <div class="cabecalho">
+
+                    <div class="avatar">
+                        {{ publicacao.usuario.matricula|first|upper }}
+                    </div>
+
+                    <div class="info">
+
+                        <h3>{{ publicacao.usuario.matricula }}</h3>
+
+                        <p>{{ publicacao.usuario.diretoria }}</p>
+
+                        <small>{{ publicacao.data|date:"d/m/Y • H:i" }}</small>
+
+                    </div>
+
+                </div>
+
+                <div class="corpo-card">
+                    <div class="avatar-espaco"></div>
+                    <div class="texto">{{ publicacao.texto }}</div>
+                </div>
+
+                <div class="rodape-card">
+
+                    <div class="avatar-espaco"></div>
+
+                    <div class="rodape-acoes">
+
+                        <button class="curtir" data-id="{{ publicacao.id }}">
+                            <img
+                                class="icone-curtir"
+                                src="{% if publicacao.id in curtidas %}{% static 'imgs/coracao-vermelho.png' %}{% else %}{% static 'imgs/coracao-cinza.png' %}{% endif %}"
+                                alt="Curtir">
+                            <span>{{ publicacao.total_curtidas }}</span>
+                        </button>
+
+                        {% if publicacao.usuario.id == usuario.id %}
+                        <form action="{% url 'excluir_publicacao' publicacao.id %}" method="POST" class="form-excluir">
+                            {% csrf_token %}
+                            <button type="submit" class="excluir">
+                                <img src="{% static 'imgs/lixeira.png' %}" alt="Excluir">
+                            </button>
+                        </form>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </article>
+
+            {% empty %}
+
+            <div class="sem-publicacoes">
+                Nenhuma publicação encontrada.
+            </div>
+
+            {% endfor %}
+
+        </section>
+
+    </div>
+
+</main>
+
+<script src="{% static 'js/feed.js' %}"></script>
+
+</body>
+</html>

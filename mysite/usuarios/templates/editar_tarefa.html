@@ -1,0 +1,136 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Tarefa</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+</head>
+
+<body>
+
+{% include "_sidebar.html" with pagina_ativa="painel" %}
+
+<main class="conteudo">
+    <div class="container-pagina container-admin">
+
+        <div class="titulo-pagina">
+            <h1>Editar Tarefa</h1>
+        </div>
+
+        <section class="painel-card">
+            <div class="card-header">
+                <img src="{% static 'imgs/icone-tarefa.png' %}" alt="">
+                <h2>Editar tarefa</h2>
+            </div>
+
+            <form class="form-tarefa" action="{% url 'editar_tarefa' tarefa.id %}" method="POST" id="form-editar-tarefa">
+                {% csrf_token %}
+
+                <div class="form-tarefa-grid">
+                    <div class="form-group">
+                        <label>Título</label>
+                        <input type="text" name="titulo" value="{{ tarefa.titulo }}" placeholder="Nome da tarefa" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tipo de tarefa</label>
+                        <div class="select-wrapper">
+                            <select name="tipo" id="tipo-tarefa" required>
+                                <option value="prolongada" {% if tarefa.tipo == "prolongada" %}selected{% endif %}>Prolongada</option>
+                                <option value="fixa" {% if tarefa.tipo == "fixa" %}selected{% endif %}>Fixa</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Campos para tarefa PROLONGADA -->
+                <div class="form-tarefa-grid" id="campos-prolongada">
+                    <div class="form-group">
+                        <label>Data</label>
+                        <div class="input-calendario">
+                            <input type="date" name="data_inicio" value="{{ tarefa.data_inicio|date:'Y-m-d' }}">
+                            <img src="{% static 'imgs/icone-calendario.png' %}" alt="" class="icone-input">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Prazo</label>
+                        <div class="input-calendario">
+                            <input type="date" name="data_fim" value="{{ tarefa.data_fim|date:'Y-m-d' }}">
+                            <img src="{% static 'imgs/icone-calendario.png' %}" alt="" class="icone-input">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Campos para tarefa FIXA -->
+                <div class="form-tarefa-grid" id="campos-fixa" style="display:none;">
+                    <div class="form-group">
+                        <label>Data</label>
+                        <div class="input-calendario">
+                            <input type="date" name="data" value="{{ tarefa.data|date:'Y-m-d' }}">
+                            <img src="{% static 'imgs/icone-calendario.png' %}" alt="" class="icone-input">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Horário</label>
+                        <div class="input-calendario">
+                            <input type="time" name="horario" value="{{ tarefa.horario|time:'H:i' }}">
+                            <img src="{% static 'imgs/icone-relogio.png' %}" alt="" class="icone-input">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-tarefa-grid">
+                    <div class="form-group">
+                        <label>Descrição</label>
+                        <input type="text" name="descricao" value="{{ tarefa.descricao }}" placeholder="Onde será?">
+                    </div>
+                    <div class="form-group">
+                        <label>Limite de participantes</label>
+                        <div class="input-contador">
+                            <input type="number" name="limite_participantes" id="limite-input" value="{{ tarefa.limite_participantes }}" min="1">
+                            <button type="button" class="btn-contador" onclick="alterarContador(-1)">-</button>
+                            <button type="button" class="btn-contador" onclick="alterarContador(1)">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions form-actions-editar">
+                    <a href="{% url 'painel_administrativo' %}" class="btn-cancelar">Cancelar</a>
+                    <button type="submit" class="btn-roxo">Salvar alterações</button>
+                </div>
+            </form>
+        </section>
+
+    </div>
+</main>
+
+<script>
+const tipoSelect = document.getElementById("tipo-tarefa");
+const camposProlongada = document.getElementById("campos-prolongada");
+const camposFixa = document.getElementById("campos-fixa");
+
+function atualizarCamposTipo() {
+    if (tipoSelect.value === "fixa") {
+        camposFixa.style.display = "";
+        camposProlongada.style.display = "none";
+    } else {
+        camposProlongada.style.display = "";
+        camposFixa.style.display = "none";
+    }
+}
+
+tipoSelect.addEventListener("change", atualizarCamposTipo);
+atualizarCamposTipo();
+
+function alterarContador(delta) {
+    const input = document.getElementById("limite-input");
+    const novoValor = Math.max(1, parseInt(input.value || 1) + delta);
+    input.value = novoValor;
+}
+</script>
+
+</body>
+</html>
