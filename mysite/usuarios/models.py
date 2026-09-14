@@ -122,6 +122,8 @@ class Tarefa(models.Model):
 
     limite_participantes=models.IntegerField(default=2)
 
+    area=models.CharField(max_length=50, blank=True)
+
     encerrada=models.BooleanField(default=False)
 
     criada_por=models.ForeignKey(

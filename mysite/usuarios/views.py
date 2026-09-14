@@ -108,7 +108,10 @@ def painel_administrativo(request):
     membros = Usuario.objects.filter(aprovado=True).order_by("matricula")
     pendentes = Usuario.objects.filter(aprovado=False).order_by("matricula")
     total_doacoes = membros.aggregate(total=models.Sum("doacao_tampinhas"))["total"] or 0
-    tarefas = Tarefa.objects.filter(encerrada=False).order_by("-criada_em")
+    if usuario.sub_lider:
+        tarefas = Tarefa.objects.filter(encerrada=False, area=usuario.sublider_de).order_by("-criada_em")
+    else:
+        tarefas = Tarefa.objects.filter(encerrada=False).order_by("-criada_em")
 
     return render(request, "admin.html", {
         "usuario": usuario,
@@ -134,6 +137,7 @@ def criar_tarefa(request):
             limite_participantes=int(request.POST.get("limite_participantes", 2)),
             criada_por=usuario
         )
+        tarefa.area = usuario.sublider_de or ""
         if tipo == "fixa":
             tarefa.data = request.POST.get("data") or None
             tarefa.horario = request.POST.get("horario") or None
