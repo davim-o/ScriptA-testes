@@ -46,6 +46,18 @@ class Usuario(models.Model):
             return [a.strip() for a in self.areas.split(",") if a.strip()]
         return []
 
+    def get_areas_ordenadas(self):
+        """Retorna áreas com a área de sub-líder no topo."""
+        areas = self.get_areas_list()
+        if self.sub_lider and self.sublider_de and self.sublider_de in areas:
+            areas = [self.sublider_de] + [a for a in areas if a != self.sublider_de]
+        return areas
+
+    def tem_acesso_area(self, area):
+        if self.eh_administrador():
+            return True
+        return area in self.get_areas_list()
+
     def __str__(self):
         return self.matricula
 
@@ -110,6 +122,8 @@ class Tarefa(models.Model):
         default="fixa"
     )
 
+    area=models.CharField(max_length=50, blank=True)
+
     # Campos para tarefa FIXA
     data=models.DateField(null=True, blank=True)
     horario=models.TimeField(null=True, blank=True)
@@ -122,8 +136,6 @@ class Tarefa(models.Model):
 
     limite_participantes=models.IntegerField(default=2)
 
-    area=models.CharField(max_length=50, blank=True)
-
     encerrada=models.BooleanField(default=False)
 
     criada_por=models.ForeignKey(
@@ -134,5 +146,34 @@ class Tarefa(models.Model):
 
     criada_em=models.DateTimeField(auto_now_add=True)
 
+    def total_participantes(self):
+        return self.participacoes.count()
+
+    def tem_vaga(self):
+        return self.total_participantes() < self.limite_participantes
+
     def __str__(self):
         return self.titulo
+
+
+class ParticipacaoTarefa(models.Model):
+
+    usuario=models.ForeignKey(
+        Usuario,
+        on_delete=models.CASCADE,
+        related_name="participacoes"
+    )
+
+    tarefa=models.ForeignKey(
+        Tarefa,
+        on_delete=models.CASCADE,
+        related_name="participacoes"
+    )
+
+    inscrito_em=models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together=("usuario","tarefa")
+
+    def __str__(self):
+        return f"{self.usuario.matricula} em {self.tarefa.titulo}"

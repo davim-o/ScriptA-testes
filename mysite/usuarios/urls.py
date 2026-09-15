@@ -79,4 +79,22 @@ urlpatterns=[
         name="encerrar_tarefa"
     ),
 
+    path(
+        "area/<str:nome_area>/",
+        views.pagina_area,
+        name="pagina_area"
+    ),
+
+    path(
+        "area/participar/<int:id_tarefa>/",
+        views.participar_tarefa,
+        name="participar_tarefa"
+    ),
+
+    path(
+        "area/cancelar/<int:id_tarefa>/",
+        views.cancelar_participacao,
+        name="cancelar_participacao"
+    ),
+
 ]

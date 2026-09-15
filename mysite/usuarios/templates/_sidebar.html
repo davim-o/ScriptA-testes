@@ -22,12 +22,25 @@
                     <span class="texto-painel">Painel administrativo</span>
                 </a>
 
-                <a href="#"><img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Cenário</span></a>
-                <a href="#"><img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Staff</span></a>
-                <a href="#"><img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Figurino</span></a>
-                <a href="#"><img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Dança</span></a>
-                <a href="#"><img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Sonoplastia</span></a>
-                <a href="#"><img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Roteiro</span></a>
+                <a href="{% url 'pagina_area' 'Cenário' %}" class="{% if area_ativa == 'Cenário' %}ativo{% endif %}">
+                    <img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Cenário</span>
+                </a>
+                <a href="{% url 'pagina_area' 'Staff' %}" class="{% if area_ativa == 'Staff' %}ativo{% endif %}">
+                    <img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Staff</span>
+                </a>
+                <a href="{% url 'pagina_area' 'Figurino' %}" class="{% if area_ativa == 'Figurino' %}ativo{% endif %}">
+                    <img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Figurino</span>
+                </a>
+                <a href="{% url 'pagina_area' 'Dança' %}" class="{% if area_ativa == 'Dança' %}ativo{% endif %}">
+                    <img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Dança</span>
+                </a>
+                <a href="{% url 'pagina_area' 'Sonoplastia' %}" class="{% if area_ativa == 'Sonoplastia' %}ativo{% endif %}">
+                    <img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Sonoplastia</span>
+                </a>
+                <a href="{% url 'pagina_area' 'Roteiro' %}" class="{% if area_ativa == 'Roteiro' %}ativo{% endif %}">
+                    <img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Roteiro</span>
+                </a>
+
             {% else %}
                 {% if usuario.sub_lider %}
                     <a href="{% url 'painel_administrativo' %}" class="{% if pagina_ativa == 'painel' %}ativo{% endif %}">
@@ -36,8 +49,8 @@
                     </a>
                 {% endif %}
 
-                {% for area in usuario.get_areas_list %}
-                    <a href="#">
+                {% for area in usuario.get_areas_ordenadas %}
+                    <a href="{% url 'pagina_area' area %}" class="{% if area_ativa == area %}ativo{% endif %}">
                         <img src="{% static 'imgs/icone-area.png' %}" alt="">
                         <span>{{ area }}</span>
                         {% if usuario.sub_lider and area == usuario.sublider_de %}

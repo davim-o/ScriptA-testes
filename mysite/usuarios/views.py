@@ -2,7 +2,13 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password, check_password
 from django.db import models
-from .models import Usuario, Publicacao, Curtida, Tarefa
+from .models import Usuario, Publicacao, Curtida, Tarefa, ParticipacaoTarefa
+
+
+def usuario_logado(request):
+    if "usuario" not in request.session:
+        return None
+    return Usuario.objects.get(id=request.session["usuario"])
 
 
 def cadastro(request):
@@ -92,12 +98,6 @@ def excluir_publicacao(request, id_publicacao):
     return redirect("feed")
 
 
-def usuario_logado(request):
-    if "usuario" not in request.session:
-        return None
-    return Usuario.objects.get(id=request.session["usuario"])
-
-
 def painel_administrativo(request):
     usuario = usuario_logado(request)
     if usuario is None:
@@ -108,6 +108,7 @@ def painel_administrativo(request):
     membros = Usuario.objects.filter(aprovado=True).order_by("matricula")
     pendentes = Usuario.objects.filter(aprovado=False).order_by("matricula")
     total_doacoes = membros.aggregate(total=models.Sum("doacao_tampinhas"))["total"] or 0
+
     if usuario.sub_lider:
         tarefas = Tarefa.objects.filter(encerrada=False, area=usuario.sublider_de).order_by("-criada_em")
     else:
@@ -135,9 +136,9 @@ def criar_tarefa(request):
             tipo=tipo,
             descricao=request.POST.get("descricao", ""),
             limite_participantes=int(request.POST.get("limite_participantes", 2)),
-            criada_por=usuario
+            criada_por=usuario,
+            area=usuario.sublider_de or ""
         )
-        tarefa.area = usuario.sublider_de or ""
         if tipo == "fixa":
             tarefa.data = request.POST.get("data") or None
             tarefa.horario = request.POST.get("horario") or None
@@ -186,6 +187,59 @@ def encerrar_tarefa(request, id_tarefa):
         tarefa.encerrada = True
         tarefa.save()
     return redirect("painel_administrativo")
+
+
+def pagina_area(request, nome_area):
+    usuario = usuario_logado(request)
+    if usuario is None:
+        return redirect("login")
+
+    # Verifica acesso à área
+    if not usuario.tem_acesso_area(nome_area):
+        return redirect("feed")
+
+    tarefas = Tarefa.objects.filter(
+        area=nome_area,
+        encerrada=False
+    ).prefetch_related("participacoes").order_by("-criada_em")
+
+    # IDs das tarefas em que o usuário participa
+    participando = ParticipacaoTarefa.objects.filter(
+        usuario=usuario
+    ).values_list("tarefa_id", flat=True)
+
+    return render(request, "area.html", {
+        "usuario": usuario,
+        "nome_area": nome_area,
+        "tarefas": tarefas,
+        "participando": list(participando),
+        "area_ativa": nome_area,
+    })
+
+
+def participar_tarefa(request, id_tarefa):
+    usuario = usuario_logado(request)
+    if usuario is None:
+        return redirect("login")
+    if request.method == "POST":
+        tarefa = get_object_or_404(Tarefa, id=id_tarefa)
+        if not usuario.tem_acesso_area(tarefa.area):
+            return redirect("feed")
+        # Só inscreve se tiver vaga e não estiver inscrito
+        ja_inscrito = ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).exists()
+        if not ja_inscrito and tarefa.tem_vaga():
+            ParticipacaoTarefa.objects.create(usuario=usuario, tarefa=tarefa)
+        return redirect("pagina_area", nome_area=tarefa.area)
+
+
+def cancelar_participacao(request, id_tarefa):
+    usuario = usuario_logado(request)
+    if usuario is None:
+        return redirect("login")
+    if request.method == "POST":
+        tarefa = get_object_or_404(Tarefa, id=id_tarefa)
+        ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).delete()
+        return redirect("pagina_area", nome_area=tarefa.area)
 
 
 def aprovar_membro(request, id_usuario):

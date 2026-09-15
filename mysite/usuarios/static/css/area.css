@@ -1,0 +1,160 @@
+/* ── Abas ── */
+
+.abas {
+    display: flex;
+    border-bottom: 1px solid #2d3150;
+    margin-bottom: 24px;
+}
+
+.aba {
+    background: transparent;
+    border: none;
+    color: #9ca4c9;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 12px 28px;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s;
+}
+
+.aba.ativa {
+    color: #fff;
+    font-weight: 600;
+}
+
+.aba.ativa::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: #7a5cff;
+    border-radius: 2px 2px 0 0;
+}
+
+
+/* ── Cards de tarefa da área ── */
+
+.lista-tarefas-area {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.tarefa-card-area {
+    background: #1a1e34;
+    border: 1px solid #2d3150;
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: border-color 0.2s;
+}
+
+.tarefa-card-area.card-participando {
+    border-color: #7a5cff;
+}
+
+.tarefa-topo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tarefa-titulo {
+    font-size: 17px;
+    font-weight: 600;
+    color: #fff;
+    margin: 0;
+}
+
+.tarefa-vagas {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #9ca4c9;
+}
+
+.tarefa-vagas img {
+    width: 16px;
+    opacity: 0.6;
+}
+
+.tarefa-detalhes {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.detalhe-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #9ca4c9;
+}
+
+.detalhe-item img {
+    width: 14px;
+    opacity: 0.6;
+}
+
+.tarefa-acao {
+    margin-left: auto;
+}
+
+.btn-participar {
+    background: #7a5cff;
+    color: white;
+    border: none;
+    padding: 9px 24px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-participar:hover {
+    background: #6a4de8;
+}
+
+.btn-participando {
+    background: #3a3a5c;
+    color: #b8bfdc;
+    border: none;
+    padding: 9px 24px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-participando:hover {
+    background: #c0392b;
+    color: white;
+}
+
+.btn-sem-vaga {
+    background: #2d3150;
+    color: #5a6080;
+    border: none;
+    padding: 9px 24px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: not-allowed;
+}
+
+.sem-itens {
+    color: #4a5175;
+    font-size: 14px;
+    padding: 20px 0;
+    text-align: center;
+}
