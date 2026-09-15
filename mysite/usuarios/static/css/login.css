@@ -49,7 +49,7 @@ form {
     width: 26em;
     min-height: 22em;
     padding: 20px 0;
-    color: gray;
+    color: rgb(255, 255, 255);
     border-radius: 2em;
     background-color: #0F1326;
     display: flex;
@@ -59,13 +59,13 @@ form {
 }
 
 .erro-login {
-    width: 24em;
+    width: 22.5em;
     margin-bottom: 14px;
     padding: 10px 12px;
     border-radius: 0.6em;
-    background-color: rgba(155, 133, 249, 0.08);
-    border: 1px solid #4a4275;
-    color: #c4b8f7;
+    background-color: #ad35353d;
+    border: 1px solid #591f1f;
+    color: #b15656;
     font-size: 0.85em;
     text-align: center;
 }
@@ -120,6 +120,7 @@ button {
     margin-top: 10px;
     display: flex;
     justify-content: center;
+    color: gray;
 }
 
 footer {
