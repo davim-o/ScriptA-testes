@@ -659,3 +659,22 @@
     background: #3a5499;
     color: #fff;
 }
+
+
+.imagem-tarefa-concluida {
+    margin: 14px 0;
+}
+
+.imagem-tarefa-concluida img {
+    display: block;
+    max-width: 220px;
+    max-height: 160px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+
+.contador-conclusoes {
+    color: #9ca4c9;
+    font-size: 12px;
+}

@@ -119,17 +119,13 @@ def painel_administrativo(request):
     total_doacoes = membros.aggregate(total=models.Sum("doacao_tampinhas"))["total"] or 0
 
     if usuario.sub_lider:
-        tarefas = Tarefa.objects.filter(encerrada=False, area=usuario.sublider_de).order_by("-criada_em")
-        # Tarefas onde TODOS os participantes concluíram, ou que foram manualmente marcadas
         from django.db.models import Count, Q
-        tarefas_concluidas = Tarefa.objects.filter(
-            area=usuario.sublider_de
-        ).annotate(
-            total_part=Count("participacoes"),
-            total_concl=Count("conclusoes")
-        ).filter(
-            total_part__gt=0,
-            total_part=models.F("total_concl")
+        tarefas_base = Tarefa.objects.filter(area=usuario.sublider_de).prefetch_related("conclusoes")
+        tarefas = tarefas_base.filter(encerrada=False).annotate(
+            total_concl=Count("conclusoes", distinct=True)
+        ).order_by("-criada_em")
+        tarefas_concluidas = tarefas_base.filter(encerrada=True).annotate(
+            total_concl=Count("conclusoes", distinct=True)
         ).order_by("-criada_em")
         solicitacoes_area = SolicitacaoArea.objects.filter(
             area=usuario.sublider_de
@@ -338,6 +334,8 @@ def concluir_tarefa_usuario(request, id_tarefa):
         return redirect("login")
     if request.method == "POST":
         tarefa = get_object_or_404(Tarefa, id=id_tarefa)
+        if tarefa.encerrada or not ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).exists():
+            return redirect("minhas_tarefas")
         comentario = request.POST.get("comentario", "").strip()
         conclusao, criada = ConclusaoTarefa.objects.get_or_create(
             usuario=usuario, tarefa=tarefa,
@@ -348,6 +346,13 @@ def concluir_tarefa_usuario(request, id_tarefa):
         if "imagem" in request.FILES:
             conclusao.imagem = request.FILES["imagem"]
         conclusao.save()
+
+        total_concluidos = ConclusaoTarefa.objects.filter(tarefa=tarefa).count()
+        if total_concluidos >= tarefa.limite_participantes:
+            tarefa.encerrada = True
+            tarefa.concluida = True
+            tarefa.save(update_fields=["encerrada", "concluida"])
+
         return redirect(f"/minhas-tarefas/{id_tarefa}/?aba=concluir")
 
 
@@ -518,6 +523,25 @@ def ver_conclusao(request, id_tarefa):
         "tarefa": tarefa,
         "conclusoes": conclusoes,
         "area_ativa": tarefa.area,
+    })
+
+
+def status_tarefa(request, id_tarefa):
+    usuario = usuario_logado(request)
+    if usuario is None:
+        return JsonResponse({"erro": "Sessão expirada"}, status=401)
+    tarefa = get_object_or_404(Tarefa, id=id_tarefa)
+    if not usuario.tem_acesso_area(tarefa.area):
+        return JsonResponse({"erro": "Acesso negado"}, status=403)
+    total_concluidos = tarefa.conclusoes.count()
+    if total_concluidos >= tarefa.limite_participantes and not tarefa.encerrada:
+        tarefa.encerrada = True
+        tarefa.concluida = True
+        tarefa.save(update_fields=["encerrada", "concluida"])
+    return JsonResponse({
+        "concluidos": total_concluidos,
+        "limite": tarefa.limite_participantes,
+        "encerrada": tarefa.encerrada,
     })
 
 

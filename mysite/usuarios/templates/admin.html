@@ -179,7 +179,7 @@
                         <div class="select-wrapper">
                             <select name="tipo" id="tipo-tarefa" required>
                                 <option value="prolongada">Prolongada</option>
-                                <option value="fixa">Fixa</option>
+                                <option value="fixa">Rápida</option>
                             </select>
                         </div>
                     </div>
@@ -190,14 +190,14 @@
                         <label>Data</label>
                         <div class="input-calendario">
                             <input type="date" name="data_inicio">
-                            <img src="{% static 'imgs/icone-calendario.png' %}" alt="" class="icone-input">
+                            
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Prazo</label>
                         <div class="input-calendario">
                             <input type="date" name="data_fim">
-                            <img src="{% static 'imgs/icone-calendario.png' %}" alt="" class="icone-input">
+                           
                         </div>
                     </div>
                 </div>
@@ -207,14 +207,14 @@
                         <label>Data</label>
                         <div class="input-calendario">
                             <input type="date" name="data">
-                            <img src="{% static 'imgs/icone-calendario.png' %}" alt="" class="icone-input">
+                            
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Horário</label>
                         <div class="input-calendario">
                             <input type="time" name="horario">
-                            <img src="{% static 'imgs/icone-relogio.png' %}" alt="" class="icone-input">
+                            
                         </div>
                     </div>
                 </div>
@@ -287,6 +287,7 @@
                         </div>
                     </div>
                     <div class="tarefa-acoes">
+                        <span class="contador-conclusoes" data-status-url="{% url 'status_tarefa' tarefa.id %}">{{ tarefa.total_concl|default:0 }}/{{ tarefa.limite_participantes }} concluíram</span>
                         <form action="{% url 'encerrar_tarefa' tarefa.id %}" method="POST" class="form-inline" onsubmit="return confirm('Deseja encerrar esta tarefa?')">
                             {% csrf_token %}
                             <button type="submit" class="btn-encerrar">Encerrar</button>
@@ -332,8 +333,15 @@
                             {% endif %}
                         </div>
                     </div>
+                    {% with primeira_conclusao=tarefa.conclusoes.all|first %}
+                    {% if primeira_conclusao and primeira_conclusao.imagem %}
+                    <div class="imagem-tarefa-concluida">
+                        <img src="{{ primeira_conclusao.imagem.url }}" alt="Imagem da entrega">
+                    </div>
+                    {% endif %}
+                    {% endwith %}
                     <div class="tarefa-acoes">
-                        <span class="badge-concluida">✓ Concluída por todos</span>
+                        <span class="badge-concluida contador-conclusoes" data-status-url="{% url 'status_tarefa' tarefa.id %}">✓ Concluída por {{ tarefa.total_concl|default:0 }}/{{ tarefa.limite_participantes }}</span>
                         <a href="{% url 'ver_conclusao' tarefa.id %}" class="btn-ver-entrega">Ver entrega</a>
                     </div>
                 </div>
@@ -393,6 +401,27 @@ document.getElementById("search-membros").addEventListener("input", function() {
     });
 });
 {% endif %}
+</script>
+
+<script>
+function atualizarContadores() {
+    document.querySelectorAll("[data-status-url]").forEach(function(elemento) {
+        fetch(elemento.dataset.statusUrl)
+            .then(response => response.json())
+            .then(dados => {
+                if (elemento.classList.contains("badge-concluida")) {
+                    elemento.textContent = "✓ Concluída por " + dados.concluidos + "/" + dados.limite;
+                } else {
+                    elemento.textContent = dados.concluidos + "/" + dados.limite + " concluíram";
+                }
+                if (dados.encerrada && !elemento.classList.contains("badge-concluida")) {
+                    window.location.reload();
+                }
+            });
+    });
+}
+
+setInterval(atualizarContadores, 5000);
 </script>
 
 </body>

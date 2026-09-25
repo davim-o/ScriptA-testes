@@ -36,6 +36,7 @@ urlpatterns=[
 
     # Conclusão
     path("area/conclusao/<int:id_tarefa>/", views.ver_conclusao, name="ver_conclusao"),
+    path("tarefa/status/<int:id_tarefa>/", views.status_tarefa, name="status_tarefa"),
 
     # Minhas Tarefas
     path("minhas-tarefas/", views.minhas_tarefas, name="minhas_tarefas"),

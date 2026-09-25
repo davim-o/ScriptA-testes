@@ -65,7 +65,7 @@ class Curtida(models.Model):
 
 class Tarefa(models.Model):
 
-    TIPO_CHOICES = [("fixa","Fixa"),("prolongada","Prolongada")]
+    TIPO_CHOICES = [("fixa","Rápida"),("prolongada","Prolongada")]
 
     titulo=models.CharField(max_length=200)
     tipo=models.CharField(max_length=20, choices=TIPO_CHOICES, default="fixa")
