@@ -1,0 +1,206 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ tarefa_selecionada.area|default:"Minhas Tarefas" }}</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/area.css' %}">
+    <link rel="stylesheet" href="{% static 'css/minhas_tarefas.css' %}">
+</head>
+<body>
+
+{% include "_sidebar.html" with area_ativa=area_ativa %}
+
+<main class="conteudo">
+    <div class="container-pagina">
+
+        <div class="titulo-pagina">
+            <h1>{{ tarefa_selecionada.area|default:"Minhas Tarefas" }}</h1>
+        </div>
+
+        <!-- Abas superiores — sempre as duas visíveis -->
+        <div class="abas">
+            {% if tarefa_selecionada %}
+                <a href="{% url 'pagina_area' tarefa_selecionada.area %}" class="aba">Tarefas</a>
+                <a href="{% url 'minhas_tarefas' %}" class="aba ativa">Minhas Tarefas</a>
+            {% else %}
+                {% if primeira_area %}
+                    <a href="{% url 'pagina_area' primeira_area %}" class="aba">Tarefas</a>
+                {% endif %}
+                <a href="{% url 'minhas_tarefas' %}" class="aba ativa">Minhas Tarefas</a>
+            {% endif %}
+        </div>
+
+        {% if not tarefa_selecionada %}
+        <!-- ── Listagem ── -->
+        <div class="lista-tarefas-area">
+            {% for tarefa in tarefas %}
+            <div class="tarefa-card-area card-participando">
+                <div class="tarefa-topo">
+                    <h3 class="tarefa-titulo">{{ tarefa.titulo }}</h3>
+                    <div class="tarefa-vagas">
+                        <img src="{% static 'imgs/icone-equipe.png' %}" alt="">
+                        <span>{{ tarefa.total_participantes }}/{{ tarefa.limite_participantes }}</span>
+                    </div>
+                </div>
+                <div class="tarefa-detalhes">
+                    {% if tarefa.descricao %}
+                    <span class="detalhe-item">
+                        <img src="{% static 'imgs/icone-local.png' %}" alt="">
+                        {{ tarefa.descricao }}
+                    </span>
+                    {% endif %}
+                    {% if tarefa.tipo == "fixa" %}
+                        {% if tarefa.horario %}<span class="detalhe-item"><img src="{% static 'imgs/icone-relogio.png' %}" alt="">{{ tarefa.horario|time:"H:i" }}</span>{% endif %}
+                        {% if tarefa.data %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa.data|date:"j/n" }}</span>{% endif %}
+                    {% else %}
+                        {% if tarefa.data_inicio %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa.data_inicio|date:"j/n" }}{% if tarefa.data_fim %} - {{ tarefa.data_fim|date:"j/n" }}{% endif %}</span>{% endif %}
+                    {% endif %}
+                    <div class="tarefa-acao">
+                        <a href="{% url 'minhas_tarefas_detalhe' tarefa.id %}" class="btn-ver-tarefa">Ver tarefa</a>
+                        <form action="{% url 'cancelar_participacao' tarefa.id %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-cancelar-mt">Cancelar</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="sem-itens">Você ainda não está participando de nenhuma tarefa.</p>
+            {% endfor %}
+        </div>
+
+        {% else %}
+        <!-- ── Detalhe da tarefa ── -->
+        <div class="tarefa-detalhe-card">
+
+            <div class="tarefa-detalhe-header">
+                <div class="tarefa-detalhe-info">
+                    <h3 class="tarefa-titulo">{{ tarefa_selecionada.titulo }}</h3>
+                    <div class="tarefa-detalhes" style="margin-top:6px">
+                        {% if tarefa_selecionada.descricao %}
+                        <span class="detalhe-item"><img src="{% static 'imgs/icone-local.png' %}" alt="">{{ tarefa_selecionada.descricao }}</span>
+                        {% endif %}
+                        {% if tarefa_selecionada.tipo == "fixa" %}
+                            {% if tarefa_selecionada.horario %}<span class="detalhe-item"><img src="{% static 'imgs/icone-relogio.png' %}" alt="">{{ tarefa_selecionada.horario|time:"H:i" }}</span>{% endif %}
+                            {% if tarefa_selecionada.data %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa_selecionada.data|date:"j/n" }}</span>{% endif %}
+                        {% else %}
+                            {% if tarefa_selecionada.data_inicio %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa_selecionada.data_inicio|date:"j/n" }}{% if tarefa_selecionada.data_fim %} - {{ tarefa_selecionada.data_fim|date:"j/n" }}{% endif %}</span>{% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="tarefa-detalhe-vagas">
+                    <img src="{% static 'imgs/icone-equipe.png' %}" alt="">
+                    <span>{{ tarefa_selecionada.total_participantes }}/{{ tarefa_selecionada.limite_participantes }}</span>
+                </div>
+                <form action="{% url 'cancelar_participacao' tarefa_selecionada.id %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-cancelar-mt">Cancelar</button>
+                </form>
+            </div>
+
+            <!-- Sub-abas -->
+            <div class="sub-abas">
+                <a href="{% url 'minhas_tarefas_detalhe' tarefa_selecionada.id %}?aba=detalhes"
+                   class="sub-aba {% if aba_ativa == 'detalhes' %}ativa{% endif %}">Detalhes</a>
+                <a href="{% url 'minhas_tarefas_detalhe' tarefa_selecionada.id %}?aba=observacao"
+                   class="sub-aba {% if aba_ativa == 'observacao' %}ativa{% endif %}">Adicionar Observação</a>
+                <a href="{% url 'minhas_tarefas_detalhe' tarefa_selecionada.id %}?aba=concluir"
+                   class="sub-aba {% if aba_ativa == 'concluir' %}ativa{% endif %}">Concluir</a>
+            </div>
+
+            <div class="sub-aba-conteudo">
+
+                {% if aba_ativa == "detalhes" %}
+                <div class="aba-detalhes">
+                    <div class="detalhe-secao">
+                        <p class="detalhe-label">Descrição da tarefa</p>
+                        <p class="detalhe-texto">{{ tarefa_selecionada.descricao|default:"Nenhuma descrição informada." }}</p>
+                    </div>
+                    {% if tarefa_selecionada.imagem %}
+                    <div class="detalhe-secao">
+                        <p class="detalhe-label">Fotos de apoio <span class="fotos-count">1</span></p>
+                        <div class="fotos-apoio">
+                            <img src="{{ tarefa_selecionada.imagem.url }}" alt="Foto de apoio" class="foto-apoio">
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% elif aba_ativa == "observacao" %}
+                <div class="aba-observacao">
+                    <div class="lista-observacoes">
+                        {% for obs in observacoes %}
+                        <div class="observacao-item">
+                            <div class="obs-avatar">{{ obs.usuario.matricula|first|upper }}</div>
+                            <div class="obs-corpo">
+                                <div class="obs-header">
+                                    <span class="obs-nome">{{ obs.usuario.matricula }}</span>
+                                    <span class="obs-data">{{ obs.criada_em|date:"d/m/Y H:i" }}</span>
+                                </div>
+                                <p class="obs-texto">{{ obs.texto }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <form action="{% url 'adicionar_observacao' tarefa_selecionada.id %}" method="POST" class="form-observacao">
+                        {% csrf_token %}
+                        <div class="obs-input-row">
+                            <div class="obs-avatar-eu">{{ usuario.matricula|first|upper }}</div>
+                            <input type="text" name="texto" placeholder="Escreva uma observação..." class="obs-input" required>
+                            <button type="submit" class="btn-enviar-obs">Enviar Observação</button>
+                        </div>
+                        <p class="obs-aviso">⚠ Sua observação será enviada para a tarefa e ficará visível para os responsáveis.</p>
+                    </form>
+                </div>
+
+                {% elif aba_ativa == "concluir" %}
+                <div class="aba-concluir">
+                    <form action="{% url 'concluir_tarefa_usuario' tarefa_selecionada.id %}" method="POST" enctype="multipart/form-data" class="form-concluir">
+                        {% csrf_token %}
+                        <label class="upload-imagem-label" for="img-concluir">
+                            {% if conclusao and conclusao.imagem %}
+                                <img src="{{ conclusao.imagem.url }}" alt="Imagem enviada" class="preview-concluir">
+                            {% else %}
+                                <img src="{% static 'imgs/icone-upload.png' %}" alt="Upload" class="icone-upload-concluir">
+                                <span class="upload-texto">+ Adicionar imagem</span>
+                                <span class="upload-subtexto">PNG, JPG até 10MB</span>
+                            {% endif %}
+                            <input type="file" id="img-concluir" name="imagem" accept="image/*" class="input-hidden" onchange="previewImagem(this)">
+                        </label>
+                        <div class="comentario-wrap">
+                            <label class="comentario-link" for="comentario-concluir">
+                                <img src="{% static 'imgs/icone-add-imagem.png' %}" alt="" style="width:16px;opacity:.7;">
+                                Adicionar comentário
+                            </label>
+                            <textarea id="comentario-concluir" name="comentario" class="comentario-input" placeholder="Escreva o comentário...">{{ conclusao.comentario|default:"" }}</textarea>
+                        </div>
+                        <button type="submit" class="btn-concluir-tarefa">Concluir Tarefa</button>
+                    </form>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</main>
+
+<script>
+function previewImagem(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const label = input.closest('label');
+            label.innerHTML = `<img src="${e.target.result}" alt="Preview" class="preview-concluir"><input type="file" id="img-concluir" name="imagem" accept="image/*" class="input-hidden" onchange="previewImagem(this)">`;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
+
+</body>
+</html>

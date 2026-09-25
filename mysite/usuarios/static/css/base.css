@@ -155,3 +155,26 @@ body {
     margin-left: auto;
     flex-shrink: 0;
 }
+
+
+/* ── Separador no menu ── */
+
+.menu-separador {
+    height: 1px;
+    background: #2d3150;
+    margin: 6px 15px;
+}
+
+/* ── Link editar área ── */
+
+.link-editar-area {
+    color: #9ca4c9 !important;
+    font-size: 13px;
+}
+
+.icone-mais {
+    font-size: 18px;
+    color: #9ca4c9;
+    width: 18px;
+    text-align: center;
+}

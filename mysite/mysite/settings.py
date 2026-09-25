@@ -83,3 +83,5 @@ MEDIA_URL = '/media/'
 # Para PythonAnywhere (produção):
 # STATIC_ROOT = '/home/pdsweb/mysite/static'
 # MEDIA_ROOT = '/home/pdsweb/mysite/media'
+
+MEDIA_ROOT = BASE_DIR / 'media'

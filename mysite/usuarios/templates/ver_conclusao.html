@@ -1,0 +1,95 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrega — {{ tarefa.titulo }}</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/area.css' %}">
+    <link rel="stylesheet" href="{% static 'css/minhas_tarefas.css' %}">
+</head>
+<body>
+
+{% include "_sidebar.html" %}
+
+<main class="conteudo">
+    <div class="container-pagina">
+
+        <div class="titulo-pagina">
+            <h1>{{ tarefa.area }}</h1>
+        </div>
+
+        <div class="abas">
+            <a href="{% url 'pagina_area' tarefa.area %}" class="aba">Tarefas</a>
+            <a href="{% url 'minhas_tarefas' %}" class="aba">Minhas Tarefas</a>
+        </div>
+
+        <div class="tarefa-detalhe-card">
+            <div class="tarefa-detalhe-header">
+                <div class="tarefa-detalhe-info">
+                    <h3 class="tarefa-titulo">{{ tarefa.titulo }}</h3>
+                    <div class="tarefa-detalhes" style="margin-top:6px">
+                        {% if tarefa.descricao %}
+                        <span class="detalhe-item">
+                            <img src="{% static 'imgs/icone-local.png' %}" alt="">
+                            {{ tarefa.descricao }}
+                        </span>
+                        {% endif %}
+                        {% if tarefa.tipo == "fixa" and tarefa.horario %}
+                        <span class="detalhe-item">
+                            <img src="{% static 'imgs/icone-relogio.png' %}" alt="">
+                            {{ tarefa.horario|time:"H:i" }}
+                        </span>
+                        {% endif %}
+                        {% if tarefa.tipo == "fixa" and tarefa.data %}
+                        <span class="detalhe-item">
+                            <img src="{% static 'imgs/icone-calendario.png' %}" alt="">
+                            {{ tarefa.data|date:"j/n" }}
+                        </span>
+                        {% elif tarefa.data_inicio %}
+                        <span class="detalhe-item">
+                            <img src="{% static 'imgs/icone-calendario.png' %}" alt="">
+                            {{ tarefa.data_inicio|date:"j/n" }}{% if tarefa.data_fim %} - {{ tarefa.data_fim|date:"j/n" }}{% endif %}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="tarefa-detalhe-vagas">
+                    <img src="{% static 'imgs/icone-equipe.png' %}" alt="">
+                    <span>{{ tarefa.total_participantes }}/{{ tarefa.limite_participantes }}</span>
+                </div>
+                <span class="badge-concluida-header">✓ Concluída</span>
+            </div>
+
+            <div class="sub-aba-conteudo">
+                <div class="lista-conclusoes">
+                    {% for c in conclusoes %}
+                    <div class="conclusao-item">
+                        <div class="conclusao-topo">
+                            <div class="obs-avatar">{{ c.usuario.matricula|first|upper }}</div>
+                            <div class="conclusao-info">
+                                <span class="obs-nome">{{ c.usuario.matricula }}</span>
+                                <span class="obs-data">{{ c.criada_em|date:"d/m/Y H:i" }}</span>
+                            </div>
+                        </div>
+                        {% if c.imagem %}
+                        <div class="conclusao-imagem">
+                            <img src="{{ c.imagem.url }}" alt="Imagem da entrega" class="foto-conclusao">
+                        </div>
+                        {% endif %}
+                        {% if c.comentario %}
+                        <p class="conclusao-comentario">{{ c.comentario }}</p>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <p class="sem-itens">Nenhuma entrega registrada ainda.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+</body>
+</html>

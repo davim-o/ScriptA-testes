@@ -16,12 +16,14 @@
                 <span>Feed</span>
             </a>
 
+            <a href="{% static 'imgs/icone-feed.png' %}" style="display:none"></a><!-- separador visual -->
+
             {% if usuario.eh_administrador %}
                 <a href="{% url 'painel_administrativo' %}" class="{% if pagina_ativa == 'painel' %}ativo{% endif %}">
                     <img src="{% static 'imgs/icone-painel.png' %}" alt="Painel">
                     <span class="texto-painel">Painel administrativo</span>
                 </a>
-
+                <div class="menu-separador"></div>
                 <a href="{% url 'pagina_area' 'Cenário' %}" class="{% if area_ativa == 'Cenário' %}ativo{% endif %}">
                     <img src="{% static 'imgs/icone-area.png' %}" alt=""><span>Cenário</span>
                 </a>
@@ -49,6 +51,8 @@
                     </a>
                 {% endif %}
 
+                <div class="menu-separador"></div>
+
                 {% for area in usuario.get_areas_ordenadas %}
                     <a href="{% url 'pagina_area' area %}" class="{% if area_ativa == area %}ativo{% endif %}">
                         <img src="{% static 'imgs/icone-area.png' %}" alt="">
@@ -60,6 +64,8 @@
                 {% empty %}
                     <p class="sem-areas">Nenhuma área cadastrada.</p>
                 {% endfor %}
+
+
             {% endif %}
         </nav>
     </div>

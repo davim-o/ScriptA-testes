@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/area.css' %}">
 </head>
-
 <body>
 
 {% include "_sidebar.html" %}
@@ -21,12 +20,15 @@
         </div>
 
         <div class="abas">
-            <button class="aba ativa">Tarefas</button>
+            <a href="{% url 'pagina_area' nome_area %}" class="aba ativa">Tarefas</a>
+            {% if not usuario.eh_administrador %}
+            <a href="{% url 'minhas_tarefas' %}" class="aba">Minhas Tarefas</a>
+            {% endif %}
         </div>
 
         <div class="lista-tarefas-area">
             {% for tarefa in tarefas %}
-                <div class="tarefa-card-area {% if tarefa.id in participando %}card-participando{% endif %}">
+                <div class="tarefa-card-area {% if tarefa.id in ids_concluidos %}card-concluida{% elif tarefa.id in participando %}card-participando{% endif %}">
                     <div class="tarefa-topo">
                         <h3 class="tarefa-titulo">{{ tarefa.titulo }}</h3>
                         <div class="tarefa-vagas">
@@ -66,11 +68,13 @@
                         {% endif %}
 
                         <div class="tarefa-acao">
-                            {% if tarefa.id in participando %}
-                                <form action="{% url 'cancelar_participacao' tarefa.id %}" method="POST">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn-participando">Participando</button>
-                                </form>
+                            {% if usuario.eh_administrador %}
+                                <a href="{% url 'ver_conclusao' tarefa.id %}" class="btn-ver-conclusao">Visualizar</a>
+                            {% elif tarefa.id in ids_concluidos %}
+                                <span class="txt-concluida">Concluída</span>
+                                <a href="{% url 'ver_conclusao' tarefa.id %}" class="btn-ver-conclusao">Ver entrega</a>
+                            {% elif tarefa.id in participando %}
+                                <a href="{% url 'minhas_tarefas_detalhe' tarefa.id %}" class="btn-participando">Participando</a>
                             {% elif tarefa.tem_vaga %}
                                 <form action="{% url 'participar_tarefa' tarefa.id %}" method="POST">
                                     {% csrf_token %}
