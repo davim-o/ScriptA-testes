@@ -37,7 +37,7 @@
         <!-- ── Listagem ── -->
         <div class="lista-tarefas-area">
             {% for tarefa in tarefas %}
-            <div class="tarefa-card-area card-participando">
+            <div class="tarefa-card-area card-participando {% if tarefa.criada_por == usuario %}card-criador{% endif %}">
                 <div class="tarefa-topo">
                     <h3 class="tarefa-titulo">{{ tarefa.titulo }}</h3>
                     <div class="tarefa-vagas">
@@ -71,6 +71,33 @@
             <p class="sem-itens">Você ainda não está participando de nenhuma tarefa.</p>
             {% endfor %}
         </div>
+
+        {% if tarefas_finalizadas %}
+        <h2 class="subtitulo-secao">Concluídas / Encerradas</h2>
+        <div class="lista-tarefas-area">
+            {% for tarefa in tarefas_finalizadas %}
+            <div class="tarefa-card-area card-concluida {% if tarefa.criada_por == usuario %}card-criador{% endif %}">
+                <div class="tarefa-topo">
+                    <h3 class="tarefa-titulo">{{ tarefa.titulo }}</h3>
+                    <span class="badge-encerrada">{% if tarefa.concluida %}✓ Concluída{% else %}Encerrada{% endif %}</span>
+                </div>
+                <div class="tarefa-detalhes">
+                    {% if tarefa.descricao %}
+                    <span class="detalhe-item"><img src="{% static 'imgs/icone-local.png' %}" alt="">{{ tarefa.descricao }}</span>
+                    {% endif %}
+                    {% if tarefa.tipo == "fixa" %}
+                        {% if tarefa.data %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa.data|date:"j/n" }}</span>{% endif %}
+                    {% else %}
+                        {% if tarefa.data_inicio %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa.data_inicio|date:"j/n" }}{% if tarefa.data_fim %} - {{ tarefa.data_fim|date:"j/n" }}{% endif %}</span>{% endif %}
+                    {% endif %}
+                    <div class="tarefa-acao">
+                        <a href="{% url 'ver_conclusao' tarefa.id %}" class="btn-ver-conclusao">Ver entrega</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
 
         {% else %}
         <!-- ── Detalhe da tarefa ── -->
@@ -107,8 +134,10 @@
                    class="sub-aba {% if aba_ativa == 'detalhes' %}ativa{% endif %}">Detalhes</a>
                 <a href="{% url 'minhas_tarefas_detalhe' tarefa_selecionada.id %}?aba=observacao"
                    class="sub-aba {% if aba_ativa == 'observacao' %}ativa{% endif %}">Adicionar Observação</a>
+                {% if not eh_criador %}
                 <a href="{% url 'minhas_tarefas_detalhe' tarefa_selecionada.id %}?aba=concluir"
                    class="sub-aba {% if aba_ativa == 'concluir' %}ativa{% endif %}">Concluir</a>
+                {% endif %}
             </div>
 
             <div class="sub-aba-conteudo">
@@ -202,5 +231,6 @@ function previewImagem(input) {
 }
 </script>
 
+<script src="{% static 'js/toast.js' %}"></script>
 </body>
 </html>

@@ -88,8 +88,19 @@ class Tarefa(models.Model):
     criada_por=models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="tarefas_criadas")
     criada_em=models.DateTimeField(auto_now_add=True)
 
+    def participacoes_validas(self):
+        # O criador (sub-líder) não conta como participante: ele já participa
+        # de todas as tarefas que cria.
+        return self.participacoes.exclude(usuario_id=self.criada_por_id)
+
     def total_participantes(self):
-        return self.participacoes.count()
+        return self.participacoes_validas().count()
+
+    def total_conclusoes(self):
+        return self.conclusoes.exclude(usuario_id=self.criada_por_id).count()
+
+    def eh_criador(self, usuario):
+        return usuario is not None and usuario.id == self.criada_por_id
 
     def tem_vaga(self):
         return self.total_participantes() < self.limite_participantes

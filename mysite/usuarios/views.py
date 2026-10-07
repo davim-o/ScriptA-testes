@@ -1,7 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password, check_password
-from django.db import models
+from django.db import models, IntegrityError
+from django.db.models import Count, Q, F
+from django.contrib import messages
 from .models import (
     Usuario, Publicacao, Curtida, Tarefa, ParticipacaoTarefa,
     SolicitacaoArea, ObservacaoTarefa, ConclusaoTarefa
@@ -17,6 +19,13 @@ AREAS_INFO = {
     "Roteiro":     "Estruturação da sequência e organização das apresentações.",
 }
 TODAS_AREAS = list(AREAS_INFO.keys())
+DIRETORIAS = ["Diaren", "Diatinf", "Diacon", "Diacin"]
+ADMIN_MATRICULA = "admin"
+
+
+def matricula_valida(matricula):
+    """Matrícula só aceita dígitos de 0 a 9 (sem letras, espaços ou símbolos)."""
+    return matricula.isascii() and matricula.isdigit()
 
 
 def usuario_logado(request):
@@ -26,25 +35,60 @@ def usuario_logado(request):
 
 
 def cadastro(request):
+    contexto = {"erro": None, "form": {}}
     if request.method == "POST":
-        areas_selecionadas = request.POST.getlist("areas")
-        Usuario.objects.create(
-            matricula=request.POST["matricula"],
-            senha=make_password(request.POST["senha"]),
-            diretoria=request.POST["diretoria"],
-            areas=",".join(areas_selecionadas),
-            aprovado=False
-        )
-        return redirect("login")
-    return render(request, "cadastro.html")
+        matricula = request.POST.get("matricula", "").strip()
+        senha = request.POST.get("senha", "")
+        diretoria = request.POST.get("diretoria", "").strip()
+        areas_selecionadas = [a for a in request.POST.getlist("areas") if a in TODAS_AREAS]
+        contexto["form"] = {
+            "matricula": matricula,
+            "diretoria": diretoria,
+            "areas": areas_selecionadas,
+        }
+
+        erro = None
+        if not matricula:
+            erro = "Informe a matrícula."
+        elif not matricula_valida(matricula):
+            erro = "A matrícula deve conter apenas números."
+        elif len(matricula) > 20:
+            erro = "A matrícula deve ter no máximo 20 números."
+        elif not senha:
+            erro = "Informe a senha."
+        elif diretoria not in DIRETORIAS:
+            erro = "Selecione uma diretoria."
+        elif Usuario.objects.filter(matricula=matricula).exists():
+            erro = "Essa matrícula já está cadastrada."
+
+        if erro is None:
+            try:
+                Usuario.objects.create(
+                    matricula=matricula,
+                    senha=make_password(senha),
+                    diretoria=diretoria,
+                    areas=",".join(areas_selecionadas),
+                    aprovado=False
+                )
+            except IntegrityError:
+                # Cadastro simultâneo com a mesma matrícula
+                erro = "Essa matrícula já está cadastrada."
+            else:
+                return redirect("login")
+
+        contexto["erro"] = erro
+    return render(request, "cadastro.html", contexto)
 
 
 def login_usuario(request):
     erro = None
     if request.method == "POST":
+        matricula = request.POST.get("matricula", "").strip()
+        senha = request.POST.get("senha", "")
         try:
-            usuario = Usuario.objects.get(matricula=request.POST["matricula"])
-            if check_password(request.POST["senha"], usuario.senha):
+            # Só números são aceitos (a conta "admin" é a única exceção)
+            usuario = Usuario.objects.get(matricula=matricula)
+            if check_password(senha, usuario.senha):
                 if not usuario.aprovado:
                     erro = "Seu cadastro ainda está aguardando aprovação da diretoria."
                 else:
@@ -119,13 +163,12 @@ def painel_administrativo(request):
     total_doacoes = membros.aggregate(total=models.Sum("doacao_tampinhas"))["total"] or 0
 
     if usuario.sub_lider:
-        from django.db.models import Count, Q
         tarefas_base = Tarefa.objects.filter(area=usuario.sublider_de).prefetch_related("conclusoes")
         tarefas = tarefas_base.filter(encerrada=False).annotate(
-            total_concl=Count("conclusoes", distinct=True)
+            total_concl=Count("conclusoes", filter=~Q(conclusoes__usuario=F("criada_por")), distinct=True)
         ).order_by("-criada_em")
         tarefas_concluidas = tarefas_base.filter(encerrada=True).annotate(
-            total_concl=Count("conclusoes", distinct=True)
+            total_concl=Count("conclusoes", filter=~Q(conclusoes__usuario=F("criada_por")), distinct=True)
         ).order_by("-criada_em")
         solicitacoes_area = SolicitacaoArea.objects.filter(
             area=usuario.sublider_de
@@ -241,6 +284,9 @@ def participar_tarefa(request, id_tarefa):
         tarefa = get_object_or_404(Tarefa, id=id_tarefa)
         if not usuario.tem_acesso_area(tarefa.area):
             return redirect("feed")
+        if tarefa.eh_criador(usuario):
+            # O criador já participa da própria tarefa; não entra na contagem
+            return redirect("pagina_area", nome_area=tarefa.area)
         ja_inscrito = ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).exists()
         if not ja_inscrito and tarefa.tem_vaga():
             ParticipacaoTarefa.objects.create(usuario=usuario, tarefa=tarefa)
@@ -264,32 +310,41 @@ def minhas_tarefas(request, id_tarefa=None):
     if usuario is None:
         return redirect("login")
 
-    # Tarefas em que o usuário participa e que não foram encerradas
-    participacoes = ParticipacaoTarefa.objects.filter(
-        usuario=usuario
-    ).select_related("tarefa").order_by("-tarefa__criada_em")
+    # Tarefas em que o usuário participa + tarefas que ele mesmo criou
+    # (o sub-líder já participa de todas as que cria).
+    todas = Tarefa.objects.filter(
+        Q(participacoes__usuario=usuario) | Q(criada_por=usuario)
+    ).distinct().order_by("-criada_em")
 
     # IDs das tarefas que o usuário já concluiu
-    ids_concluidos = ConclusaoTarefa.objects.filter(
+    ids_concluidos = set(ConclusaoTarefa.objects.filter(
         usuario=usuario
-    ).values_list("tarefa_id", flat=True)
+    ).values_list("tarefa_id", flat=True))
 
-    tarefas = [
-        p.tarefa for p in participacoes
-        if not p.tarefa.encerrada and p.tarefa.id not in ids_concluidos
-    ]
+    tarefas = []             # em andamento
+    tarefas_finalizadas = [] # concluídas por mim ou encerradas
+    for t in todas:
+        if t.encerrada or (t.id in ids_concluidos and not t.eh_criador(usuario)):
+            tarefas_finalizadas.append(t)
+        else:
+            tarefas.append(t)
 
     tarefa_selecionada = None
     aba_ativa = request.GET.get("aba", "detalhes")
     observacoes = []
     conclusao = None
     ja_concluiu = False
+    eh_criador = False
 
     if id_tarefa:
         tarefa_selecionada = get_object_or_404(Tarefa, id=id_tarefa)
-        # Verificar que o usuário participa dessa tarefa
-        if not ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa_selecionada).exists():
+        eh_criador = tarefa_selecionada.eh_criador(usuario)
+        # O usuário precisa participar da tarefa ou ser o criador dela
+        participa = ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa_selecionada).exists()
+        if not (participa or eh_criador):
             return redirect("minhas_tarefas")
+        if eh_criador and aba_ativa == "concluir":
+            aba_ativa = "detalhes"
         observacoes = tarefa_selecionada.observacoes.select_related("usuario").order_by("criada_em")
         conclusao = ConclusaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa_selecionada).first()
         ja_concluiu = conclusao is not None
@@ -306,7 +361,9 @@ def minhas_tarefas(request, id_tarefa=None):
     return render(request, "minhas_tarefas.html", {
         "usuario": usuario,
         "tarefas": tarefas,
+        "tarefas_finalizadas": tarefas_finalizadas,
         "tarefa_selecionada": tarefa_selecionada,
+        "eh_criador": eh_criador,
         "aba_ativa": aba_ativa,
         "observacoes": observacoes,
         "conclusao": conclusao,
@@ -334,7 +391,11 @@ def concluir_tarefa_usuario(request, id_tarefa):
         return redirect("login")
     if request.method == "POST":
         tarefa = get_object_or_404(Tarefa, id=id_tarefa)
-        if tarefa.encerrada or not ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).exists():
+        if (
+            tarefa.encerrada
+            or tarefa.eh_criador(usuario)
+            or not ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).exists()
+        ):
             return redirect("minhas_tarefas")
         comentario = request.POST.get("comentario", "").strip()
         conclusao, criada = ConclusaoTarefa.objects.get_or_create(
@@ -347,7 +408,7 @@ def concluir_tarefa_usuario(request, id_tarefa):
             conclusao.imagem = request.FILES["imagem"]
         conclusao.save()
 
-        total_concluidos = ConclusaoTarefa.objects.filter(tarefa=tarefa).count()
+        total_concluidos = tarefa.total_conclusoes()
         if total_concluidos >= tarefa.limite_participantes:
             tarefa.encerrada = True
             tarefa.concluida = True
@@ -468,19 +529,39 @@ def promover_sublider(request):
     if usuario is None or not usuario.eh_administrador():
         return redirect("login")
     if request.method == "POST":
+        matricula = request.POST.get("matricula", "").strip()
+        area = request.POST.get("area", "").strip()
+
+        if area not in TODAS_AREAS:
+            messages.error(request, "Selecione uma área válida para promover o sub-líder.")
+            return redirect("painel_administrativo")
+
         try:
-            membro = Usuario.objects.get(matricula=request.POST["matricula"], aprovado=True)
-            area = request.POST.get("area", "").strip()
+            membro = Usuario.objects.get(matricula=matricula, aprovado=True)
+        except Usuario.DoesNotExist:
+            messages.error(request, f"Membro \"{matricula}\" não encontrado (ou ainda não aprovado).")
+            return redirect("painel_administrativo")
+
+        if membro.eh_administrador():
+            messages.error(request, "O líder não pode ser promovido a sub-líder.")
+        elif membro.sub_lider:
+            # Só pode ser sub-líder de UMA área (mas continua podendo participar
+            # das demais como membro comum).
+            onde = f" de {membro.sublider_de}" if membro.sublider_de else ""
+            messages.error(
+                request,
+                f"{membro.matricula} já é sub-líder{onde}. Cada membro só pode ser sub-líder "
+                f"de uma área; remova o cargo atual antes de promovê-lo novamente."
+            )
+        else:
             areas_atuais = membro.get_areas_list()
-            if area and area not in areas_atuais:
+            if area not in areas_atuais:
                 areas_atuais.append(area)
             membro.areas = ",".join(areas_atuais)
             membro.sub_lider = True
-            if area:
-                membro.sublider_de = area
+            membro.sublider_de = area
             membro.save()
-        except Usuario.DoesNotExist:
-            pass
+            messages.success(request, f"{membro.matricula} agora é sub-líder de {area}.")
     return redirect("painel_administrativo")
 
 
@@ -533,7 +614,7 @@ def status_tarefa(request, id_tarefa):
     tarefa = get_object_or_404(Tarefa, id=id_tarefa)
     if not usuario.tem_acesso_area(tarefa.area):
         return JsonResponse({"erro": "Acesso negado"}, status=403)
-    total_concluidos = tarefa.conclusoes.count()
+    total_concluidos = tarefa.total_conclusoes()
     if total_concluidos >= tarefa.limite_participantes and not tarefa.encerrada:
         tarefa.encerrada = True
         tarefa.concluida = True

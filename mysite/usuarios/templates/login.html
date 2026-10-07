@@ -23,13 +23,15 @@
             <img src="{% static 'imgs/cavalo.png' %}" alt="Cavalo">
         </section>
 
-        <form method="post">
+        <form method="post" id="form-login">
             {% csrf_token %}
             <section class="formula">
 
                 <div class="mat">
                     <p>Matrícula</p>
-                    <input type="text" id="matricula" name="matricula" placeholder="Digite sua matrícula">
+                    <input type="text" id="matricula" name="matricula"
+                           placeholder="Digite sua matrícula (apenas números)"
+                           inputmode="numeric" pattern="[0-9]+" maxlength="20">
                 </div>
 
                 <div class="senha">
@@ -56,5 +58,6 @@
         <p>© 2026 ScriptA. Todos os direitos reservados.</p>
     </footer>
 
+<script src="{% static 'js/toast.js' %}"></script>
 </body>
 </html>

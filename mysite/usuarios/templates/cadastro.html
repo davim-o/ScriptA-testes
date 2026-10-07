@@ -24,14 +24,19 @@
         <img src="{% static 'imgs/cavalo.png' %}" alt="Cavalo">
     </section>
 
-    <form method="POST">
+    <form method="POST" id="form-cadastro">
         {% csrf_token %}
 
         <section class="formula">
 
+            {% if erro %}
+            <p class="erro-login">{{ erro }}</p>
+            {% endif %}
+
             <div class="mat">
                 <p>Matrícula</p>
-                <input type="text" name="matricula" placeholder="Digite sua matrícula">
+                <input type="text" name="matricula" placeholder="Digite sua matrícula (apenas números)"
+                       value="{{ form.matricula }}" inputmode="numeric" pattern="[0-9]+" maxlength="20">
             </div>
 
             <div class="senha">
@@ -45,7 +50,7 @@
                 <p>Diretoria</p>
                 <div class="dropdown">
                     <button type="button" class="dropdown-btn" id="abrirDiretoria">
-                        <span id="textoDiretoria">Selecione uma diretoria</span>
+                        <span id="textoDiretoria">{% if form.diretoria %}{{ form.diretoria }}{% else %}Selecione uma diretoria{% endif %}</span>
                         <img class="seta" id="setaDiretoria" src="{% static 'imgs/seta-baixo.png' %}" alt="">
                     </button>
                     <div class="lista" id="listaDiretoria">
@@ -57,7 +62,7 @@
                 </div>
             </div>
 
-            <input type="hidden" name="diretoria" id="diretoriaSelecionada">
+            <input type="hidden" name="diretoria" id="diretoriaSelecionada" value="{{ form.diretoria }}">
 
             <div class="areas">
                 <p>Áreas</p>
@@ -98,6 +103,31 @@
     const SETA_CIMA = "{% static 'imgs/seta-cima.png' %}";
 </script>
 <script src="{% static 'js/cadastro.js' %}"></script>
+<script>
+// Validação frontend antes de enviar
+document.getElementById("form-cadastro").addEventListener("submit", function(e) {
+    var matricula = document.querySelector("input[name='matricula']").value.trim();
+    var senha     = document.querySelector("input[name='senha']").value;
+    var diretoria = document.getElementById("diretoriaSelecionada").value;
+    var erro = null;
 
+    if (!matricula) {
+        erro = "Informe a matrícula.";
+    } else if (!/^\d+$/.test(matricula)) {
+        erro = "A matrícula deve conter apenas números.";
+    } else if (!senha) {
+        erro = "Informe a senha.";
+    } else if (!diretoria) {
+        erro = "Selecione uma diretoria.";
+    }
+
+    if (erro) {
+        e.preventDefault();
+        toast(erro, "erro");
+    }
+});
+</script>
+
+<script src="{% static 'js/toast.js' %}"></script>
 </body>
 </html>

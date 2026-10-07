@@ -457,3 +457,14 @@
     line-height: 1.6;
     margin: 0;
 }
+
+
+/* ── Card criador (sub-líder) ── */
+.card-criador { border-left: 3px solid #9c6bce !important; }
+
+/* ── Seção finalizadas ── */
+.subtitulo-secao { color: #9ca4c9; font-size: 13px; text-transform: uppercase;
+                   letter-spacing: .06em; margin: 24px 0 8px; }
+.badge-encerrada { font-size: 12px; color: #81c784; font-weight: 600; }
+
+/* ── Erro login reutilizado no cadastro ── */

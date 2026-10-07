@@ -7,6 +7,7 @@
     <title>Editar Tarefa</title>
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+    <link rel="stylesheet" href="{% static 'vendor/flatpickr/flatpickr.min.css' %}">
 </head>
 
 <body>
@@ -107,6 +108,8 @@
     </div>
 </main>
 
+<script src="{% static 'vendor/flatpickr/flatpickr.min.js' %}"></script>
+<script src="{% static 'vendor/flatpickr/pt.js' %}"></script>
 <script>
 const tipoSelect = document.getElementById("tipo-tarefa");
 const camposProlongada = document.getElementById("campos-prolongada");
@@ -130,7 +133,18 @@ function alterarContador(delta) {
     const novoValor = Math.max(1, parseInt(input.value || 1) + delta);
     input.value = novoValor;
 }
+
+var fpOpts = {locale: "pt", dateFormat: "Y-m-d", allowInput: true, clickOpens: true};
+var tpOpts = {enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true,
+              locale: "pt", allowInput: true, clickOpens: true};
+document.querySelectorAll("#form-editar-tarefa input[type='date']").forEach(function(el) {
+    flatpickr(el.parentElement, fpOpts);
+});
+document.querySelectorAll("#form-editar-tarefa input[type='time']").forEach(function(el) {
+    flatpickr(el.parentElement, tpOpts);
+});
 </script>
 
+<script src="{% static 'js/toast.js' %}"></script>
 </body>
 </html>

@@ -21,6 +21,14 @@
             <h1>Painel Administrativo</h1>
         </div>
 
+        {% if messages %}
+        <div class="mensagens">
+            {% for msg in messages %}
+            <p class="msg msg-{{ msg.tags }}">{{ msg }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <section class="stats-grid">
             <div class="stat-card">
                 <p class="stat-rotulo">Membros</p>
@@ -356,6 +364,9 @@
     </div>
 </main>
 
+<link rel="stylesheet" href="{% static 'vendor/flatpickr/flatpickr.min.css' %}">
+<script src="{% static 'vendor/flatpickr/flatpickr.min.js' %}"></script>
+<script src="{% static 'vendor/flatpickr/pt.js' %}"></script>
 <script>
 const tipoSelect = document.getElementById("tipo-tarefa");
 const camposProlongada = document.getElementById("campos-prolongada");
@@ -392,14 +403,31 @@ function atualizarUpload(input) {
     }
 }
 
-{% if usuario.eh_administrador %}
-document.getElementById("search-membros").addEventListener("input", function() {
-    const termo = this.value.toLowerCase();
-    document.querySelectorAll(".lista-itens .item-linha").forEach(item => {
-        const nome = item.querySelector("h3").textContent.toLowerCase();
-        item.style.display = nome.includes(termo) ? "" : "none";
-    });
+// Flatpickr — date pickers (clique em qualquer lugar do campo, não só no ícone)
+var fpOpts = {locale: "pt", dateFormat: "Y-m-d", allowInput: true, clickOpens: true};
+var tpOpts = {enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true,
+              locale: "pt", allowInput: true, clickOpens: true};
+document.querySelectorAll("#form-criar-tarefa input[type='date']").forEach(function(el) {
+    flatpickr(el.parentElement, fpOpts);
 });
+document.querySelectorAll("#form-criar-tarefa input[type='time']").forEach(function(el) {
+    flatpickr(el.parentElement, tpOpts);
+});
+
+{% if usuario.eh_administrador %}
+(function() {
+    var input = document.getElementById("search-membros");
+    if (!input) return;
+    // Pega somente a lista de membros (última .lista-itens dentro do card de membros)
+    var secaoMembros = input.closest(".painel-card");
+    input.addEventListener("input", function() {
+        var termo = this.value.toLowerCase();
+        secaoMembros.querySelectorAll(".lista-itens .item-linha").forEach(function(item) {
+            var nome = item.querySelector("h3");
+            item.style.display = nome && nome.textContent.toLowerCase().includes(termo) ? "" : "none";
+        });
+    });
+})();
 {% endif %}
 </script>
 
@@ -424,5 +452,6 @@ function atualizarContadores() {
 setInterval(atualizarContadores, 5000);
 </script>
 
+<script src="{% static 'js/toast.js' %}"></script>
 </body>
 </html>
