@@ -1,6 +1,10 @@
+# pyrefly: ignore [missing-import]
 from django.shortcuts import render, redirect, get_object_or_404
+# pyrefly: ignore [missing-import]
 from django.http import JsonResponse
+# pyrefly: ignore [missing-import]
 from django.contrib.auth.hashers import make_password, check_password
+# pyrefly: ignore [missing-import]
 from django.db import models, IntegrityError
 from django.db.models import Count, Q, F
 from django.contrib import messages
@@ -34,7 +38,6 @@ def usuario_logado(request):
     try:
         return Usuario.objects.get(id=usuario_id)
     except Usuario.DoesNotExist:
-        request.session.flush()
         return None
 
 
@@ -198,6 +201,22 @@ def painel_administrativo(request):
     })
 
 
+def stats_painel(request):
+    usuario = usuario_logado(request)
+    if usuario is None or not usuario.tem_acesso_painel():
+        return JsonResponse({"erro": "Não autorizado"}, status=403)
+    total_membros = Usuario.objects.filter(aprovado=True).count()
+    total_pendentes = Usuario.objects.filter(aprovado=False).count()
+    total_doacoes = Usuario.objects.filter(aprovado=True).aggregate(
+        total=models.Sum("doacao_tampinhas")
+    )["total"] or 0
+    return JsonResponse({
+        "membros": total_membros,
+        "pendentes": total_pendentes,
+        "doacoes": f"{total_doacoes}Kg",
+    })
+
+
 def criar_tarefa(request):
     usuario = usuario_logado(request)
     if usuario is None or not usuario.sub_lider:
@@ -348,16 +367,23 @@ def cancelar_participacao(request, id_tarefa):
 
 # ─── Minhas Tarefas ───────────────────────────────────────────────────────────
 
-def minhas_tarefas(request, id_tarefa=None):
+def minhas_tarefas(request, nome_area=None, id_tarefa=None):
     usuario = usuario_logado(request)
     if usuario is None:
         return redirect("login")
+    if not nome_area:
+        areas = usuario.get_areas_ordenadas()
+        if areas:
+            return redirect("minhas_tarefas", nome_area=areas[0])
+        return redirect("feed")
+    if not usuario.tem_acesso_area(nome_area):
+        return redirect("feed")
 
     # Tarefas em que o usuário participa + tarefas que ele mesmo criou
     # (o sub-líder já participa de todas as que cria).
     todas = Tarefa.objects.filter(
         Q(participacoes__usuario=usuario) | Q(criada_por=usuario)
-    ).distinct().order_by("-criada_em")
+    ).filter(area=nome_area).distinct().order_by("-criada_em")
 
     # IDs das tarefas que o usuário já concluiu
     ids_concluidos = set(ConclusaoTarefa.objects.filter(
@@ -376,30 +402,29 @@ def minhas_tarefas(request, id_tarefa=None):
     aba_ativa = request.GET.get("aba", "detalhes")
     observacoes = []
     conclusao = None
+    conclusoes_tarefa = None
     ja_concluiu = False
     eh_criador = False
 
     if id_tarefa:
         tarefa_selecionada = get_object_or_404(Tarefa, id=id_tarefa)
-        eh_criador = tarefa_selecionada.eh_criador(usuario)
-        # O usuário precisa participar da tarefa ou ser o criador dela
+        eh_criador = tarefa_selecionada.eh_criador(usuario) or usuario.eh_administrador() or (usuario.sub_lider and usuario.sublider_de == nome_area)
+        # O usuário precisa participar da tarefa ou ter privilégio de liderança/criação
         participa = ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa_selecionada).exists()
-        if not (participa or eh_criador):
-            return redirect("minhas_tarefas")
+        if not (participa or eh_criador or usuario.eh_administrador()):
+            return redirect("minhas_tarefas", nome_area=nome_area)
         if eh_criador and aba_ativa == "concluir":
             aba_ativa = "detalhes"
         observacoes = tarefa_selecionada.observacoes.select_related("usuario").order_by("criada_em")
         conclusao = ConclusaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa_selecionada).first()
+        conclusoes_tarefa = tarefa_selecionada.conclusoes.select_related("usuario").order_by("criada_em")
         ja_concluiu = conclusao is not None
 
     # Determinar área ativa para sidebar
-    area_ativa = tarefa_selecionada.area if tarefa_selecionada else None
+    area_ativa = nome_area
 
     # Primeira área do usuário para o link "Tarefas" quando não há tarefa selecionada
-    primeira_area = None
-    if not tarefa_selecionada:
-        areas = usuario.get_areas_ordenadas()
-        primeira_area = areas[0] if areas else None
+    primeira_area = nome_area
 
     return render(request, "minhas_tarefas.html", {
         "usuario": usuario,
@@ -410,13 +435,14 @@ def minhas_tarefas(request, id_tarefa=None):
         "aba_ativa": aba_ativa,
         "observacoes": observacoes,
         "conclusao": conclusao,
+        "conclusoes_tarefa": conclusoes_tarefa,
         "ja_concluiu": ja_concluiu,
         "area_ativa": area_ativa,
         "primeira_area": primeira_area,
     })
 
 
-def adicionar_observacao(request, id_tarefa):
+def adicionar_observacao(request, nome_area, id_tarefa):
     usuario = usuario_logado(request)
     if usuario is None:
         return redirect("login")
@@ -424,31 +450,33 @@ def adicionar_observacao(request, id_tarefa):
         tarefa = get_object_or_404(Tarefa, id=id_tarefa)
         participa = ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).exists()
         if not participa and not tarefa.eh_criador(usuario):
-            return redirect("minhas_tarefas")
+            return redirect("minhas_tarefas", nome_area=nome_area)
         texto = request.POST.get("texto", "").strip()
         if texto:
             ObservacaoTarefa.objects.create(usuario=usuario, tarefa=tarefa, texto=texto)
-        return redirect(f"/minhas-tarefas/{id_tarefa}/?aba=observacao")
+        return redirect(f"/area/{nome_area}/minhas-tarefas/{id_tarefa}/?aba=observacao")
 
 
-def concluir_tarefa_usuario(request, id_tarefa):
+def concluir_tarefa_usuario(request, nome_area, id_tarefa):
     usuario = usuario_logado(request)
     if usuario is None:
         return redirect("login")
     if request.method == "POST":
         tarefa = get_object_or_404(Tarefa, id=id_tarefa)
-        if (
-            tarefa.encerrada
-            or tarefa.eh_criador(usuario)
-            or not ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).exists()
-        ):
-            return redirect("minhas_tarefas")
+        participa = ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).exists()
+        if tarefa.eh_criador(usuario) or not participa:
+            return redirect("minhas_tarefas", nome_area=nome_area)
+
+        conclusao_existente = ConclusaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).first()
+        if tarefa.encerrada and not conclusao_existente:
+            return redirect("minhas_tarefas", nome_area=nome_area)
+
         comentario = request.POST.get("comentario", "").strip()
         conclusao, criada = ConclusaoTarefa.objects.get_or_create(
             usuario=usuario, tarefa=tarefa,
             defaults={"comentario": comentario}
         )
-        if not criada:
+        if not criada and comentario:
             conclusao.comentario = comentario
         if "imagem" in request.FILES:
             conclusao.imagem = request.FILES["imagem"]
@@ -460,7 +488,7 @@ def concluir_tarefa_usuario(request, id_tarefa):
             tarefa.concluida = True
             tarefa.save(update_fields=["encerrada", "concluida"])
 
-        return redirect(f"/minhas-tarefas/{id_tarefa}/?aba=concluir")
+        return redirect(f"/area/{nome_area}/minhas-tarefas/{id_tarefa}/?aba=detalhes")
 
 
 # ─── Gerenciamento de áreas ──────────────────────────────────────────────────
@@ -644,18 +672,40 @@ def ver_conclusao(request, id_tarefa):
     usuario = usuario_logado(request)
     if usuario is None:
         return redirect("login")
-    tarefa = get_object_or_404(Tarefa, id=id_tarefa)
-    # Qualquer participante da área ou sub-lider pode ver
-    if not usuario.tem_acesso_area(tarefa.area):
-        return redirect("feed")
+    try:
+        tarefa = Tarefa.objects.get(id=id_tarefa)
+    except Tarefa.DoesNotExist:
+        messages.error(request, "Tarefa não encontrada.")
+        return redirect("painel_administrativo" if usuario.eh_administrador() else "feed")
+
+    area_nome = tarefa.area if tarefa.area else (usuario.sublider_de or "Cenário")
     conclusoes = ConclusaoTarefa.objects.filter(
         tarefa=tarefa
     ).select_related("usuario").order_by("criada_em")
+
+    origem = request.GET.get("origem", "").strip()
+    if origem == "minhas_tarefas" or (usuario.sub_lider and not origem and not usuario.eh_administrador()):
+        url_voltar = f"/area/{area_nome}/minhas-tarefas/"
+        nome_voltar = "Minhas Tarefas"
+        aba_ativa_conclusao = "minhas_tarefas"
+    elif origem == "painel" or (usuario.eh_administrador() and not origem):
+        url_voltar = "/painel-administrativo/"
+        nome_voltar = "Painel Administrativo"
+        aba_ativa_conclusao = "tarefas"
+    else:
+        url_voltar = f"/area/{area_nome}/"
+        nome_voltar = "Tarefas"
+        aba_ativa_conclusao = "tarefas"
+
     return render(request, "ver_conclusao.html", {
         "usuario": usuario,
         "tarefa": tarefa,
         "conclusoes": conclusoes,
-        "area_ativa": tarefa.area,
+        "area_ativa": area_nome,
+        "url_voltar": url_voltar,
+        "nome_voltar": nome_voltar,
+        "aba_ativa_conclusao": aba_ativa_conclusao,
+        "origem": origem,
     })
 
 
@@ -681,3 +731,4 @@ def status_tarefa(request, id_tarefa):
 def sair(request):
     request.session.flush()
     return redirect("login")
+

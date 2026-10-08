@@ -26,15 +26,15 @@
         <section class="stats-grid">
             <div class="stat-card">
                 <p class="stat-rotulo">Membros</p>
-                <p class="stat-valor">0</p>
+                <p class="stat-valor" id="stat-membros">{{ total_membros }}</p>
             </div>
             <div class="stat-card">
                 <p class="stat-rotulo">Pendentes</p>
-                <p class="stat-valor">0</p>
+                <p class="stat-valor" id="stat-pendentes">{{ total_pendentes }}</p>
             </div>
             <div class="stat-card">
                 <p class="stat-rotulo">Doações</p>
-                <p class="stat-valor">0Kg</p>
+                <p class="stat-valor" id="stat-doacoes">{{ total_doacoes }}Kg</p>
             </div>
         </section>
 
@@ -249,7 +249,7 @@
                             <img src="{% static 'imgs/icone-add-imagem.png' %}" alt="" class="icone-add-img">
                             <span id="nome-arquivo">Clique para adicionar uma imagem</span>
                         </label>
-                        <input type="file" id="img-tarefa" name="imagem" accept="image/*" class="input-hidden"
+                        <input type="file" id="img-tarefa" name="imagem" accept="image/*" class="input-hidden" style="display: none;"
                                onchange="atualizarUpload(this)">
                     </div>
                 </div>
@@ -273,12 +273,9 @@
                     <div class="tarefa-header">
                         <div class="tarefa-info">
                             <h3 class="tarefa-titulo">{{ tarefa.titulo }}</h3>
-                            <p class="tarefa-local">
-                                {% if tarefa.descricao %}{{ tarefa.descricao }}{% endif %}
-                                {% if tarefa.tipo == "fixa" and tarefa.horario %}
-                                    &nbsp;&ndash; {{ tarefa.horario|time:"H:i" }}
-                                {% endif %}
-                            </p>
+                            {% if tarefa.tipo == "fixa" and tarefa.horario %}
+                            <p class="tarefa-local">{{ tarefa.horario|time:"H:i" }}</p>
+                            {% endif %}
                         </div>
                         <div class="tarefa-data">
                             <img src="{% static 'imgs/icone-calendario.png' %}" alt="">
@@ -294,14 +291,14 @@
                         </div>
                     </div>
                     <div class="tarefa-acoes">
-                        <span class="contador-participantes" data-status-url="{% url 'status_tarefa' tarefa.id %}">{{ tarefa.total_concl|default:0 }}/{{ tarefa.limite_participantes }} concluíram</span>
-                        <a href="{% url 'editar_tarefa' tarefa.id %}" class="btn-icon" style="background: rgba(122, 92, 255, 0.15); padding: 6px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; width: auto; height: auto;">
-                            <img src="{% static 'imgs/icone-editar.png' %}" alt="Editar" style="width: 16px; height: 16px; opacity: 0.8; border-radius: 0;">
-                        </a>
-                        <form action="{% url 'encerrar_tarefa' tarefa.id %}" method="POST" class="form-inline" onsubmit="return confirm('Deseja encerrar esta tarefa?')">
-                            {% csrf_token %}
-                            <button type="submit" class="btn-encerrar">Encerrar</button>
-                        </form>
+                        <span class="contador-participantes" data-status-url="{% url 'status_tarefa' tarefa.id %}" style="color: #9ca4c9; font-size: 13px; font-weight: 500;">{{ tarefa.total_concl|default:0 }}/{{ tarefa.limite_participantes }} concluíram</span>
+                        <div style="display: flex; gap: 10px; margin-left: auto;">
+                            <a href="{% url 'editar_tarefa' tarefa.id %}" class="btn-editar">Editar</a>
+                            <form action="{% url 'encerrar_tarefa' tarefa.id %}" method="POST" class="form-inline" onsubmit="return confirm('Deseja encerrar esta tarefa?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-encerrar">Encerrar</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
                 {% empty %}
@@ -323,12 +320,9 @@
                     <div class="tarefa-header">
                         <div class="tarefa-info">
                             <h3 class="tarefa-titulo">{{ tarefa.titulo }}</h3>
-                            <p class="tarefa-local">
-                                {% if tarefa.descricao %}{{ tarefa.descricao }}{% endif %}
-                                {% if tarefa.tipo == "fixa" and tarefa.horario %}
-                                    &nbsp;&ndash; {{ tarefa.horario|time:"H:i" }}
-                                {% endif %}
-                            </p>
+                            {% if tarefa.tipo == "fixa" and tarefa.horario %}
+                            <p class="tarefa-local">{{ tarefa.horario|time:"H:i" }}</p>
+                            {% endif %}
                         </div>
                         <div class="tarefa-data">
                             <img src="{% static 'imgs/icone-calendario.png' %}" alt="">
@@ -343,16 +337,23 @@
                             {% endif %}
                         </div>
                     </div>
-                    {% with primeira_conclusao=tarefa.conclusoes.all|first %}
-                    {% if primeira_conclusao and primeira_conclusao.imagem %}
-                    <div class="imagem-tarefa-concluida">
-                        <img src="{{ primeira_conclusao.imagem.url }}" alt="Imagem da entrega">
+                    {% if tarefa.conclusoes.all %}
+                    <div class="lista-conclusoes-imagens">
+                        {% for conc in tarefa.conclusoes.all %}
+                            {% if conc.imagem and conc.imagem.name %}
+                            <div class="conclusao-preview-card">
+                                <a href="{{ conc.imagem.url }}" target="_blank" title="Entrega de {{ conc.usuario.matricula }}">
+                                    <img src="{{ conc.imagem.url }}" alt="Entrega de {{ conc.usuario.matricula }}" class="img-conclusao-thumb">
+                                </a>
+                                <span class="conclusao-autor">{{ conc.usuario.matricula }}</span>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
                     </div>
                     {% endif %}
-                    {% endwith %}
                     <div class="tarefa-acoes">
                         <span class="badge-concluida contador-conclusoes" data-status-url="{% url 'status_tarefa' tarefa.id %}">✓ Concluída por {{ tarefa.total_concl|default:0 }}/{{ tarefa.limite_participantes }}</span>
-                        <a href="{% url 'ver_conclusao' tarefa.id %}" class="btn-ver-entrega">Ver entrega</a>
+                        <a href="{% url 'ver_conclusao' tarefa.id %}?origem=painel" class="btn-ver-entrega">Ver entrega</a>
                     </div>
                 </div>
                 {% empty %}
@@ -375,20 +376,24 @@ const camposProlongada = document.getElementById("campos-prolongada");
 const camposFixa = document.getElementById("campos-fixa");
 
 function atualizarCamposTipo() {
+    if (!tipoSelect) return;
     if (tipoSelect.value === "fixa") {
-        camposFixa.style.display = "";
-        camposProlongada.style.display = "none";
+        if (camposFixa) camposFixa.style.display = "";
+        if (camposProlongada) camposProlongada.style.display = "none";
     } else {
-        camposProlongada.style.display = "";
-        camposFixa.style.display = "none";
+        if (camposProlongada) camposProlongada.style.display = "";
+        if (camposFixa) camposFixa.style.display = "none";
     }
 }
 
-tipoSelect.addEventListener("change", atualizarCamposTipo);
-atualizarCamposTipo();
+if (tipoSelect) {
+    tipoSelect.addEventListener("change", atualizarCamposTipo);
+    atualizarCamposTipo();
+}
 
 function alterarContador(delta) {
     const input = document.getElementById("limite-input");
+    if (!input) return;
     const novoValor = Math.max(1, parseInt(input.value || 1) + delta);
     input.value = novoValor;
 }
@@ -396,6 +401,7 @@ function alterarContador(delta) {
 function atualizarUpload(input) {
     const label = document.getElementById("label-upload");
     const span = document.getElementById("nome-arquivo");
+    if (!label || !span) return;
     if (input.files && input.files[0]) {
         span.textContent = "✓ " + input.files[0].name;
         label.classList.add("upload-selecionado");
@@ -405,54 +411,100 @@ function atualizarUpload(input) {
     }
 }
 
-// Flatpickr — date/time pickers (clique em qualquer lugar do campo abre o picker)
-var fpOpts = {locale: "pt", dateFormat: "Y-m-d", allowInput: true, clickOpens: true};
-var tpOpts = {enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true,
-              locale: "pt", allowInput: true, clickOpens: true};
+// Flatpickr — date/time pickers
+if (typeof flatpickr !== "undefined") {
+    var fpOpts = {locale: "pt", dateFormat: "Y-m-d", allowInput: true, clickOpens: true};
+    var tpOpts = {enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true,
+                  locale: "pt", allowInput: true, clickOpens: true};
 
-document.querySelectorAll("#form-criar-tarefa input[type='date']").forEach(function(el) {
-    var fp = flatpickr(el, fpOpts);
-    // Clique no wrapper inteiro abre o picker
-    el.parentElement.style.cursor = "pointer";
-    el.parentElement.addEventListener("click", function(e) {
-        if (e.target !== el) fp.open();
+    document.querySelectorAll("#form-criar-tarefa input[type='date']").forEach(function(el) {
+        var fp = flatpickr(el, fpOpts);
+        el.parentElement.style.cursor = "pointer";
+        el.parentElement.addEventListener("click", function(e) {
+            if (e.target !== el) fp.open();
+        });
     });
-});
-document.querySelectorAll("#form-criar-tarefa input[type='time']").forEach(function(el) {
-    var fp = flatpickr(el, tpOpts);
-    el.parentElement.style.cursor = "pointer";
-    el.parentElement.addEventListener("click", function(e) {
-        if (e.target !== el) fp.open();
+    document.querySelectorAll("#form-criar-tarefa input[type='time']").forEach(function(el) {
+        var fp = flatpickr(el, tpOpts);
+        el.parentElement.style.cursor = "pointer";
+        el.parentElement.addEventListener("click", function(e) {
+            if (e.target !== el) fp.open();
+        });
     });
-});
+}
 
 {% if usuario.eh_administrador %}
 (function() {
     var input = document.getElementById("search-membros");
     if (!input) return;
     var secaoMembros = input.closest(".painel-card");
+    if (!secaoMembros) return;
     
     function removeAccents(str) {
-        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        return (str || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     }
+
+    var listaItens = secaoMembros.querySelector(".lista-itens");
+    if (!listaItens) return;
+
+    var msgSemResultados = document.createElement("p");
+    msgSemResultados.className = "sem-itens";
+    msgSemResultados.textContent = "Nenhum membro encontrado.";
+    msgSemResultados.style.display = "none";
+    listaItens.appendChild(msgSemResultados);
 
     input.addEventListener("input", function() {
         var termo = removeAccents(this.value.toLowerCase().trim());
-        secaoMembros.querySelectorAll(".lista-itens .item-linha").forEach(function(item) {
-            var textoCompleto = removeAccents(item.textContent.toLowerCase());
-            item.style.display = textoCompleto.includes(termo) ? "" : "none";
+        var linhas = listaItens.querySelectorAll(".item-linha");
+        var visiveis = 0;
+
+        linhas.forEach(function(item) {
+            var texto = removeAccents(item.textContent.toLowerCase());
+            if (!termo || texto.includes(termo)) {
+                item.style.display = "";
+                visiveis++;
+            } else {
+                item.style.display = "none";
+            }
         });
+
+        if (linhas.length > 0) {
+            msgSemResultados.style.display = (visiveis === 0) ? "block" : "none";
+        }
     });
 })();
 {% endif %}
-</script>
 
-<script>
+// Atualização de contadores de membros e doações em tempo real
+function atualizarStatsPainel() {
+    fetch("{% url 'stats_painel' %}")
+        .then(function(res) {
+            if (res.ok) return res.json();
+            throw new Error("Erro ao consultar stats");
+        })
+        .then(function(dados) {
+            if (dados.membros !== undefined) {
+                var el = document.getElementById("stat-membros");
+                if (el) el.textContent = dados.membros;
+            }
+            if (dados.pendentes !== undefined) {
+                var el = document.getElementById("stat-pendentes");
+                if (el) el.textContent = dados.pendentes;
+            }
+            if (dados.doacoes !== undefined) {
+                var el = document.getElementById("stat-doacoes");
+                if (el) el.textContent = dados.doacoes;
+            }
+        })
+        .catch(function(err) {});
+}
+
+// Atualização de status de tarefas
 function atualizarContadores() {
     document.querySelectorAll("[data-status-url]").forEach(function(elemento) {
         fetch(elemento.dataset.statusUrl)
-            .then(response => response.json())
-            .then(dados => {
+            .then(function(response) { return response.json(); })
+            .then(function(dados) {
                 if (elemento.classList.contains("badge-concluida")) {
                     elemento.textContent = "✓ Concluída por " + dados.concluidos + "/" + dados.limite;
                 } else {
@@ -461,10 +513,12 @@ function atualizarContadores() {
                 if (dados.encerrada && !elemento.classList.contains("badge-concluida")) {
                     window.location.reload();
                 }
-            });
+            })
+            .catch(function(err) {});
     });
 }
 
+setInterval(atualizarStatsPainel, 4000);
 setInterval(atualizarContadores, 5000);
 </script>
 

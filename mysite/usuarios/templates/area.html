@@ -38,13 +38,6 @@
                     </div>
 
                     <div class="tarefa-detalhes">
-                        {% if tarefa.descricao %}
-                        <span class="detalhe-item">
-                            <img src="{% static 'imgs/icone-area.png' %}" alt="">
-                            {{ tarefa.descricao }}
-                        </span>
-                        {% endif %}
-
                         {% if tarefa.tipo == "fixa" %}
                             {% if tarefa.horario %}
                             <span class="detalhe-item">
@@ -69,10 +62,10 @@
 
                         <div class="tarefa-acao">
                             {% if usuario.eh_administrador %}
-                                <a href="{% url 'ver_conclusao' tarefa.id %}" class="btn-ver-conclusao">Visualizar</a>
+                                <a href="{% url 'ver_conclusao' tarefa.id %}?origem=tarefas" class="btn-ver-conclusao">Visualizar</a>
                             {% elif tarefa.id in ids_concluidos %}
                                 <span class="txt-concluida">Concluída</span>
-                                <a href="{% url 'ver_conclusao' tarefa.id %}" class="btn-ver-conclusao">Ver entrega</a>
+                                <a href="{% url 'ver_conclusao' tarefa.id %}?origem=tarefas" class="btn-ver-conclusao">Ver entrega</a>
                             {% elif tarefa.id in participando %}
                                 <span class="btn-participando" aria-label="Você está participando desta tarefa">Participando</span>
                             {% elif tarefa.tem_vaga %}

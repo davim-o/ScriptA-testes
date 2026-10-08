@@ -12,6 +12,7 @@ urlpatterns=[
 
     # Painel
     path("painel-administrativo/", views.painel_administrativo, name="painel_administrativo"),
+    path("painel-administrativo/stats/", views.stats_painel, name="stats_painel"),
     path("painel-administrativo/aprovar/<int:id_usuario>/", views.aprovar_membro, name="aprovar_membro"),
     path("painel-administrativo/recusar/<int:id_usuario>/", views.recusar_membro, name="recusar_membro"),
     path("painel-administrativo/promover/", views.promover_sublider, name="promover_sublider"),
@@ -39,6 +40,7 @@ urlpatterns=[
     path("tarefa/status/<int:id_tarefa>/", views.status_tarefa, name="status_tarefa"),
 
     # Minhas Tarefas
+    path("minhas-tarefas/", views.minhas_tarefas, name="minhas_tarefas_padrao"),
     path("area/<str:nome_area>/minhas-tarefas/", views.minhas_tarefas, name="minhas_tarefas"),
     path("area/<str:nome_area>/minhas-tarefas/<int:id_tarefa>/", views.minhas_tarefas, name="minhas_tarefas_detalhe"),
     path("area/<str:nome_area>/minhas-tarefas/<int:id_tarefa>/observacao/", views.adicionar_observacao, name="adicionar_observacao"),

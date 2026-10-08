@@ -85,3 +85,8 @@ MEDIA_URL = '/media/'
 # MEDIA_ROOT = '/home/pdsweb/mysite/media'
 
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Sessão estável e persistente (só encerra ao clicar em Sair)
+SESSION_COOKIE_AGE = 1209600  # 2 semanas
+SESSION_SAVE_EVERY_REQUEST = False
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False

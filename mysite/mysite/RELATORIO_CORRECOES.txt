@@ -49,3 +49,70 @@ SCRIPT A — CORREÇÕES REALIZADAS
 - A verificação completa com Django não pôde ser executada neste ambiente porque o pacote Django não está instalado e o ambiente de execução não possui acesso à internet para instalá-lo.
 
 O banco de dados original foi preservado dentro do projeto.
+
+7. NOVAS CORREÇÕES REALIZADAS (SOLICITAÇÕES RECENTES)
+- Proporções e layout do Login e Cadastro:
+  * Título "Participe da torcida" e logotipo tiveram suas dimensões ampliadas e tornadas proporcionais.
+  * O grid principal foi ampliado (até 1380px), alinhando o preenchimento com o cabeçalho.
+  * Os ícones das mascotes das torcidas (Tigre, Cobra, Dragão, Cavalo) foram organizados em um grid 2x2 harmonioso (140px-175px) e perfeitamente centralizados no espaço entre a borda esquerda da página e os formulários de login e cadastro.
+- Painel Administrativo (Contador em tempo real e Pesquisa):
+  * O contador de membros, pendentes e doações agora exibe a contagem real inicial do banco de dados em vez de "0".
+  * Criado endpoint (/painel-administrativo/stats/) e script que atualiza os contadores em tempo real a cada 4 segundos.
+  * Corrigido erro de JavaScript que travava a execução dos scripts na visão de administrador (por ausência dos campos de sub-líder).
+  * O campo de busca de membros na tabela agora funciona perfeitamente, com suporte a busca insensível a maiúsculas e sem acentos, além de aviso quando nenhum membro for encontrado.
+- Imagem de conclusão visível em tarefas finalizadas:
+  * Todas as imagens anexadas pelos membros ao concluir a tarefa agora aparecem para cada conclusão (no painel do administrador, na visualização de entregas 'ver_conclusao' e no detalhamento de 'minhas_tarefas').
+  * Imagens agora abrem em tamanho real ao clicar e não sofrem cortes indesejados.
+- Preservação da formatação do Textarea (quebras de linha):
+  * As descrições, observações e comentários criados via textarea agora mantêm fielmente suas quebras de linha e espaçamentos visuais tanto no detalhamento da tarefa quanto nas listagens, utilizando linebreaksbr e white-space: pre-wrap.
+- Campo de imagem de apoio na criação de tarefas:
+  * Ocultado o botão nativo "Choose File" e o texto "No file chosen" do navegador através da classe .input-hidden e display: none, mantendo a ativação do seletor pelo clique estilizado no label/campo de upload.
+
+8. CORREÇÕES ADICIONAIS (SOLICITAÇÕES ATUAIS)
+- Descrição da Tarefa Exclusiva nos Detalhes:
+  * Removida a descrição da tarefa de todos os cards das listagens (em Minhas Tarefas, Área, Ver Conclusão e Painel Administrativo).
+  * Todos os cards agora apresentam unicamente: Horário, Data, Título e Quantidade de Participantes (vagas).
+  * A descrição completa da tarefa é exibida exclusivamente na aba "Detalhes" de Minhas Tarefas.
+- Correção Definitiva da Foto Anexada na Conclusão:
+  * Corrigido o bug em previewImagem(input) no JavaScript que destruía o input do tipo file ao renderizar o preview, esvaziando o arquivo selecionado antes do envio.
+  * O input de arquivo agora é preservado no DOM intacto, garantindo que a imagem seja enviada via multipart/form-data para o Django.
+  * O backend (concluir_tarefa_usuario) agora permite atualizar ou anexar a foto de tarefas já concluídas/encerradas pelo usuário, e redireciona para a aba Detalhes onde a comprovação aparece imediatamente.
+- Estabilidade das Áreas no Menu Lateral (Sidebar):
+  * Todas as 6 áreas (Cenário, Staff, Figurino, Dança, Sonoplastia, Roteiro) agora ficam permanentemente visíveis para todos os usuários no menu lateral, eliminando o comportamento de aparecerem/sumirem conforme a matrícula logada.
+  * O acesso de navegação entre as áreas foi uniformizado em Usuario.tem_acesso_area.
+- Proporções e Alinhamento em Login e Cadastro:
+  * O logo agora possui presença destacada com altura proporcional (130px - 155px), respeitando a sua proporção vertical nativa.
+  * O texto "Participe da torcida" foi diminuído e balanceado para um tamanho moderno e proporcional (1.2rem - 1.5rem).
+  * As mascotes agora estão perfeitamente alinhadas em uma matriz 2x2 com células simétricas (145px x 145px), centralizadas e com drop-shadow estilizado.
+  * Sincronizadas todas as alterações entre o diretório principal e o diretório interno espelhado (mysite/mysite).
+
+9. CORREÇÕES DE DESIGN E NAVEGAÇÃO (PRINT 1, PRINT 2, PRINT 3)
+- Telas de Login e Cadastro (Fiel ao Print 1):
+  * Logotipo no canto superior esquerdo (72px de altura, nítido e proporcional).
+  * Título "Participe da torcida" centralizado horizontalmente no topo da tela com tipografia marcante em branco.
+  * Mascotes (Tigre, Cobra, Dragão e Cavalo) dispostos em UMA ÚNICA LINHA HORIZONTAL contínua no lado esquerdo, com dimensões equilibradas e alinhamento visual idêntico ao Print 1.
+  * Card do formulário com fundo #0c1022, borda suave #1e2649, inputs escuros com borda fina e botão roxo/lavanda #8b77fc.
+  * Preservado o estilo do texto/link abaixo do botão de entrar ("Já possui conta? Entrar" / "Não possui conta? Cadastra-se"), conforme solicitação.
+- Ícone de Concluir Tarefa (Print 2):
+  * Corrigido o alinhamento da área de upload: o ícone de nuvem agora fica centralizado DIRETAMENTE ACIMA do texto ("+ Adicionar Imagem" e "PNG, JPG até 10MB"), eliminando o alinhamento lateral descompassado.
+- Detalhes da Tarefa e Entregas dos Participantes (Print 3):
+  * Aumentada a proporção visual das Fotos de Apoio para 280px x 180px com bordas suaves e efeito hover.
+  * Reduzida a proporção das fotos de entrega dos participantes (máximo de 380px x 230px), impedindo que ocupem a largura inteira do card.
+  * Implementado botão de rolagem tipo acordeão ("Ocultar entregas / Mostrar entregas" com seta ▲/▼) para ocultar e mostrar a lista de entregas com animação suave de subida/descida.
+- Navegação Intuitiva e Botão Voltar (Admin e Sub-líder):
+  * Adicionado botão "← Voltar para as Tarefas / Minhas Tarefas / Painel" no topo da visualização de entrega (ver_conclusao) e na visualização detalhada de Minhas Tarefas.
+  * O sistema agora memoriza e identifica a origem da navegação (?origem=minhas_tarefas, ?origem=tarefas ou ?origem=painel), garantindo que o sub-líder e o admin retornem com 1 clique para a aba correta sem sair do fluxo.
+- Estabilidade de Sessão e Sidebar:
+  * Configuradas diretivas de persistência de sessão (SESSION_COOKIE_AGE para 2 semanas e SESSION_EXPIRE_AT_BROWSER_CLOSE = False).
+  * Sincronizados todos os arquivos estáticos, templates e views entre o diretório raiz e o espelho interno (mysite/mysite).
+
+10. CORREÇÃO DEFINITIVA DO FECHAMENTO INVOLUNTÁRIO (SESSÃO E VISUALIZAÇÃO DE ENTREGAS)
+- Sessão Permanente e Isolada (Só Fecha/Desloga ao Clicar em Sair):
+  * Desativado SESSION_SAVE_EVERY_REQUEST (definido como False): com SQLite, requisições simultâneas em segundo plano (polling dos contadores do painel a cada 4s/5s) geravam concorrência e sobrescrita de sessão, causando a perda do cookie do usuário e o redirecionamento inesperado para o login.
+  * Removido o 'request.session.flush()' automático de 'usuario_logado': a sessão nunca mais é limpa de forma arbitrária; apenas a ação explícita no botão "Sair" encerra a sessão do usuário.
+- Robustez da Rota de Visualização de Entrega (ver_conclusao):
+  * A busca da tarefa agora trata falhas com mensagem amigável sem interromper a sessão nem redirecionar para login.
+  * O nome da área ('area_ativa') agora é validado com fallback seguro ('Cenário'), impedindo que strings vazias causem erro no resolver de URLs (NoReverseMatch).
+  * Nas abas e links, a URL reversa de 'minhas_tarefas' foi desambiguada em urls.py (rota sem argumento nomeada como 'minhas_tarefas_padrao'), garantindo que a resolução com argumento de área funcione perfeitamente.
+  * Tratamento defensivo nas tags de imagem de suporte e entregas ({% if c.imagem and c.imagem.name %} e {% if tarefa.imagem and tarefa.imagem.name %}) antes de acessar .url, impedindo que tarefas ou entregas sem arquivo associado levantem exceções no Django.
+  * Sincronizadas todas as correções entre os diretórios raiz e espelhado (mysite/mysite).

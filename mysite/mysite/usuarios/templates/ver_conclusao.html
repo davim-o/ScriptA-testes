@@ -17,14 +17,20 @@
     <div class="container-pagina">
 
         <div class="titulo-pagina">
-            <h1>{{ tarefa.area }}</h1>
+            <h1>{{ area_ativa }}</h1>
         </div>
 
         <div class="abas">
-            <a href="{% url 'pagina_area' tarefa.area %}" class="aba">Tarefas</a>
+            <a href="{% url 'pagina_area' area_ativa %}" class="aba {% if aba_ativa_conclusao == 'tarefas' %}ativa{% endif %}">Tarefas</a>
             {% if not usuario.eh_administrador %}
-            <a href="{% url 'minhas_tarefas' %}" class="aba">Minhas Tarefas</a>
+            <a href="{% url 'minhas_tarefas' area_ativa %}" class="aba {% if aba_ativa_conclusao == 'minhas_tarefas' %}ativa{% endif %}">Minhas Tarefas</a>
             {% endif %}
+        </div>
+
+        <div class="topo-navegacao-voltar">
+            <a href="{{ url_voltar }}" class="btn-voltar-link">
+                <span class="seta-voltar">←</span> Voltar para {{ nome_voltar }}
+            </a>
         </div>
 
         <div class="tarefa-detalhe-card">
@@ -32,12 +38,6 @@
                 <div class="tarefa-detalhe-info">
                     <h3 class="tarefa-titulo">{{ tarefa.titulo }}</h3>
                     <div class="tarefa-detalhes" style="margin-top:6px">
-                        {% if tarefa.descricao %}
-                        <span class="detalhe-item">
-                            <img src="{% static 'imgs/icone-area.png' %}" alt="">
-                            {{ tarefa.descricao }}
-                        </span>
-                        {% endif %}
                         {% if tarefa.tipo == "fixa" and tarefa.horario %}
                         <span class="detalhe-item">
                             <img src="{% static 'imgs/icone-relogio.png' %}" alt="">
@@ -64,8 +64,27 @@
                 <span class="badge-concluida-header">✓ Concluída</span>
             </div>
 
+            {% if tarefa.imagem and tarefa.imagem.name %}
+            <div class="detalhe-secao" style="padding: 16px 24px 0;">
+                <p class="detalhe-label">Fotos de apoio <span class="fotos-count">1</span></p>
+                <div class="fotos-apoio">
+                    <a href="{{ tarefa.imagem.url }}" target="_blank" title="Clique para ver foto de apoio">
+                        <img src="{{ tarefa.imagem.url }}" alt="Foto de apoio" class="foto-apoio">
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
             <div class="sub-aba-conteudo">
-                <div class="lista-conclusoes">
+                <div class="detalhe-header-toggle" onclick="toggleEntregas()">
+                    <p class="detalhe-label">Entregas dos participantes <span class="fotos-count">{{ conclusoes.count }}</span></p>
+                    <button type="button" class="btn-toggle-entregas" id="btn-toggle-entregas" aria-label="Ocultar ou mostrar entregas">
+                        <span id="toggle-texto">Ocultar entregas</span>
+                        <span class="toggle-seta" id="toggle-seta">▲</span>
+                    </button>
+                </div>
+
+                <div class="lista-conclusoes lista-conclusoes-colapsavel" id="lista-conclusoes-wrapper" style="margin-top:12px;">
                     {% for c in conclusoes %}
                     <div class="conclusao-item">
                         <div class="conclusao-topo">
@@ -75,13 +94,15 @@
                                 <span class="obs-data">{{ c.criada_em|date:"d/m/Y H:i" }}</span>
                             </div>
                         </div>
-                        {% if c.imagem %}
+                        {% if c.imagem and c.imagem.name %}
                         <div class="conclusao-imagem">
-                            <img src="{{ c.imagem.url }}" alt="Imagem da entrega" class="foto-conclusao">
+                            <a href="{{ c.imagem.url }}" target="_blank" title="Clique para abrir a imagem em tamanho original">
+                                <img src="{{ c.imagem.url }}" alt="Comprovação enviada por {{ c.usuario.matricula }}" class="foto-conclusao">
+                            </a>
                         </div>
                         {% endif %}
                         {% if c.comentario %}
-                        <p class="conclusao-comentario">{{ c.comentario }}</p>
+                        <p class="conclusao-comentario">{{ c.comentario|linebreaksbr }}</p>
                         {% endif %}
                     </div>
                     {% empty %}
@@ -93,5 +114,17 @@
 
     </div>
 </main>
+
+<script>
+function toggleEntregas() {
+    const wrapper = document.getElementById('lista-conclusoes-wrapper');
+    const seta = document.getElementById('toggle-seta');
+    const texto = document.getElementById('toggle-texto');
+    if (!wrapper) return;
+    const isRecolhida = wrapper.classList.toggle('recolhida');
+    if (seta) seta.classList.toggle('girada', isRecolhida);
+    if (texto) texto.textContent = isRecolhida ? 'Mostrar entregas' : 'Ocultar entregas';
+}
+</script>
 </body>
 </html>

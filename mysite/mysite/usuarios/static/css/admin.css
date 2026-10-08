@@ -484,6 +484,8 @@
     font-size: 13px;
     color: #9ca4c9;
     margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .tarefa-data {
@@ -520,6 +522,26 @@
 
 .btn-encerrar:hover {
     background-color: #a93226;
+}
+
+.btn-editar {
+    background-color: rgba(156, 133, 249, 0.15);
+    color: #9c85f9;
+    border: 1px solid rgba(156, 133, 249, 0.35);
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-editar:hover {
+    background-color: rgba(156, 133, 249, 0.25);
+    color: #a89bff;
 }
 
 .btn-participantes {
@@ -580,8 +602,13 @@
 
 /* ── Upload de imagem ── */
 
+.input-hidden {
+    display: none !important;
+}
+
 .upload-wrapper {
     position: relative;
+    width: 100%;
 }
 
 .label-upload-tarefa {
@@ -596,6 +623,7 @@
     transition: border-color 0.2s, background 0.2s;
     color: #9ca4c9;
     font-size: 13px;
+    user-select: none;
 }
 
 .label-upload-tarefa:hover {
@@ -605,9 +633,10 @@
 }
 
 .label-upload-tarefa.upload-selecionado {
-    border-color: #7a5cff;
+    border-color: #81c784;
     border-style: solid;
-    color: #a89bff;
+    color: #81c784;
+    background: rgba(129, 199, 132, 0.08);
 }
 
 .icone-add-img {
@@ -676,6 +705,46 @@
     object-fit: cover;
 }
 
+.lista-conclusoes-imagens {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 14px 0 10px;
+}
+
+.conclusao-preview-card {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: #0B0E1B;
+    border: 1px solid #2d3150;
+    border-radius: 8px;
+    padding: 6px;
+    max-width: 130px;
+}
+
+.img-conclusao-thumb {
+    width: 110px;
+    height: 75px;
+    object-fit: cover;
+    border-radius: 6px;
+    display: block;
+    transition: transform 0.2s ease;
+}
+
+.img-conclusao-thumb:hover {
+    transform: scale(1.04);
+}
+
+.conclusao-autor {
+    font-size: 11px;
+    color: #9ca4c9;
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
 .contador-conclusoes {
     color: #9ca4c9;

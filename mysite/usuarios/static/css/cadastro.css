@@ -16,56 +16,74 @@ body {
 header {
     display: flex;
     align-items: center;
-    gap: 28px;
-    padding: 22px clamp(24px, 5vw, 70px);
+    position: relative;
+    padding: 24px clamp(24px, 5vw, 60px);
 }
 
 header img {
-    width: 86px;
-    height: 86px;
+    height: 72px;
+    width: auto;
     object-fit: contain;
 }
 
 h1 {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
     color: white;
-    font-size: clamp(2rem, 3vw, 2.5rem);
+    font-size: clamp(1.45rem, 2.2vw, 1.85rem);
+    font-weight: 700;
     margin: 0;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
 }
 
 main {
     flex: 1;
-    width: min(1100px, calc(100% - 48px));
-    margin: 10px auto 50px;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 10px clamp(20px, 4vw, 60px) 40px;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 430px;
-    gap: 60px;
+    grid-template-columns: 1fr 420px;
+    gap: clamp(36px, 5vw, 70px);
     align-items: center;
 }
 
 .imagens {
     display: flex;
-    justify-content: center;
+    flex-direction: row;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 24px;
-    margin: 0;
+    justify-content: center;
+    gap: clamp(14px, 2vw, 24px);
+    margin: 0 auto;
+    width: 100%;
 }
 
 .imagens img {
-    width: 105px;
-    height: 105px;
+    width: clamp(75px, 7.5vw, 98px);
+    height: clamp(75px, 7.5vw, 98px);
     object-fit: contain;
+    display: block;
+    transition: transform 0.25s ease, filter 0.25s ease;
+    filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45));
+}
+
+.imagens img:hover {
+    transform: scale(1.1);
+    filter: drop-shadow(0 8px 20px rgba(139, 119, 252, 0.5));
 }
 
 form {
     width: 100%;
-    background: #0F1326;
-    border: 1px solid #2d3150;
-    border-radius: 20px;
+    max-width: 420px;
+    background: #0c1022;
+    border: 1px solid #1e2649;
+    border-radius: 18px;
     display: flex;
     justify-content: center;
-    padding: 28px 24px;
-    box-shadow: 0 18px 45px rgba(0,0,0,.22);
+    padding: 30px 24px;
+    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.4);
 }
 
 .formula {
@@ -83,26 +101,27 @@ form {
 .senha p,
 .diretoria p,
 .areas p {
-    color: white;
-    margin: 0 0 8px 4px;
-    font-size: 14px;
+    color: #cbd5e1;
+    margin: 0 0 7px 4px;
+    font-size: 13.5px;
 }
 
 input {
     width: 100%;
-    height: 48px;
-    border: 1px solid #2d3150;
-    border-radius: 10px;
-    background: #0F1326;
+    height: 44px;
+    border: 1px solid #20284d;
+    border-radius: 9px;
+    background: #070a16;
     color: white;
-    padding: 0 12px;
-    font-size: 14px;
+    padding: 0 13px;
+    font-size: 13.5px;
     outline: none;
+    transition: border-color .2s, box-shadow .2s;
 }
 
 input:focus {
-    border-color: #9C85F9;
-    box-shadow: 0 0 0 3px rgba(156,133,249,.12);
+    border-color: #8b77fc;
+    box-shadow: 0 0 0 3px rgba(139, 119, 252, 0.15);
 }
 
 input::placeholder {
@@ -112,7 +131,7 @@ input::placeholder {
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
-    -webkit-box-shadow: 0 0 0 1000px #0F1326 inset;
+    -webkit-box-shadow: 0 0 0 1000px #070a16 inset;
     -webkit-text-fill-color: white;
     caret-color: white;
 }
@@ -123,21 +142,23 @@ input:-webkit-autofill:focus {
 
 .dropdown-btn {
     width: 100%;
-    height: 48px;
-    border: 1px solid #2d3150;
-    border-radius: 10px;
-    background: #0F1326;
+    height: 44px;
+    border: 1px solid #20284d;
+    border-radius: 9px;
+    background: #070a16;
     color: white;
-    padding: 0 12px;
+    padding: 0 13px;
+    font-size: 13.5px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
+    transition: border-color .2s, box-shadow .2s;
 }
 
 .dropdown-btn:hover,
 .dropdown-btn.campo-erro {
-    border-color: #9C85F9;
+    border-color: #8b77fc;
 }
 
 .seta {
@@ -196,24 +217,25 @@ input:-webkit-autofill:focus {
 }
 
 .butao {
-    margin-top: 8px;
+    margin-top: 10px;
 }
 
 .butao button {
     width: 100%;
-    height: 48px;
+    height: 46px;
     border: none;
     border-radius: 10px;
-    background: #9C85F9;
+    background: #8b77fc;
     color: white;
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 14.5px;
+    font-weight: 600;
     cursor: pointer;
-    transition: background .2s;
+    transition: background .2s, transform .2s;
 }
 
 .butao button:hover {
-    background: #886EF1;
+    background: #7964f4;
+    transform: translateY(-1px);
 }
 
 #cadbutao {
@@ -246,7 +268,7 @@ footer {
     font-size: 12px;
 }
 
-@media (max-width: 850px) {
+@media (max-width: 920px) {
     header {
         justify-content: center;
         padding-bottom: 10px;
@@ -254,11 +276,20 @@ footer {
 
     main {
         grid-template-columns: 1fr;
-        width: min(520px, calc(100% - 32px));
+        max-width: 480px;
+        margin-top: 10px;
+        padding-bottom: 30px;
     }
 
     .imagens {
         order: 2;
+        gap: 20px 24px;
+        margin-top: 24px;
+    }
+
+    .imagens img {
+        width: 110px;
+        height: 110px;
     }
 
     form {
@@ -268,31 +299,32 @@ footer {
 
 @media (max-width: 480px) {
     header {
-        gap: 14px;
-        padding: 16px;
+        gap: 16px;
+        padding: 18px 16px;
     }
 
     header img {
-        width: 64px;
-        height: 64px;
+        width: 72px;
+        height: 72px;
     }
 
     h1 {
-        font-size: 1.55rem;
+        font-size: 1.75rem;
     }
 
     main {
         width: calc(100% - 24px);
         margin-bottom: 24px;
+        padding: 10px 0 24px;
     }
 
     form {
-        padding: 22px 18px;
+        padding: 24px 18px;
     }
 
     .imagens img {
-        width: 72px;
-        height: 72px;
+        width: 80px;
+        height: 80px;
     }
 }
 

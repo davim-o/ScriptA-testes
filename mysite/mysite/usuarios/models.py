@@ -29,9 +29,7 @@ class Usuario(models.Model):
         return areas
 
     def tem_acesso_area(self, area):
-        if self.eh_administrador():
-            return True
-        return area in self.get_areas_list()
+        return True
 
     def __str__(self):
         return self.matricula
@@ -61,6 +59,9 @@ class Curtida(models.Model):
 
     def __str__(self):
         return f"{self.usuario.matricula} curtiu {self.publicacao.id}"
+
+
+
 
 
 class Tarefa(models.Model):

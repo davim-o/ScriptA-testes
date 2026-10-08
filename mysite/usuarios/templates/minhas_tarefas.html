@@ -41,12 +41,6 @@
                     </div>
                 </div>
                 <div class="tarefa-detalhes">
-                    {% if tarefa.descricao %}
-                    <span class="detalhe-item">
-                        <img src="{% static 'imgs/icone-area.png' %}" alt="">
-                        {{ tarefa.descricao }}
-                    </span>
-                    {% endif %}
                     {% if tarefa.tipo == "fixa" %}
                         {% if tarefa.horario %}<span class="detalhe-item"><img src="{% static 'imgs/icone-relogio.png' %}" alt="">{{ tarefa.horario|time:"H:i" }}</span>{% endif %}
                         {% if tarefa.data %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa.data|date:"j/n" }}</span>{% endif %}
@@ -79,16 +73,13 @@
                     <span class="badge-encerrada">{% if tarefa.concluida %}✓ Concluída{% else %}Encerrada{% endif %}</span>
                 </div>
                 <div class="tarefa-detalhes">
-                    {% if tarefa.descricao %}
-                    <span class="detalhe-item"><img src="{% static 'imgs/icone-area.png' %}" alt="">{{ tarefa.descricao }}</span>
-                    {% endif %}
                     {% if tarefa.tipo == "fixa" %}
                         {% if tarefa.data %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa.data|date:"j/n" }}</span>{% endif %}
                     {% else %}
                         {% if tarefa.data_inicio %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa.data_inicio|date:"j/n" }}{% if tarefa.data_fim %} - {{ tarefa.data_fim|date:"j/n" }}{% endif %}</span>{% endif %}
                     {% endif %}
                     <div class="tarefa-acao">
-                        <a href="{% url 'ver_conclusao' tarefa.id %}" class="btn-ver-conclusao">Ver entrega</a>
+                        <a href="{% url 'ver_conclusao' tarefa.id %}?origem=minhas_tarefas" class="btn-ver-conclusao">Ver entrega</a>
                     </div>
                 </div>
             </div>
@@ -98,15 +89,17 @@
 
         {% else %}
         <!-- ── Detalhe da tarefa ── -->
+        <div class="topo-navegacao-voltar">
+            <a href="{% url 'minhas_tarefas' area_ativa %}" class="btn-voltar-link">
+                <span class="seta-voltar">←</span> Voltar para Minhas Tarefas
+            </a>
+        </div>
         <div class="tarefa-detalhe-card">
 
             <div class="tarefa-detalhe-header">
                 <div class="tarefa-detalhe-info">
                     <h3 class="tarefa-titulo">{{ tarefa_selecionada.titulo }}</h3>
                     <div class="tarefa-detalhes" style="margin-top:6px">
-                        {% if tarefa_selecionada.descricao %}
-                        <span class="detalhe-item"><img src="{% static 'imgs/icone-area.png' %}" alt="">{{ tarefa_selecionada.descricao }}</span>
-                        {% endif %}
                         {% if tarefa_selecionada.tipo == "fixa" %}
                             {% if tarefa_selecionada.horario %}<span class="detalhe-item"><img src="{% static 'imgs/icone-relogio.png' %}" alt="">{{ tarefa_selecionada.horario|time:"H:i" }}</span>{% endif %}
                             {% if tarefa_selecionada.data %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa_selecionada.data|date:"j/n" }}</span>{% endif %}
@@ -144,13 +137,66 @@
                 <div class="aba-detalhes">
                     <div class="detalhe-secao">
                         <p class="detalhe-label">Descrição da tarefa</p>
-                        <p class="detalhe-texto">{{ tarefa_selecionada.descricao|default:"Nenhuma descrição informada." }}</p>
+                        <div class="detalhe-texto">{{ tarefa_selecionada.descricao|linebreaksbr|default:"Nenhuma descrição informada." }}</div>
                     </div>
-                    {% if tarefa_selecionada.imagem %}
+                    {% if tarefa_selecionada.imagem and tarefa_selecionada.imagem.name %}
                     <div class="detalhe-secao">
                         <p class="detalhe-label">Fotos de apoio <span class="fotos-count">1</span></p>
                         <div class="fotos-apoio">
-                            <img src="{{ tarefa_selecionada.imagem.url }}" alt="Foto de apoio" class="foto-apoio">
+                            <a href="{{ tarefa_selecionada.imagem.url }}" target="_blank" title="Clique para ver foto de apoio">
+                                <img src="{{ tarefa_selecionada.imagem.url }}" alt="Foto de apoio" class="foto-apoio">
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if conclusao %}
+                    <div class="detalhe-secao">
+                        <p class="detalhe-label">Sua comprovação de conclusão <span class="badge-concluida" style="margin-left:8px;font-size:11px;">✓ Entregue</span></p>
+                        {% if conclusao.imagem and conclusao.imagem.name %}
+                        <div class="conclusao-imagem">
+                            <a href="{{ conclusao.imagem.url }}" target="_blank" title="Clique para ver em tamanho real">
+                                <img src="{{ conclusao.imagem.url }}" alt="Comprovação enviada" class="foto-conclusao">
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% if conclusao.comentario %}
+                        <p class="conclusao-comentario" style="margin-top:8px;">{{ conclusao.comentario|linebreaksbr }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if eh_criador and conclusoes_tarefa %}
+                    <div class="detalhe-secao secao-entregas">
+                        <div class="detalhe-header-toggle" onclick="toggleEntregas()">
+                            <p class="detalhe-label">Entregas dos participantes <span class="fotos-count">{{ conclusoes_tarefa.count }}</span></p>
+                            <button type="button" class="btn-toggle-entregas" id="btn-toggle-entregas" aria-label="Ocultar ou mostrar entregas">
+                                <span id="toggle-texto">Ocultar entregas</span>
+                                <span class="toggle-seta" id="toggle-seta">▲</span>
+                            </button>
+                        </div>
+                        <div class="lista-conclusoes lista-conclusoes-colapsavel" id="lista-conclusoes-wrapper" style="margin-top:12px;">
+                            {% for c in conclusoes_tarefa %}
+                            <div class="conclusao-item">
+                                <div class="conclusao-topo">
+                                    <div class="obs-avatar">{{ c.usuario.matricula|first|upper }}</div>
+                                    <div class="conclusao-info">
+                                        <span class="obs-nome">{{ c.usuario.matricula }}</span>
+                                        <span class="obs-data">{{ c.criada_em|date:"d/m/Y H:i" }}</span>
+                                    </div>
+                                </div>
+                                {% if c.imagem and c.imagem.name %}
+                                <div class="conclusao-imagem">
+                                    <a href="{{ c.imagem.url }}" target="_blank" title="Clique para abrir imagem original">
+                                        <img src="{{ c.imagem.url }}" alt="Comprovação de {{ c.usuario.matricula }}" class="foto-conclusao">
+                                    </a>
+                                </div>
+                                {% endif %}
+                                {% if c.comentario %}
+                                <p class="conclusao-comentario">{{ c.comentario|linebreaksbr }}</p>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
                         </div>
                     </div>
                     {% endif %}
@@ -167,7 +213,7 @@
                                     <span class="obs-nome">{{ obs.usuario.matricula }}</span>
                                     <span class="obs-data">{{ obs.criada_em|date:"d/m/Y H:i" }}</span>
                                 </div>
-                                <p class="obs-texto">{{ obs.texto }}</p>
+                                <p class="obs-texto">{{ obs.texto|linebreaksbr }}</p>
                             </div>
                         </div>
                         {% endfor %}
@@ -188,13 +234,16 @@
                     <form action="{% url 'concluir_tarefa_usuario' area_ativa tarefa_selecionada.id %}" method="POST" enctype="multipart/form-data" class="form-concluir">
                         {% csrf_token %}
                         <label class="upload-imagem-label" for="img-concluir">
-                            {% if conclusao and conclusao.imagem %}
-                                <img src="{{ conclusao.imagem.url }}" alt="Imagem enviada" class="preview-concluir">
-                            {% else %}
-                                <img src="{% static 'imgs/icone-upload.png' %}" alt="Upload" class="icone-upload-concluir">
-                                <span class="upload-texto">+ Adicionar imagem</span>
-                                <span class="upload-subtexto">PNG, JPG até 10MB</span>
-                            {% endif %}
+                            <div id="preview-container">
+                                {% if conclusao and conclusao.imagem and conclusao.imagem.name %}
+                                    <img src="{{ conclusao.imagem.url }}" alt="Imagem enviada" class="preview-concluir">
+                                    <span class="upload-subtexto" style="margin-top:6px;color:#81c784;">✓ Imagem anexada (clique para alterar se desejar)</span>
+                                {% else %}
+                                    <img src="{% static 'imgs/icone-upload.png' %}" alt="Upload" class="icone-upload-concluir">
+                                    <span class="upload-texto">+ Adicionar imagem</span>
+                                    <span class="upload-subtexto">PNG, JPG até 10MB</span>
+                                {% endif %}
+                            </div>
                             <input type="file" id="img-concluir" name="imagem" accept="image/*" class="input-hidden" onchange="previewImagem(this)">
                         </label>
                         <div class="comentario-wrap">
@@ -217,14 +266,30 @@
 </main>
 
 <script>
+function toggleEntregas() {
+    const wrapper = document.getElementById('lista-conclusoes-wrapper');
+    const seta = document.getElementById('toggle-seta');
+    const texto = document.getElementById('toggle-texto');
+    if (!wrapper) return;
+    const isRecolhida = wrapper.classList.toggle('recolhida');
+    if (seta) seta.classList.toggle('girada', isRecolhida);
+    if (texto) texto.textContent = isRecolhida ? 'Mostrar entregas' : 'Ocultar entregas';
+}
+
 function previewImagem(input) {
     if (input.files && input.files[0]) {
+        const file = input.files[0];
         const reader = new FileReader();
         reader.onload = function(e) {
-            const label = input.closest('label');
-            label.innerHTML = `<img src="${e.target.result}" alt="Preview" class="preview-concluir"><input type="file" id="img-concluir" name="imagem" accept="image/*" class="input-hidden" onchange="previewImagem(this)">`;
+            const container = document.getElementById('preview-container');
+            if (container) {
+                container.innerHTML = `
+                    <img src="${e.target.result}" alt="Preview" class="preview-concluir">
+                    <span class="upload-subtexto" style="margin-top:6px;color:#81c784;">✓ Imagem selecionada (${file.name})</span>
+                `;
+            }
         };
-        reader.readAsDataURL(input.files[0]);
+        reader.readAsDataURL(file);
     }
 }
 </script>
