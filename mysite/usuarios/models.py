@@ -63,6 +63,9 @@ class Curtida(models.Model):
         return f"{self.usuario.matricula} curtiu {self.publicacao.id}"
 
 
+
+
+
 class Tarefa(models.Model):
 
     TIPO_CHOICES = [("fixa","Rápida"),("prolongada","Prolongada")]

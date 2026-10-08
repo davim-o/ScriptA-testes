@@ -1,0 +1,51 @@
+SCRIPT A — CORREÇÕES REALIZADAS
+
+1. LOGIN
+- A matrícula comum continua aceitando somente números.
+- A conta manual "admin" pode usar letras normalmente.
+- Removida a validação HTML que bloqueava "admin" antes do Django receber o formulário.
+- Erro de matrícula ou senha agora permanece visível na tela.
+- Sessão inválida ou usuário apagado não causa erro 500.
+
+2. CADASTRO
+- Pelo menos uma área agora é obrigatória no servidor.
+- Matrícula duplicada é rejeitada.
+- Matrícula comum continua limitada a números.
+- Áreas selecionadas permanecem marcadas quando o formulário retorna com erro.
+- Validações de frontend e backend ficaram alinhadas.
+
+3. TAREFAS
+- Depois de participar, aparece "Participando" como status visual, e não como link azul.
+- "Ver tarefa" passou a ter aparência real de botão.
+- Links de tarefas usam o roxo claro principal do projeto.
+- Participação em tarefa encerrada foi bloqueada também no backend.
+- Criador não pode cancelar a própria tarefa.
+- Cancelamento de participação em tarefa encerrada foi bloqueado.
+- Observações exigem participação ou autoria da tarefa.
+- Sub-líder só pode editar e encerrar tarefas da própria área.
+- Dados inválidos de criação/edição de tarefa não causam ValueError.
+- Prazo de tarefa prolongada não pode ser anterior à data inicial.
+- Contadores do painel passaram a contar conclusões reais, e não apenas participações.
+- Contadores ativos podem ser atualizados automaticamente pelo painel.
+
+4. INTERFACE
+- Login e cadastro foram reorganizados para evitar desalinhamentos.
+- Layout ficou responsivo para telas menores.
+- Botões e links de tarefas seguem a identidade roxa do ScriptA.
+- Corrigida referência ao ícone "icone-local.png", que não existia no projeto.
+- Painel administrativo recebeu ajustes de responsividade.
+- Idioma do Django foi ajustado para pt-br.
+
+5. SEGURANÇA E CONSISTÊNCIA
+- Aprovação/recusa de membros agora atua somente sobre cadastros pendentes.
+- Usuário administrador não pode ser removido por essas rotas.
+- Administrador não pode receber indevidamente o cargo de sub-líder por remoção direta.
+- Sessões apontando para usuários removidos são invalidadas corretamente.
+
+6. TESTES
+- Foram adicionados testes automatizados para login do admin, senha inválida, cadastro sem área, matrícula duplicada e fluxo de participação/minhas tarefas.
+- Os arquivos Python modificados passaram pela verificação de sintaxe.
+- Os arquivos JavaScript passaram pela verificação de sintaxe.
+- A verificação completa com Django não pôde ser executada neste ambiente porque o pacote Django não está instalado e o ambiente de execução não possui acesso à internet para instalá-lo.
+
+O banco de dados original foi preservado dentro do projeto.

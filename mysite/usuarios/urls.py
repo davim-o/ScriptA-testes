@@ -39,8 +39,8 @@ urlpatterns=[
     path("tarefa/status/<int:id_tarefa>/", views.status_tarefa, name="status_tarefa"),
 
     # Minhas Tarefas
-    path("minhas-tarefas/", views.minhas_tarefas, name="minhas_tarefas"),
-    path("minhas-tarefas/<int:id_tarefa>/", views.minhas_tarefas, name="minhas_tarefas_detalhe"),
-    path("minhas-tarefas/<int:id_tarefa>/observacao/", views.adicionar_observacao, name="adicionar_observacao"),
-    path("minhas-tarefas/<int:id_tarefa>/concluir/", views.concluir_tarefa_usuario, name="concluir_tarefa_usuario"),
+    path("area/<str:nome_area>/minhas-tarefas/", views.minhas_tarefas, name="minhas_tarefas"),
+    path("area/<str:nome_area>/minhas-tarefas/<int:id_tarefa>/", views.minhas_tarefas, name="minhas_tarefas_detalhe"),
+    path("area/<str:nome_area>/minhas-tarefas/<int:id_tarefa>/observacao/", views.adicionar_observacao, name="adicionar_observacao"),
+    path("area/<str:nome_area>/minhas-tarefas/<int:id_tarefa>/concluir/", views.concluir_tarefa_usuario, name="concluir_tarefa_usuario"),
 ]

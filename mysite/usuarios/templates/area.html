@@ -22,7 +22,7 @@
         <div class="abas">
             <a href="{% url 'pagina_area' nome_area %}" class="aba ativa">Tarefas</a>
             {% if not usuario.eh_administrador %}
-            <a href="{% url 'minhas_tarefas' %}" class="aba">Minhas Tarefas</a>
+            <a href="{% url 'minhas_tarefas' nome_area %}" class="aba">Minhas Tarefas</a>
             {% endif %}
         </div>
 
@@ -40,7 +40,7 @@
                     <div class="tarefa-detalhes">
                         {% if tarefa.descricao %}
                         <span class="detalhe-item">
-                            <img src="{% static 'imgs/icone-local.png' %}" alt="">
+                            <img src="{% static 'imgs/icone-area.png' %}" alt="">
                             {{ tarefa.descricao }}
                         </span>
                         {% endif %}
@@ -74,7 +74,7 @@
                                 <span class="txt-concluida">Concluída</span>
                                 <a href="{% url 'ver_conclusao' tarefa.id %}" class="btn-ver-conclusao">Ver entrega</a>
                             {% elif tarefa.id in participando %}
-                                <a href="{% url 'minhas_tarefas_detalhe' tarefa.id %}" class="btn-participando">Participando</a>
+                                <span class="btn-participando" aria-label="Você está participando desta tarefa">Participando</span>
                             {% elif tarefa.tem_vaga %}
                                 <form action="{% url 'participar_tarefa' tarefa.id %}" method="POST">
                                     {% csrf_token %}

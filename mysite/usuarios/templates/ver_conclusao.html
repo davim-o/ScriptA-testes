@@ -21,8 +21,10 @@
         </div>
 
         <div class="abas">
-            <a href="{% url 'pagina_area' tarefa.area %}" class="aba">Tarefas</a>
-            <a href="{% url 'minhas_tarefas' %}" class="aba">Minhas Tarefas</a>
+            <a href="{% url 'pagina_area' tarefa.area %}" class="aba ativa">Tarefas</a>
+            {% if not usuario.eh_administrador %}
+            <a href="{% url 'minhas_tarefas' tarefa.area %}" class="aba">Minhas Tarefas</a>
+            {% endif %}
         </div>
 
         <div class="tarefa-detalhe-card">
@@ -32,7 +34,7 @@
                     <div class="tarefa-detalhes" style="margin-top:6px">
                         {% if tarefa.descricao %}
                         <span class="detalhe-item">
-                            <img src="{% static 'imgs/icone-local.png' %}" alt="">
+                            <img src="{% static 'imgs/icone-area.png' %}" alt="">
                             {{ tarefa.descricao }}
                         </span>
                         {% endif %}

@@ -17,19 +17,14 @@
     <div class="container-pagina">
 
         <div class="titulo-pagina">
-            <h1>{{ tarefa_selecionada.area|default:"Minhas Tarefas" }}</h1>
+            <h1>{{ area_ativa }}</h1>
         </div>
 
         <!-- Abas superiores — sempre as duas visíveis -->
         <div class="abas">
-            {% if tarefa_selecionada %}
-                <a href="{% url 'pagina_area' tarefa_selecionada.area %}" class="aba">Tarefas</a>
-                <a href="{% url 'minhas_tarefas' %}" class="aba ativa">Minhas Tarefas</a>
-            {% else %}
-                {% if primeira_area %}
-                    <a href="{% url 'pagina_area' primeira_area %}" class="aba">Tarefas</a>
-                {% endif %}
-                <a href="{% url 'minhas_tarefas' %}" class="aba ativa">Minhas Tarefas</a>
+            <a href="{% url 'pagina_area' area_ativa %}" class="aba">Tarefas</a>
+            {% if not usuario.eh_administrador %}
+            <a href="{% url 'minhas_tarefas' area_ativa %}" class="aba ativa">Minhas Tarefas</a>
             {% endif %}
         </div>
 
@@ -48,7 +43,7 @@
                 <div class="tarefa-detalhes">
                     {% if tarefa.descricao %}
                     <span class="detalhe-item">
-                        <img src="{% static 'imgs/icone-local.png' %}" alt="">
+                        <img src="{% static 'imgs/icone-area.png' %}" alt="">
                         {{ tarefa.descricao }}
                     </span>
                     {% endif %}
@@ -59,11 +54,13 @@
                         {% if tarefa.data_inicio %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa.data_inicio|date:"j/n" }}{% if tarefa.data_fim %} - {{ tarefa.data_fim|date:"j/n" }}{% endif %}</span>{% endif %}
                     {% endif %}
                     <div class="tarefa-acao">
-                        <a href="{% url 'minhas_tarefas_detalhe' tarefa.id %}" class="btn-ver-tarefa">Ver tarefa</a>
+                        <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa.id %}" class="btn-ver-tarefa">Ver tarefa</a>
+                        {% if tarefa.criada_por != usuario %}
                         <form action="{% url 'cancelar_participacao' tarefa.id %}" method="POST">
                             {% csrf_token %}
                             <button type="submit" class="btn-cancelar-mt">Cancelar</button>
                         </form>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -83,7 +80,7 @@
                 </div>
                 <div class="tarefa-detalhes">
                     {% if tarefa.descricao %}
-                    <span class="detalhe-item"><img src="{% static 'imgs/icone-local.png' %}" alt="">{{ tarefa.descricao }}</span>
+                    <span class="detalhe-item"><img src="{% static 'imgs/icone-area.png' %}" alt="">{{ tarefa.descricao }}</span>
                     {% endif %}
                     {% if tarefa.tipo == "fixa" %}
                         {% if tarefa.data %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa.data|date:"j/n" }}</span>{% endif %}
@@ -108,7 +105,7 @@
                     <h3 class="tarefa-titulo">{{ tarefa_selecionada.titulo }}</h3>
                     <div class="tarefa-detalhes" style="margin-top:6px">
                         {% if tarefa_selecionada.descricao %}
-                        <span class="detalhe-item"><img src="{% static 'imgs/icone-local.png' %}" alt="">{{ tarefa_selecionada.descricao }}</span>
+                        <span class="detalhe-item"><img src="{% static 'imgs/icone-area.png' %}" alt="">{{ tarefa_selecionada.descricao }}</span>
                         {% endif %}
                         {% if tarefa_selecionada.tipo == "fixa" %}
                             {% if tarefa_selecionada.horario %}<span class="detalhe-item"><img src="{% static 'imgs/icone-relogio.png' %}" alt="">{{ tarefa_selecionada.horario|time:"H:i" }}</span>{% endif %}
@@ -122,20 +119,21 @@
                     <img src="{% static 'imgs/icone-equipe.png' %}" alt="">
                     <span>{{ tarefa_selecionada.total_participantes }}/{{ tarefa_selecionada.limite_participantes }}</span>
                 </div>
+                {% if not eh_criador %}
                 <form action="{% url 'cancelar_participacao' tarefa_selecionada.id %}" method="POST">
                     {% csrf_token %}
                     <button type="submit" class="btn-cancelar-mt">Cancelar</button>
                 </form>
+                {% endif %}
             </div>
 
-            <!-- Sub-abas -->
             <div class="sub-abas">
-                <a href="{% url 'minhas_tarefas_detalhe' tarefa_selecionada.id %}?aba=detalhes"
+                <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa_selecionada.id %}?aba=detalhes"
                    class="sub-aba {% if aba_ativa == 'detalhes' %}ativa{% endif %}">Detalhes</a>
-                <a href="{% url 'minhas_tarefas_detalhe' tarefa_selecionada.id %}?aba=observacao"
+                <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa_selecionada.id %}?aba=observacao"
                    class="sub-aba {% if aba_ativa == 'observacao' %}ativa{% endif %}">Adicionar Observação</a>
                 {% if not eh_criador %}
-                <a href="{% url 'minhas_tarefas_detalhe' tarefa_selecionada.id %}?aba=concluir"
+                <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa_selecionada.id %}?aba=concluir"
                    class="sub-aba {% if aba_ativa == 'concluir' %}ativa{% endif %}">Concluir</a>
                 {% endif %}
             </div>
@@ -174,7 +172,7 @@
                         </div>
                         {% endfor %}
                     </div>
-                    <form action="{% url 'adicionar_observacao' tarefa_selecionada.id %}" method="POST" class="form-observacao">
+                    <form action="{% url 'adicionar_observacao' area_ativa tarefa_selecionada.id %}" method="POST" class="form-observacao">
                         {% csrf_token %}
                         <div class="obs-input-row">
                             <div class="obs-avatar-eu">{{ usuario.matricula|first|upper }}</div>
@@ -187,7 +185,7 @@
 
                 {% elif aba_ativa == "concluir" %}
                 <div class="aba-concluir">
-                    <form action="{% url 'concluir_tarefa_usuario' tarefa_selecionada.id %}" method="POST" enctype="multipart/form-data" class="form-concluir">
+                    <form action="{% url 'concluir_tarefa_usuario' area_ativa tarefa_selecionada.id %}" method="POST" enctype="multipart/form-data" class="form-concluir">
                         {% csrf_token %}
                         <label class="upload-imagem-label" for="img-concluir">
                             {% if conclusao and conclusao.imagem %}

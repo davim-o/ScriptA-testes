@@ -522,6 +522,26 @@
     background-color: #a93226;
 }
 
+.btn-editar {
+    background-color: rgba(156, 133, 249, 0.15);
+    color: #9c85f9;
+    border: 1px solid rgba(156, 133, 249, 0.35);
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-editar:hover {
+    background-color: rgba(156, 133, 249, 0.25);
+    color: #a89bff;
+}
+
 .btn-participantes {
     background-color: #263b69;
     color: white;
@@ -643,21 +663,24 @@
 }
 
 .btn-ver-entrega {
-    background: #263b69;
-    color: #c8cdec;
-    border: none;
+    background: #9c85f9;
+    color: #fff !important;
+    border: 1px solid #9c85f9;
     padding: 7px 16px;
     border-radius: 6px;
     font-size: 12px;
     font-weight: 600;
     text-decoration: none;
-    display: inline-block;
-    transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s;
 }
 
 .btn-ver-entrega:hover {
-    background: #3a5499;
-    color: #fff;
+    background: #886ef1;
+    border-color: #886ef1;
+    color: #fff !important;
 }
 
 
@@ -747,4 +770,71 @@
 @keyframes toast-out {
     from { opacity: 1; transform: translateY(0)     scale(1);   }
     to   { opacity: 0; transform: translateY(-10px) scale(.95); }
+}
+
+@media (max-width: 900px) {
+    .stats-grid,
+    .form-inputs-row,
+    .form-tarefa-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .painel-card {
+        padding: 22px;
+    }
+
+    .card-header.flex-between {
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .search-box {
+        width: min(250px, 100%);
+    }
+}
+
+@media (max-width: 620px) {
+    .painel-card {
+        padding: 18px;
+        border-radius: 10px;
+    }
+
+    .card-header,
+    .card-header.flex-between,
+    .item-linha,
+    .tarefa-header {
+        flex-wrap: wrap;
+    }
+
+    .card-header.flex-between {
+        flex-direction: column;
+    }
+
+    .search-box {
+        width: 100%;
+    }
+
+    .item-linha {
+        gap: 14px;
+        align-items: flex-start;
+    }
+
+    .acoes {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .tarefa-data {
+        width: 100%;
+    }
+
+    .form-actions,
+    .form-actions-editar {
+        justify-content: stretch;
+    }
+
+    .btn-roxo,
+    .btn-cancelar {
+        width: 100%;
+    }
 }

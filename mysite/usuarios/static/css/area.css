@@ -12,28 +12,22 @@
     color: #9ca4c9;
     font-size: 15px;
     font-weight: 500;
-    padding: 12px 28px;
+    padding: 12px 0;
     cursor: pointer;
     position: relative;
     transition: color 0.2s;
     text-decoration: none;
-    display: inline-block;
+    flex: 1;
+    text-align: center;
+    border-bottom: 2px solid transparent;
 }
 
 .aba.ativa {
     color: #fff;
     font-weight: 600;
-}
-
-.aba.ativa::after {
-    content: "";
-    position: absolute;
-    bottom: -1px;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: #7a5cff;
-    border-radius: 2px 2px 0 0;
+    background: #1a1e34;
+    border-radius: 8px 8px 0 0;
+    border-bottom-color: #7a5cff;
 }
 
 .aba:hover {
@@ -136,24 +130,26 @@
     background: #6a4de8;
 }
 
-/* Participando — link que leva para minhas tarefas */
+/* Participando */
 .btn-participando {
-    background: #3a3a5c;
-    color: #b8bfdc;
-    border: none;
+    background: rgba(156, 133, 249, 0.14);
+    color: #9c85f9;
+    border: 1px solid rgba(156, 133, 249, 0.35);
     padding: 9px 24px;
     border-radius: 6px;
     font-size: 13px;
     font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    display: inline-block;
-    transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 112px;
+    cursor: default;
 }
 
-.btn-participando:hover {
-    background: #4a4a7c;
-    color: #fff;
+.btn-participando::before {
+    content: "✓";
+    margin-right: 7px;
+    font-size: 12px;
 }
 
 /* Sem vaga */
@@ -168,23 +164,27 @@
     cursor: not-allowed;
 }
 
-/* Ver tarefa (minhas tarefas) */
+/* Ver tarefa */
 .btn-ver-tarefa {
-    background: transparent;
-    color: #9ca4c9;
-    border: 1px solid #3d456f;
-    padding: 8px 16px;
+    background: #9c85f9;
+    color: #fff !important;
+    border: 1px solid #9c85f9;
+    padding: 9px 18px;
     border-radius: 6px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
     text-decoration: none;
-    display: inline-block;
-    transition: border-color 0.2s, color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 102px;
+    transition: background 0.2s, border-color 0.2s;
 }
 
 .btn-ver-tarefa:hover {
-    border-color: #7a5cff;
-    color: white;
+    background: #886ef1;
+    border-color: #886ef1;
+    color: #fff !important;
 }
 
 .sem-itens {
@@ -220,21 +220,24 @@
 }
 
 .btn-ver-conclusao {
-    background: #263b69;
-    color: #c8cdec;
-    border: none;
+    background: #9c85f9;
+    color: #fff !important;
+    border: 1px solid #9c85f9;
     padding: 8px 16px;
     border-radius: 6px;
     font-size: 13px;
     font-weight: 600;
     text-decoration: none;
-    display: inline-block;
-    transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s;
 }
 
 .btn-ver-conclusao:hover {
-    background: #3a5499;
-    color: #fff;
+    background: #886ef1;
+    border-color: #886ef1;
+    color: #fff !important;
 }
 
 

@@ -21,13 +21,7 @@
             <h1>Painel Administrativo</h1>
         </div>
 
-        {% if messages %}
-        <div class="mensagens">
-            {% for msg in messages %}
-            <p class="msg msg-{{ msg.tags }}">{{ msg }}</p>
-            {% endfor %}
-        </div>
-        {% endif %}
+
 
         <section class="stats-grid">
             <div class="stat-card">
@@ -112,7 +106,12 @@
                         </div>
                     </div>
                 </div>
-                <div class="form-actions">
+                <div class="form-actions" style="display: flex; align-items: center; justify-content: flex-end; gap: 15px;">
+                    {% if messages %}
+                        {% for msg in messages %}
+                            <p class="msg-text-{{ msg.tags }}" style="margin: 0; font-size: 13px; font-weight: 500; {% if msg.tags == 'error' %}color: #e89090;{% else %}color: #81c784;{% endif %}">{{ msg }}</p>
+                        {% endfor %}
+                    {% endif %}
                     <button type="submit" class="btn-roxo">Promover</button>
                 </div>
             </form>
@@ -228,9 +227,9 @@
                 </div>
 
                 <div class="form-tarefa-grid">
-                    <div class="form-group">
+                    <div class="form-group" style="grid-column: 1 / -1;">
                         <label>Descrição</label>
-                        <input type="text" name="descricao" placeholder="Onde será?">
+                        <textarea name="descricao" placeholder="Detalhes da tarefa..." rows="4" style="background: #111323; border: 1px solid #2d3150; border-radius: 8px; padding: 12px 16px; color: #9ca4c9; font-size: 14px; outline: none; width: 100%; resize: vertical;"></textarea>
                     </div>
                     <div class="form-group">
                         <label>Limite de participantes</label>
@@ -295,11 +294,14 @@
                         </div>
                     </div>
                     <div class="tarefa-acoes">
-                        <span class="contador-conclusoes" data-status-url="{% url 'status_tarefa' tarefa.id %}">{{ tarefa.total_concl|default:0 }}/{{ tarefa.limite_participantes }} concluíram</span>
-                        <form action="{% url 'encerrar_tarefa' tarefa.id %}" method="POST" class="form-inline" onsubmit="return confirm('Deseja encerrar esta tarefa?')">
-                            {% csrf_token %}
-                            <button type="submit" class="btn-encerrar">Encerrar</button>
-                        </form>
+                        <span class="contador-participantes" data-status-url="{% url 'status_tarefa' tarefa.id %}" style="color: #9ca4c9; font-size: 13px; font-weight: 500;">{{ tarefa.total_concl|default:0 }}/{{ tarefa.limite_participantes }} concluíram</span>
+                        <div style="display: flex; gap: 10px; margin-left: auto;">
+                            <a href="{% url 'editar_tarefa' tarefa.id %}" class="btn-editar">Editar</a>
+                            <form action="{% url 'encerrar_tarefa' tarefa.id %}" method="POST" class="form-inline" onsubmit="return confirm('Deseja encerrar esta tarefa?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-encerrar">Encerrar</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
                 {% empty %}
@@ -403,29 +405,57 @@ function atualizarUpload(input) {
     }
 }
 
-// Flatpickr — date pickers (clique em qualquer lugar do campo, não só no ícone)
+// Flatpickr — date/time pickers (clique em qualquer lugar do campo abre o picker)
 var fpOpts = {locale: "pt", dateFormat: "Y-m-d", allowInput: true, clickOpens: true};
 var tpOpts = {enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true,
               locale: "pt", allowInput: true, clickOpens: true};
+
 document.querySelectorAll("#form-criar-tarefa input[type='date']").forEach(function(el) {
-    flatpickr(el.parentElement, fpOpts);
+    var fp = flatpickr(el, fpOpts);
+    // Clique no wrapper inteiro abre o picker
+    el.parentElement.style.cursor = "pointer";
+    el.parentElement.addEventListener("click", function(e) {
+        if (e.target !== el) fp.open();
+    });
 });
 document.querySelectorAll("#form-criar-tarefa input[type='time']").forEach(function(el) {
-    flatpickr(el.parentElement, tpOpts);
+    var fp = flatpickr(el, tpOpts);
+    el.parentElement.style.cursor = "pointer";
+    el.parentElement.addEventListener("click", function(e) {
+        if (e.target !== el) fp.open();
+    });
 });
 
 {% if usuario.eh_administrador %}
 (function() {
     var input = document.getElementById("search-membros");
     if (!input) return;
-    // Pega somente a lista de membros (última .lista-itens dentro do card de membros)
     var secaoMembros = input.closest(".painel-card");
+    
+    function removeAccents(str) {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    var msgSemResultados = document.createElement("div");
+    msgSemResultados.className = "sem-itens";
+    msgSemResultados.textContent = "Nenhum membro encontrado.";
+    msgSemResultados.style.display = "none";
+    var listaItens = secaoMembros.querySelector(".lista-itens");
+    if (listaItens) listaItens.appendChild(msgSemResultados);
+
     input.addEventListener("input", function() {
-        var termo = this.value.toLowerCase();
+        var termo = removeAccents(this.value.toLowerCase().trim());
+        var encontrou = false;
         secaoMembros.querySelectorAll(".lista-itens .item-linha").forEach(function(item) {
-            var nome = item.querySelector("h3");
-            item.style.display = nome && nome.textContent.toLowerCase().includes(termo) ? "" : "none";
+            var textoCompleto = removeAccents(item.textContent.toLowerCase());
+            if (textoCompleto.includes(termo)) {
+                item.style.display = "";
+                encontrou = true;
+            } else {
+                item.style.display = "none";
+            }
         });
+        msgSemResultados.style.display = encontrou || document.querySelectorAll(".lista-itens .item-linha").length === 0 ? "none" : "block";
     });
 })();
 {% endif %}

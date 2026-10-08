@@ -1,0 +1,473 @@
+{% load static %}
+{% load usuarios_extras %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+</head>
+
+<body>
+
+{% include "_sidebar.html" with pagina_ativa="painel" %}
+
+<main class="conteudo">
+    <div class="container-pagina container-admin">
+
+        <div class="titulo-pagina">
+            <h1>Painel Administrativo</h1>
+        </div>
+
+
+
+        <section class="stats-grid">
+            <div class="stat-card">
+                <p class="stat-rotulo">Membros</p>
+                <p class="stat-valor">0</p>
+            </div>
+            <div class="stat-card">
+                <p class="stat-rotulo">Pendentes</p>
+                <p class="stat-valor">0</p>
+            </div>
+            <div class="stat-card">
+                <p class="stat-rotulo">Doações</p>
+                <p class="stat-valor">0Kg</p>
+            </div>
+        </section>
+
+        {% if usuario.eh_administrador %}
+        <section class="painel-card">
+            <div class="card-header">
+                <img src="{% static 'imgs/icone-usuario.png' %}" alt="">
+                <h2>Aprovação de membros</h2>
+            </div>
+            <div class="lista-itens">
+                {% for pendente in pendentes %}
+                <div class="item-linha">
+                    <div class="info-principal">
+                        <div class="avatar avatar-roxo">{{ pendente.matricula|first|upper }}</div>
+                        <div class="textos">
+                            <h3>{{ pendente.matricula }}</h3>
+                            <p>{{ pendente.diretoria }}</p>
+                        </div>
+                    </div>
+                    <div class="acoes">
+                        <form action="{% url 'aprovar_membro' pendente.id %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-icon">
+                                <img src="{% static 'imgs/icone-check-verde.png' %}" alt="Aprovar">
+                            </button>
+                        </form>
+                        <form action="{% url 'recusar_membro' pendente.id %}" method="POST" onsubmit="return confirm('Deseja recusar esta solicitação?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-icon">
+                                <img src="{% static 'imgs/icone-cross-vermelho.png' %}" alt="Recusar">
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="sem-itens">Nenhuma solicitação pendente.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="painel-card">
+            <div class="card-header">
+                <img src="{% static 'imgs/icone-promover.png' %}" alt="">
+                <h2>Promover Sub-Líderes</h2>
+            </div>
+            <form class="form-promover" action="{% url 'promover_sublider' %}" method="POST">
+                {% csrf_token %}
+                <div class="form-inputs-row">
+                    <div class="form-group">
+                        <label>Matrícula</label>
+                        <div class="input-with-icon">
+                            <img src="{% static 'imgs/icone-usuario.png' %}" alt="">
+                            <input type="text" name="matricula" placeholder="Digite o nome..." required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Áreas</label>
+                        <div class="input-with-icon">
+                            <img src="{% static 'imgs/icone-area.png' %}" alt="">
+                            <select name="area" required>
+                                <option value="" disabled selected>Selecione...</option>
+                                <option value="Cenário">Cenário</option>
+                                <option value="Staff">Staff</option>
+                                <option value="Figurino">Figurino</option>
+                                <option value="Dança">Dança</option>
+                                <option value="Sonoplastia">Sonoplastia</option>
+                                <option value="Roteiro">Roteiro</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-actions" style="display: flex; align-items: center; justify-content: flex-end; gap: 15px;">
+                    {% if messages %}
+                        {% for msg in messages %}
+                            <p class="msg-text-{{ msg.tags }}" style="margin: 0; font-size: 13px; font-weight: 500; {% if msg.tags == 'error' %}color: #e89090;{% else %}color: #81c784;{% endif %}">{{ msg }}</p>
+                        {% endfor %}
+                    {% endif %}
+                    <button type="submit" class="btn-roxo">Promover</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="painel-card">
+            <div class="card-header flex-between">
+                <div class="titulo-icone">
+                    <img src="{% static 'imgs/icone-equipe.png' %}" alt="">
+                    <h2>Membros</h2>
+                </div>
+                <div class="search-box">
+                    <img src="{% static 'imgs/icone-search.png' %}" alt="">
+                    <input type="text" id="search-membros" placeholder="Pesquisar membros">
+                </div>
+            </div>
+            <div class="lista-itens">
+                {% for membro in membros %}
+                <div class="item-linha">
+                    <div class="info-principal">
+                        <div class="avatar avatar-verde">{{ membro.matricula|first|upper }}</div>
+                        <div class="textos">
+                            <div class="nome-badges">
+                                <h3>{{ membro.matricula }}</h3>
+                                {% if membro.sub_lider %}
+                                    <span class="badge-sublider">Sub-Líder</span>
+                                    <form action="{% url 'remover_sublider' membro.id %}" method="POST" class="form-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-lixeira">
+                                            <img src="{% static 'imgs/icone-lixeira.png' %}" alt="Remover cargo">
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                            <p>{{ membro.matricula }} - {{ membro.areas }}</p>
+                        </div>
+                    </div>
+                    <div class="acoes">
+                        {% if not membro.eh_administrador %}
+                        <form action="{% url 'remover_membro' membro.id %}" method="POST" onsubmit="return confirm('Deseja realmente remover este membro?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-remover">Remover</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <p class="sem-itens">Nenhum membro aprovado ainda.</p>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- ── Criar Tarefa (apenas Sub-Líder) ── -->
+        {% if usuario.sub_lider %}
+        <section class="painel-card">
+            <div class="card-header">
+                <img src="{% static 'imgs/icone-tarefa.png' %}" alt="">
+                <h2>Criar tarefas</h2>
+            </div>
+
+            <form class="form-tarefa" action="{% url 'criar_tarefa' %}" method="POST" enctype="multipart/form-data" id="form-criar-tarefa">
+                {% csrf_token %}
+
+                <div class="form-tarefa-grid">
+                    <div class="form-group">
+                        <label>Título</label>
+                        <input type="text" name="titulo" placeholder="Nome da tarefa" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo de tarefa</label>
+                        <div class="select-wrapper">
+                            <select name="tipo" id="tipo-tarefa" required>
+                                <option value="prolongada">Prolongada</option>
+                                <option value="fixa">Rápida</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-tarefa-grid" id="campos-prolongada">
+                    <div class="form-group">
+                        <label>Data</label>
+                        <div class="input-calendario">
+                            <input type="date" name="data_inicio">
+                            
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Prazo</label>
+                        <div class="input-calendario">
+                            <input type="date" name="data_fim">
+                           
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-tarefa-grid" id="campos-fixa" style="display:none;">
+                    <div class="form-group">
+                        <label>Data</label>
+                        <div class="input-calendario">
+                            <input type="date" name="data">
+                            
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Horário</label>
+                        <div class="input-calendario">
+                            <input type="time" name="horario">
+                            
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-tarefa-grid">
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>Descrição</label>
+                        <textarea name="descricao" placeholder="Detalhes da tarefa..." rows="4" style="background: #111323; border: 1px solid #2d3150; border-radius: 8px; padding: 12px 16px; color: #9ca4c9; font-size: 14px; outline: none; width: 100%; resize: vertical;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Limite de participantes</label>
+                        <div class="input-contador">
+                            <input type="number" name="limite_participantes" id="limite-input" value="2" min="1">
+                            <button type="button" class="btn-contador" onclick="alterarContador(-1)">-</button>
+                            <button type="button" class="btn-contador" onclick="alterarContador(1)">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Campo imagem -->
+                <div class="form-group">
+                    <label>Imagem de apoio (opcional)</label>
+                    <div class="upload-wrapper">
+                        <label class="label-upload-tarefa" for="img-tarefa" id="label-upload">
+                            <img src="{% static 'imgs/icone-add-imagem.png' %}" alt="" class="icone-add-img">
+                            <span id="nome-arquivo">Clique para adicionar uma imagem</span>
+                        </label>
+                        <input type="file" id="img-tarefa" name="imagem" accept="image/*" class="input-hidden"
+                               onchange="atualizarUpload(this)">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-roxo">Criar tarefa</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- ── Tarefas pendentes ── -->
+        <section class="painel-card">
+            <div class="card-header">
+                <img src="{% static 'imgs/icone-tarefa.png' %}" alt="">
+                <h2>Tarefas pendentes</h2>
+            </div>
+
+            <div class="lista-tarefas">
+                {% for tarefa in tarefas %}
+                <div class="tarefa-card">
+                    <div class="tarefa-header">
+                        <div class="tarefa-info">
+                            <h3 class="tarefa-titulo">{{ tarefa.titulo }}</h3>
+                            <p class="tarefa-local">
+                                {% if tarefa.descricao %}{{ tarefa.descricao }}{% endif %}
+                                {% if tarefa.tipo == "fixa" and tarefa.horario %}
+                                    &nbsp;&ndash; {{ tarefa.horario|time:"H:i" }}
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="tarefa-data">
+                            <img src="{% static 'imgs/icone-calendario.png' %}" alt="">
+                            {% if tarefa.tipo == "fixa" %}
+                                {% if tarefa.data %}{{ tarefa.data|date:"j/n" }}{% endif %}
+                            {% else %}
+                                {% if tarefa.data_inicio and tarefa.data_fim %}
+                                    {{ tarefa.data_inicio|date:"j/n" }} - {{ tarefa.data_fim|date:"j/n" }}
+                                {% elif tarefa.data_inicio %}
+                                    {{ tarefa.data_inicio|date:"j/n" }}
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="tarefa-acoes">
+                        <span class="contador-participantes" data-status-url="{% url 'status_tarefa' tarefa.id %}">{{ tarefa.total_concl|default:0 }}/{{ tarefa.limite_participantes }} concluíram</span>
+                        <a href="{% url 'editar_tarefa' tarefa.id %}" class="btn-icon" style="background: rgba(122, 92, 255, 0.15); padding: 6px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; width: auto; height: auto;">
+                            <img src="{% static 'imgs/icone-editar.png' %}" alt="Editar" style="width: 16px; height: 16px; opacity: 0.8; border-radius: 0;">
+                        </a>
+                        <form action="{% url 'encerrar_tarefa' tarefa.id %}" method="POST" class="form-inline" onsubmit="return confirm('Deseja encerrar esta tarefa?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-encerrar">Encerrar</button>
+                        </form>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="sem-itens">Nenhuma tarefa pendente.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- ── Tarefas concluídas ── -->
+        <section class="painel-card">
+            <div class="card-header">
+                <img src="{% static 'imgs/icone-tarefa.png' %}" alt="">
+                <h2>Tarefas concluídas</h2>
+            </div>
+
+            <div class="lista-tarefas">
+                {% for tarefa in tarefas_concluidas %}
+                <div class="tarefa-card tarefa-card-concluida">
+                    <div class="tarefa-header">
+                        <div class="tarefa-info">
+                            <h3 class="tarefa-titulo">{{ tarefa.titulo }}</h3>
+                            <p class="tarefa-local">
+                                {% if tarefa.descricao %}{{ tarefa.descricao }}{% endif %}
+                                {% if tarefa.tipo == "fixa" and tarefa.horario %}
+                                    &nbsp;&ndash; {{ tarefa.horario|time:"H:i" }}
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="tarefa-data">
+                            <img src="{% static 'imgs/icone-calendario.png' %}" alt="">
+                            {% if tarefa.tipo == "fixa" %}
+                                {% if tarefa.data %}{{ tarefa.data|date:"j/n" }}{% endif %}
+                            {% else %}
+                                {% if tarefa.data_inicio and tarefa.data_fim %}
+                                    {{ tarefa.data_inicio|date:"j/n" }} - {{ tarefa.data_fim|date:"j/n" }}
+                                {% elif tarefa.data_inicio %}
+                                    {{ tarefa.data_inicio|date:"j/n" }}
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% with primeira_conclusao=tarefa.conclusoes.all|first %}
+                    {% if primeira_conclusao and primeira_conclusao.imagem %}
+                    <div class="imagem-tarefa-concluida">
+                        <img src="{{ primeira_conclusao.imagem.url }}" alt="Imagem da entrega">
+                    </div>
+                    {% endif %}
+                    {% endwith %}
+                    <div class="tarefa-acoes">
+                        <span class="badge-concluida contador-conclusoes" data-status-url="{% url 'status_tarefa' tarefa.id %}">✓ Concluída por {{ tarefa.total_concl|default:0 }}/{{ tarefa.limite_participantes }}</span>
+                        <a href="{% url 'ver_conclusao' tarefa.id %}" class="btn-ver-entrega">Ver entrega</a>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="sem-itens">Nenhuma tarefa concluída ainda.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        {% endif %}
+
+    </div>
+</main>
+
+<link rel="stylesheet" href="{% static 'vendor/flatpickr/flatpickr.min.css' %}">
+<script src="{% static 'vendor/flatpickr/flatpickr.min.js' %}"></script>
+<script src="{% static 'vendor/flatpickr/pt.js' %}"></script>
+<script>
+const tipoSelect = document.getElementById("tipo-tarefa");
+const camposProlongada = document.getElementById("campos-prolongada");
+const camposFixa = document.getElementById("campos-fixa");
+
+function atualizarCamposTipo() {
+    if (tipoSelect.value === "fixa") {
+        camposFixa.style.display = "";
+        camposProlongada.style.display = "none";
+    } else {
+        camposProlongada.style.display = "";
+        camposFixa.style.display = "none";
+    }
+}
+
+tipoSelect.addEventListener("change", atualizarCamposTipo);
+atualizarCamposTipo();
+
+function alterarContador(delta) {
+    const input = document.getElementById("limite-input");
+    const novoValor = Math.max(1, parseInt(input.value || 1) + delta);
+    input.value = novoValor;
+}
+
+function atualizarUpload(input) {
+    const label = document.getElementById("label-upload");
+    const span = document.getElementById("nome-arquivo");
+    if (input.files && input.files[0]) {
+        span.textContent = "✓ " + input.files[0].name;
+        label.classList.add("upload-selecionado");
+    } else {
+        span.textContent = "Clique para adicionar uma imagem";
+        label.classList.remove("upload-selecionado");
+    }
+}
+
+// Flatpickr — date/time pickers (clique em qualquer lugar do campo abre o picker)
+var fpOpts = {locale: "pt", dateFormat: "Y-m-d", allowInput: true, clickOpens: true};
+var tpOpts = {enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true,
+              locale: "pt", allowInput: true, clickOpens: true};
+
+document.querySelectorAll("#form-criar-tarefa input[type='date']").forEach(function(el) {
+    var fp = flatpickr(el, fpOpts);
+    // Clique no wrapper inteiro abre o picker
+    el.parentElement.style.cursor = "pointer";
+    el.parentElement.addEventListener("click", function(e) {
+        if (e.target !== el) fp.open();
+    });
+});
+document.querySelectorAll("#form-criar-tarefa input[type='time']").forEach(function(el) {
+    var fp = flatpickr(el, tpOpts);
+    el.parentElement.style.cursor = "pointer";
+    el.parentElement.addEventListener("click", function(e) {
+        if (e.target !== el) fp.open();
+    });
+});
+
+{% if usuario.eh_administrador %}
+(function() {
+    var input = document.getElementById("search-membros");
+    if (!input) return;
+    var secaoMembros = input.closest(".painel-card");
+    
+    function removeAccents(str) {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    input.addEventListener("input", function() {
+        var termo = removeAccents(this.value.toLowerCase().trim());
+        secaoMembros.querySelectorAll(".lista-itens .item-linha").forEach(function(item) {
+            var textoCompleto = removeAccents(item.textContent.toLowerCase());
+            item.style.display = textoCompleto.includes(termo) ? "" : "none";
+        });
+    });
+})();
+{% endif %}
+</script>
+
+<script>
+function atualizarContadores() {
+    document.querySelectorAll("[data-status-url]").forEach(function(elemento) {
+        fetch(elemento.dataset.statusUrl)
+            .then(response => response.json())
+            .then(dados => {
+                if (elemento.classList.contains("badge-concluida")) {
+                    elemento.textContent = "✓ Concluída por " + dados.concluidos + "/" + dados.limite;
+                } else {
+                    elemento.textContent = dados.concluidos + "/" + dados.limite + " concluíram";
+                }
+                if (dados.encerrada && !elemento.classList.contains("badge-concluida")) {
+                    window.location.reload();
+                }
+            });
+    });
+}
+
+setInterval(atualizarContadores, 5000);
+</script>
+
+<script src="{% static 'js/toast.js' %}"></script>
+</body>
+</html>
