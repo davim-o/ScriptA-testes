@@ -1,0 +1,155 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Área</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/nova_area.css' %}">
+</head>
+<body>
+
+{% include "_sidebar.html" with pagina_ativa="nova_area" %}
+
+<main class="conteudo">
+    <div class="container-pagina container-nova-area">
+
+        <div class="titulo-nova-area">
+            <h1>Nova área</h1>
+        </div>
+
+        {% if messages %}
+            <div style="display:none;">
+                {% for message in messages %}
+                    <div class="msg msg-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="lista-areas-gerenciar">
+            {% for area in areas_com_status %}
+            <div class="card-area">
+                <div class="card-area-info">
+                    <div class="card-area-icone">
+                        <img src="{% static area.icone %}" alt="{{ area.nome }}">
+                    </div>
+                    <div class="card-area-textos">
+                        <h3>{{ area.nome }}</h3>
+                        <p>{{ area.descricao }}</p>
+                    </div>
+                </div>
+
+                <div class="card-area-acao">
+                    {% if area.status == 'membro' %}
+                        <button type="button" class="btn-sair-area" onclick="abrirModalSair('{{ area.nome }}')">Sair da área</button>
+                    {% elif area.status == 'pendente' %}
+                        <form action="{% url 'cancelar_solicitacao_area' area.nome %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-cancelar-solicitacao">Cancelar Solicitação ✕</button>
+                        </form>
+                    {% else %}
+                        <form action="{% url 'solicitar_area' area.nome %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-solicitar-area">Solicitar</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+</main>
+
+<!-- ── Modal de Confirmação para Sair da Área ── -->
+<div id="modal-sair-area" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2 id="modal-titulo">Sair da Área</h2>
+            <button type="button" class="btn-modal-fechar" onclick="fecharModalSair()" aria-label="Fechar modal">✕</button>
+        </div>
+
+        <form action="" method="POST" id="form-sair-area" onsubmit="return validarConfirmacaoSair(event)">
+            {% csrf_token %}
+            <div class="modal-corpo">
+                <p class="modal-aviso">
+                    Tem certeza que deseja sair da área <span id="modal-nome-area" class="destaque-area"></span>?
+                </p>
+                <p class="modal-instrucao">
+                    Para confirmar a operação, digite a sua matrícula abaixo:
+                </p>
+
+                <input type="text"
+                       name="matricula_confirmacao"
+                       id="matricula-confirmacao"
+                       class="input-matricula-confirmacao"
+                       placeholder="Digite sua matrícula"
+                       required
+                       autocomplete="off">
+
+                <div class="modal-acoes">
+                    <button type="button" class="btn-modal-cancelar" onclick="fecharModalSair()">Cancelar</button>
+                    <button type="submit" class="btn-modal-confirmar">Confirmar Saída</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const matriculaUsuario = "{{ usuario.matricula|escapejs }}";
+    let areaAtualSair = "";
+
+    function abrirModalSair(nomeArea) {
+        areaAtualSair = nomeArea;
+        document.getElementById("modal-nome-area").textContent = nomeArea;
+        const form = document.getElementById("form-sair-area");
+        form.action = "/nova-area/sair/" + encodeURIComponent(nomeArea) + "/";
+        const input = document.getElementById("matricula-confirmacao");
+        input.value = "";
+        document.getElementById("modal-sair-area").classList.add("ativo");
+        setTimeout(function() {
+            input.focus();
+        }, 100);
+    }
+
+    function fecharModalSair() {
+        document.getElementById("modal-sair-area").classList.remove("ativo");
+    }
+
+    function validarConfirmacaoSair(event) {
+        const input = document.getElementById("matricula-confirmacao");
+        const valor = input.value.trim();
+        if (valor !== matriculaUsuario) {
+            event.preventDefault();
+            if (typeof toast === "function") {
+                toast("Matrícula incorreta. Digite sua matrícula para confirmar a saída.", "erro");
+            } else {
+                alert("Matrícula incorreta. Digite sua matrícula para confirmar a saída.");
+            }
+            input.focus();
+            return false;
+        }
+        return true;
+    }
+
+    const modalOverlay = document.getElementById("modal-sair-area");
+    if (modalOverlay) {
+        modalOverlay.addEventListener("click", function(e) {
+            if (e.target === this) {
+                fecharModalSair();
+            }
+        });
+    }
+
+    document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape") {
+            fecharModalSair();
+        }
+    });
+</script>
+
+<script src="{% static 'js/toast.js' %}"></script>
+</body>
+</html>

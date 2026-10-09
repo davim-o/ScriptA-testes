@@ -41,4 +41,16 @@ document.addEventListener("DOMContentLoaded", function() {
         if (msg) toast(msg, tipo, 5000);
         el.style.display = "none";
     });
+
+    // Previne que a tecla Backspace fora de campos editáveis cause navegação acidental para o login
+    document.addEventListener("keydown", function(e) {
+        if (e.key === "Backspace" || e.keyCode === 8) {
+            var target = e.target;
+            var tag = (target && target.tagName) ? target.tagName.toLowerCase() : "";
+            var isEditable = tag === "input" || tag === "textarea" || (target && target.isContentEditable);
+            if (!isEditable) {
+                e.preventDefault();
+            }
+        }
+    });
 });

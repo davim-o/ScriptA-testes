@@ -16,13 +16,24 @@ from .models import (
 AREAS_INFO = {
     "Cenário":     "Planejamento e montagem do ambiente visual do evento.",
     "Staff":       "Organização e gerenciamento da equipe de apoio.",
-    "Figurino":    "Definição e controle das roupas e caracterizações.",
     "Dança":       "Coordenação das apresentações coreográficas.",
+    "Figurino":    "Definição e controle das roupas e caracterizações.",
     "Sonoplastia": "Gerenciamento de músicas, efeitos e áudio do evento.",
     "Tampinhas":   "Gerenciamento e coleta de recursos recicláveis.",
     "Roteiro":     "Estruturação da sequência e organização das apresentações.",
 }
 TODAS_AREAS = list(AREAS_INFO.keys())
+
+AREAS_ICONES = {
+    "Cenário":     "imgs/icone-cenario.png",
+    "Staff":       "imgs/icone-staff.png",
+    "Dança":       "imgs/icone-danca.png",
+    "Figurino":    "imgs/icone-figurino.png",
+    "Sonoplastia": "imgs/icone-sonoplastia.png",
+    "Tampinhas":   "imgs/icone-tampinhas.png",
+    "Roteiro":     "imgs/icone-roteiro.png",
+}
+
 DIRETORIAS = ["Diaren", "Diatinf", "Diacon", "Diacin"]
 ADMIN_MATRICULA = "admin"
 
@@ -39,9 +50,21 @@ def usuario_logado(request):
         return Usuario.objects.get(id=usuario_id)
     except Usuario.DoesNotExist:
         return None
+    except Exception:
+        import time
+        time.sleep(0.05)
+        try:
+            return Usuario.objects.get(id=usuario_id)
+        except Exception:
+            return None
 
 
 def cadastro(request):
+    if "usuario" in request.session:
+        u = usuario_logado(request)
+        if u is not None:
+            return redirect("feed")
+
     contexto = {"erro": None, "form": {}}
     if request.method == "POST":
         matricula = request.POST.get("matricula", "").strip()
@@ -63,6 +86,8 @@ def cadastro(request):
             erro = "Informe a senha."
         elif diretoria not in DIRETORIAS:
             erro = "Selecione uma diretoria."
+        elif not areas_selecionadas:
+            erro = "Selecione pelo menos uma área para participar."
         elif Usuario.objects.filter(matricula=matricula).exists():
             erro = "Essa matrícula já está cadastrada."
 
@@ -86,6 +111,11 @@ def cadastro(request):
 
 
 def login_usuario(request):
+    if "usuario" in request.session:
+        u = usuario_logado(request)
+        if u is not None:
+            return redirect("feed")
+
     erro = None
     if request.method == "POST":
         matricula = request.POST.get("matricula", "").strip()
@@ -186,7 +216,7 @@ def painel_administrativo(request):
     else:
         tarefas = Tarefa.objects.filter(encerrada=False).order_by("-criada_em")
         tarefas_concluidas = Tarefa.objects.none()
-        solicitacoes_area = None
+        solicitacoes_area = SolicitacaoArea.objects.select_related("usuario").order_by("area", "solicitado_em")
 
     return render(request, "admin.html", {
         "usuario": usuario,
@@ -372,7 +402,7 @@ def minhas_tarefas(request, nome_area=None, id_tarefa=None):
     if usuario is None:
         return redirect("login")
     if not nome_area:
-        areas = usuario.get_areas_ordenadas()
+        areas = usuario.get_areas_sidebar()
         if areas:
             return redirect("minhas_tarefas", nome_area=areas[0])
         return redirect("feed")
@@ -497,21 +527,28 @@ def nova_area(request):
     usuario = usuario_logado(request)
     if usuario is None:
         return redirect("login")
-    areas_usuario = usuario.get_areas_list()
-    solicitacoes_pendentes = SolicitacaoArea.objects.filter(usuario=usuario).values_list("area", flat=True)
+    areas_usuario = set(usuario.get_areas_list())
+    solicitacoes_pendentes = set(SolicitacaoArea.objects.filter(usuario=usuario).values_list("area", flat=True))
     areas_com_status = []
-    for area in TODAS_AREAS:
-        if area in areas_usuario:
+    ordem_figma = ["Cenário", "Staff", "Dança", "Figurino", "Sonoplastia", "Tampinhas", "Roteiro"]
+    for area in ordem_figma:
+        if usuario.eh_administrador() or area in areas_usuario:
             status = "membro"
         elif area in solicitacoes_pendentes:
             status = "pendente"
         else:
             status = "livre"
-        areas_com_status.append({"nome": area, "descricao": AREAS_INFO[area], "status": status})
+        areas_com_status.append({
+            "nome": area,
+            "descricao": AREAS_INFO.get(area, ""),
+            "icone": AREAS_ICONES.get(area, "imgs/icone-area.png"),
+            "status": status,
+        })
     return render(request, "nova_area.html", {
         "usuario": usuario,
         "areas_com_status": areas_com_status,
         "pagina_ativa": "nova_area",
+        "area_ativa": "",
     })
 
 
@@ -521,8 +558,18 @@ def solicitar_area(request, nome_area):
         return redirect("login")
     if request.method == "POST" and nome_area in TODAS_AREAS:
         areas_usuario = usuario.get_areas_list()
-        if nome_area not in areas_usuario:
-            SolicitacaoArea.objects.get_or_create(usuario=usuario, area=nome_area)
+        # FA04: Participante já pertence à área
+        if nome_area in areas_usuario:
+            messages.info(request, f"Você já participa da área {nome_area}.")
+            return redirect("nova_area")
+        # FA03: Solicitação já existente
+        ja_solicitado = SolicitacaoArea.objects.filter(usuario=usuario, area=nome_area).exists()
+        if ja_solicitado:
+            messages.info(request, f"Você já possui uma solicitação pendente para {nome_area}.")
+            return redirect("nova_area")
+        # Fluxo Principal: Registra solicitação
+        SolicitacaoArea.objects.create(usuario=usuario, area=nome_area)
+        messages.success(request, f"Solicitação para {nome_area} enviada com sucesso!")
     return redirect("nova_area")
 
 
@@ -531,7 +578,9 @@ def cancelar_solicitacao_area(request, nome_area):
     if usuario is None:
         return redirect("login")
     if request.method == "POST":
+        # FA01: Cancelar Solicitação
         SolicitacaoArea.objects.filter(usuario=usuario, area=nome_area).delete()
+        messages.success(request, f"Solicitação para {nome_area} cancelada.")
     return redirect("nova_area")
 
 
@@ -540,6 +589,12 @@ def sair_da_area(request, nome_area):
     if usuario is None:
         return redirect("login")
     if request.method == "POST":
+        # Validação obrigatória da matrícula para confirmar saída
+        matricula_digitada = request.POST.get("matricula_confirmacao", "").strip()
+        if matricula_digitada != usuario.matricula:
+            messages.error(request, "Matrícula incorreta. A confirmação para sair da área falhou.")
+            return redirect("nova_area")
+
         areas = usuario.get_areas_list()
         if nome_area in areas:
             areas.remove(nome_area)
@@ -548,15 +603,20 @@ def sair_da_area(request, nome_area):
                 usuario.sub_lider = False
                 usuario.sublider_de = None
             usuario.save()
+            messages.success(request, f"Você saiu da área {nome_area} com sucesso.")
+        elif usuario.eh_administrador():
+            messages.info(request, "Como líder geral, seu acesso é total.")
     return redirect("nova_area")
 
 
 def aprovar_solicitacao_area(request, id_solicitacao):
     usuario = usuario_logado(request)
-    if usuario is None or not usuario.sub_lider:
+    if usuario is None or not usuario.tem_acesso_painel():
         return redirect("login")
     if request.method == "POST":
-        sol = get_object_or_404(SolicitacaoArea, id=id_solicitacao, area=usuario.sublider_de)
+        sol = get_object_or_404(SolicitacaoArea, id=id_solicitacao)
+        if not (usuario.eh_administrador() or (usuario.sub_lider and usuario.sublider_de == sol.area)):
+            return redirect("painel_administrativo")
         membro = sol.usuario
         areas = membro.get_areas_list()
         if sol.area not in areas:
@@ -564,16 +624,20 @@ def aprovar_solicitacao_area(request, id_solicitacao):
             membro.areas = ",".join(areas)
             membro.save()
         sol.delete()
+        messages.success(request, f"Solicitação de {membro.matricula} para {sol.area} aprovada!")
     return redirect("painel_administrativo")
 
 
 def recusar_solicitacao_area(request, id_solicitacao):
     usuario = usuario_logado(request)
-    if usuario is None or not usuario.sub_lider:
+    if usuario is None or not usuario.tem_acesso_painel():
         return redirect("login")
     if request.method == "POST":
-        sol = get_object_or_404(SolicitacaoArea, id=id_solicitacao, area=usuario.sublider_de)
+        sol = get_object_or_404(SolicitacaoArea, id=id_solicitacao)
+        if not (usuario.eh_administrador() or (usuario.sub_lider and usuario.sublider_de == sol.area)):
+            return redirect("painel_administrativo")
         sol.delete()
+        messages.success(request, "Solicitação de área recusada.")
     return redirect("painel_administrativo")
 
 
@@ -583,8 +647,17 @@ def aprovar_membro(request, id_usuario):
         return redirect("login")
     if request.method == "POST":
         membro = get_object_or_404(Usuario, id=id_usuario, aprovado=False)
+        # Ao aprovar o membro no sistema, cria as solicitações para os sub-líderes
+        # das áreas selecionadas no cadastro. O membro tem acesso inicial apenas ao
+        # feed e ao editar áreas, desbloqueando as áreas conforme cada sub-líder aprovar.
+        areas_iniciais = membro.get_areas_list()
+        for area_nome in areas_iniciais:
+            if area_nome in TODAS_AREAS:
+                SolicitacaoArea.objects.get_or_create(usuario=membro, area=area_nome)
+        membro.areas = ""
         membro.aprovado = True
         membro.save()
+        messages.success(request, f"Membro {membro.matricula} aprovado no sistema! Solicitações de áreas emitidas para os sub-líderes.")
     return redirect("painel_administrativo")
 
 
@@ -595,6 +668,7 @@ def recusar_membro(request, id_usuario):
     if request.method == "POST":
         membro = get_object_or_404(Usuario, id=id_usuario, aprovado=False)
         membro.delete()
+        messages.success(request, "Cadastro do participante recusado.")
     return redirect("painel_administrativo")
 
 

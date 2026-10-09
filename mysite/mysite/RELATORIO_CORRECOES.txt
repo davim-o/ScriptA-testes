@@ -116,3 +116,25 @@ O banco de dados original foi preservado dentro do projeto.
   * Nas abas e links, a URL reversa de 'minhas_tarefas' foi desambiguada em urls.py (rota sem argumento nomeada como 'minhas_tarefas_padrao'), garantindo que a resolução com argumento de área funcione perfeitamente.
   * Tratamento defensivo nas tags de imagem de suporte e entregas ({% if c.imagem and c.imagem.name %} e {% if tarefa.imagem and tarefa.imagem.name %}) antes de acessar .url, impedindo que tarefas ou entregas sem arquivo associado levantem exceções no Django.
   * Sincronizadas todas as correções entre os diretórios raiz e espelhado (mysite/mysite).
+
+11. RESOLUÇÃO DEFINITIVA DO BUG DE SAÍDA INVOLUNTÁRIA E IMPLEMENTAÇÃO DO CDU EDITAR ÁREA
+- Correção Completa do Bug de Saída Involuntária do Sistema:
+  * Confirmação no Botão "Sair" da Sidebar: adicionado diálogo de confirmação ('onclick="return confirm(...)"') ao link de logout, eliminando o encerramento acidental por clique ou acionamento via teclado (Tab + Enter/Espaço).
+  * Bloqueio de Navegação por Backspace: adicionado ouvinte no toast.js que bloqueia a ação padrão do Backspace fora de campos editáveis (inputs/textareas), impedindo que o navegador volte para a tela de login.
+  * Redirecionamento Inteligente de Usuário Autenticado: se o usuário já estiver logado e navegar para "/" ou "/cadastro/", ele é redirecionado imediatamente para "/feed/", evitando a falsa impressão de deslogamento.
+  * Tolerância a Bloqueio de Concorrência no SQLite: tratamento no método 'usuario_logado' com retentativa suave para garantir que transações concorrentes ou requisições de polling em segundo plano não anulem a sessão do usuário.
+  * Eliminação de 'window.location.reload()' no Painel: a função 'atualizarContadores()' agora altera os elementos dinamicamente no DOM sem forçar o recarregamento da página, impedindo que a tela seja reiniciada inesperadamente durante a navegação.
+- Implementação do CDU Editar Área / Nova Área (Fidelidade ao Figma e Especificação):
+  * Criados o template 'nova_area.html' e a folha de estilos 'nova_area.css', seguindo com exatidão o visual do Figma (cards escuros com bordas roxas suaves, ícones temáticos e botões de ação).
+  * Ícones correspondentes de todas as 7 áreas (Cenário, Staff, Dança, Figurino, Sonoplastia, Tampinhas, Roteiro) e o ícone de Editar Área integrados em 'imgs/'.
+  * Fluxo Principal (Solicitar Entrada): botão roxo "Solicitar" registra a solicitação e passa para o estado "Cancelar Solicitação".
+  * FA01 (Cancelar Solicitação): botão demarcado que remove a solicitação pendente e retorna para "Solicitar".
+  * FA02 (Sair da Área com Confirmação e Matrícula): modal de segurança que pergunta "Tem certeza que deseja sair da área [Nome]?" e requer a digitação da matrícula para confirmação. Validação implementada no cliente e no servidor.
+  * FA03 e FA04 (Regras de Negócio): impedimento de solicitações duplicadas e áreas já pertencentes ao usuário.
+  * Gestão e Desbloqueio Gradual de Áreas:
+    - Ao ser aprovado pelo Administrador, o membro passa a ter acesso ao Feed e à página de Editar Área.
+    - As áreas selecionadas no cadastro geram automaticamente solicitações de entrada ('SolicitacaoArea') para os sub-líderes correspondentes.
+    - O sub-líder (e o admin) visualiza as solicitações no Painel Administrativo ('admin.html') em um card visualmente idêntico ao de Aprovação de Membros (avatar, matrícula, diretoria e botões verde/vermelho).
+    - Apenas após a aprovação pelo sub-líder a área é adicionada ao membro e desbloqueada em seu menu lateral.
+  * Menu Lateral Dinâmico: a sidebar exibe somente as áreas já desbloqueadas pelo membro, além do link direto para "Editar área" com ícone circular estilizado.
+  * Sincronização integral de todos os arquivos modificados entre 'mysite/' e 'mysite/mysite/'.

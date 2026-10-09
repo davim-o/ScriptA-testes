@@ -77,6 +77,42 @@
 
         <section class="painel-card">
             <div class="card-header">
+                <img src="{% static 'imgs/icone-area.png' %}" alt="">
+                <h2>Solicitações de entrada nas áreas</h2>
+            </div>
+            <div class="lista-itens">
+                {% for sol in solicitacoes_area %}
+                <div class="item-linha">
+                    <div class="info-principal">
+                        <div class="avatar avatar-roxo">{{ sol.usuario.matricula|first|upper }}</div>
+                        <div class="textos">
+                            <h3>{{ sol.usuario.matricula }}</h3>
+                            <p>{{ sol.usuario.diretoria }} — Área: {{ sol.area }}</p>
+                        </div>
+                    </div>
+                    <div class="acoes">
+                        <form action="{% url 'aprovar_solicitacao_area' sol.id %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-icon" title="Aprovar entrada">
+                                <img src="{% static 'imgs/icone-check-verde.png' %}" alt="Aprovar">
+                            </button>
+                        </form>
+                        <form action="{% url 'recusar_solicitacao_area' sol.id %}" method="POST" onsubmit="return confirm('Deseja recusar esta solicitação?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-icon" title="Recusar entrada">
+                                <img src="{% static 'imgs/icone-cross-vermelho.png' %}" alt="Recusar">
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="sem-itens">Nenhuma solicitação de área pendente.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="painel-card">
+            <div class="card-header">
                 <img src="{% static 'imgs/icone-promover.png' %}" alt="">
                 <h2>Promover Sub-Líderes</h2>
             </div>
@@ -160,6 +196,45 @@
                 </div>
                 {% empty %}
                 <p class="sem-itens">Nenhum membro aprovado ainda.</p>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- ── Solicitações de Entrada na Área (Sub-Líder) ── -->
+        {% if usuario.sub_lider %}
+        <section class="painel-card">
+            <div class="card-header">
+                <img src="{% static 'imgs/icone-area.png' %}" alt="">
+                <h2>Solicitações de entrada na área ({{ usuario.sublider_de }})</h2>
+            </div>
+            <div class="lista-itens">
+                {% for sol in solicitacoes_area %}
+                <div class="item-linha">
+                    <div class="info-principal">
+                        <div class="avatar avatar-roxo">{{ sol.usuario.matricula|first|upper }}</div>
+                        <div class="textos">
+                            <h3>{{ sol.usuario.matricula }}</h3>
+                            <p>{{ sol.usuario.diretoria }}</p>
+                        </div>
+                    </div>
+                    <div class="acoes">
+                        <form action="{% url 'aprovar_solicitacao_area' sol.id %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-icon" title="Aprovar entrada">
+                                <img src="{% static 'imgs/icone-check-verde.png' %}" alt="Aprovar">
+                            </button>
+                        </form>
+                        <form action="{% url 'recusar_solicitacao_area' sol.id %}" method="POST" onsubmit="return confirm('Deseja recusar esta solicitação?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-icon" title="Recusar entrada">
+                                <img src="{% static 'imgs/icone-cross-vermelho.png' %}" alt="Recusar">
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="sem-itens">Nenhuma solicitação pendente para sua área.</p>
                 {% endfor %}
             </div>
         </section>
@@ -503,15 +578,20 @@ function atualizarStatsPainel() {
 function atualizarContadores() {
     document.querySelectorAll("[data-status-url]").forEach(function(elemento) {
         fetch(elemento.dataset.statusUrl)
-            .then(function(response) { return response.json(); })
+            .then(function(response) {
+                if (!response.ok) return null;
+                return response.json();
+            })
             .then(function(dados) {
+                if (!dados) return;
                 if (elemento.classList.contains("badge-concluida")) {
                     elemento.textContent = "✓ Concluída por " + dados.concluidos + "/" + dados.limite;
                 } else {
                     elemento.textContent = dados.concluidos + "/" + dados.limite + " concluíram";
                 }
                 if (dados.encerrada && !elemento.classList.contains("badge-concluida")) {
-                    window.location.reload();
+                    elemento.classList.add("badge-concluida");
+                    elemento.textContent = "✓ Concluída por " + dados.concluidos + "/" + dados.limite;
                 }
             })
             .catch(function(err) {});

@@ -28,8 +28,17 @@ class Usuario(models.Model):
             areas = [self.sublider_de] + [a for a in areas if a != self.sublider_de]
         return areas
 
+    def get_areas_sidebar(self):
+        if self.eh_administrador():
+            return ["Cenário", "Staff", "Dança", "Figurino", "Sonoplastia", "Roteiro"]
+        return self.get_areas_ordenadas()
+
     def tem_acesso_area(self, area):
-        return True
+        if self.eh_administrador():
+            return True
+        if self.sub_lider and self.sublider_de == area:
+            return True
+        return area in self.get_areas_list()
 
     def __str__(self):
         return self.matricula
