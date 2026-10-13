@@ -21,6 +21,14 @@
             <h1>Painel Administrativo</h1>
         </div>
 
+        {% if messages %}
+            <div style="display:none;">
+                {% for message in messages %}
+                    <div class="msg msg-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
 
 
         <section class="stats-grid">
@@ -123,7 +131,7 @@
                         <label>Matrícula</label>
                         <div class="input-with-icon">
                             <img src="{% static 'imgs/icone-usuario.png' %}" alt="">
-                            <input type="text" name="matricula" placeholder="Digite o nome..." required>
+                            <input type="text" name="matricula" placeholder="Digite a matrícula..." required>
                         </div>
                     </div>
                     <div class="form-group">
@@ -143,11 +151,6 @@
                     </div>
                 </div>
                 <div class="form-actions" style="display: flex; align-items: center; justify-content: flex-end; gap: 15px;">
-                    {% if messages %}
-                        {% for msg in messages %}
-                            <p class="msg-text-{{ msg.tags }}" style="margin: 0; font-size: 13px; font-weight: 500; {% if msg.tags == 'error' %}color: #e89090;{% else %}color: #81c784;{% endif %}">{{ msg }}</p>
-                        {% endfor %}
-                    {% endif %}
                     <button type="submit" class="btn-roxo">Promover</button>
                 </div>
             </form>
@@ -598,8 +601,8 @@ function atualizarContadores() {
     });
 }
 
-setInterval(atualizarStatsPainel, 4000);
-setInterval(atualizarContadores, 5000);
+setInterval(atualizarStatsPainel, 12000);
+setInterval(atualizarContadores, 15000);
 </script>
 
 <script src="{% static 'js/toast.js' %}"></script>

@@ -12,7 +12,9 @@ class Usuario(models.Model):
     doacao_tampinhas=models.FloatField(default=0)
 
     def eh_administrador(self):
-        return self.matricula=="admin" or self.diretoria=="Líder"
+        mat = (self.matricula or "").strip().lower()
+        diret = (self.diretoria or "").strip().lower()
+        return mat == "admin" or diret in ["líder", "lider", "líder geral", "lider geral"]
 
     def tem_acesso_painel(self):
         return self.eh_administrador() or self.sub_lider

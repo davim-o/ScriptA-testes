@@ -138,3 +138,21 @@ O banco de dados original foi preservado dentro do projeto.
     - Apenas após a aprovação pelo sub-líder a área é adicionada ao membro e desbloqueada em seu menu lateral.
   * Menu Lateral Dinâmico: a sidebar exibe somente as áreas já desbloqueadas pelo membro, além do link direto para "Editar área" com ícone circular estilizado.
   * Sincronização integral de todos os arquivos modificados entre 'mysite/' e 'mysite/mysite/'.
+
+12. CORREÇÃO DEFINITIVA DE MENSAGENS REPETITIVAS, TROCA DE USUÁRIO E LOGOUT INVOLUNTÁRIO
+- Eliminação de Mensagens de Confirmação Repetitivas e Desnecessárias:
+  * Remoção do bloco duplicado de mensagens em 'admin.html': o formulário de promover sub-líder continha uma reiteração redundante ({% for msg in messages %}) que exibia qualquer mensagem de ação duas vezes (uma no toast e outra em texto fixo dentro do formulário).
+  * Deduplicação estrita no 'toast.js': implementado controle com 'Set' para mensagens ativas ('mensagensAtivas') e mensagens processadas no DOM ('mensagensProcessadas'). Mensagens idênticas nunca são empilhadas simultaneamente.
+  * Proteção contra duplo clique (Double-Submit): formulários agora desabilitam o botão de envio imediatamente após o acionamento, impedindo que cliques rápidos disparem requisições duplicadas e mensagens repetidas.
+  * Limpeza imediata no DOM: os elementos '.msg' do Django são removidos do DOM assim que o toast é acionado, eliminando qualquer reprocessamento por scripts.
+- Prevenção Definitiva de Troca de Usuários ("Teletransporte" de Contas):
+  * Substituição de 'flush()' por 'cycle_key()' no Login: 'request.session.flush()' excluía fisicamente o registro de sessão e disparava cabeçalhos de remoção de cookie no navegador, provocando instabilidade e reaproveitamento de cookies residuais entre abas. O login agora utiliza 'request.session.cycle_key()', 'clear()', 'modified = True' e vinculação estrita de usuário.
+  * Reafirmação da Sessão Ativa em Ações Administrativas: todas as ações de aprovação, recusa, promoção e criação de tarefas reafirmam explicitamente 'request.session["usuario"] = usuario.id' e 'request.session.modified = True', garantindo que o ID do membro aprovado (ex: 202403) jamais substitua o ID do administrador logado.
+  * Redirecionamento de Acesso ao Painel: caso um usuário não possua permissão para o painel, o redirecionamento agora vai para 'feed' em vez de criar ciclos que forçam o retorno a telas incorretas.
+- Eliminação de Logout Involuntário em Botões Aleatórios:
+  * Cache de Usuário por Requisição ('_cached_usuario'): 'usuario_logado(request)' agora armazena o objeto autenticado no ciclo da requisição, evitando múltiplas consultas repetitivas ao banco durante a mesma ação.
+  * Retentativas com Tolerância a Travamentos no SQLite: ampliado o timeout do banco para 60 segundos em todas as configurações ('settings.py') e implementadas 3 tentativas com pausas defensivas em 'usuario_logado' antes de qualquer falha.
+  * Polling Otimizado e Puramente de Leitura:
+    - Intervalo de atualização de stats aumentado de 4s para 12s, e o de tarefas de 5s para 15s em 'admin.html', reduzindo drasticamente o tráfego concorrente sobre o SQLite no Codespaces.
+    - O endpoint 'status_tarefa' tornou-se uma consulta puramente de leitura (sem invocar 'tarefa.save()' em requisições GET periódicas), extinguindo as travas de escrita invisíveis que derrubavam as sessões.
+  * Correção de Rotas com Logout Forçado: rotas como 'criar_tarefa' e 'editar_tarefa' redirecionavam para 'login' caso o usuário não fosse sub-líder. Agora permitem acesso ao administrador e redirecionam para 'painel_administrativo' com mensagem de aviso quando não autorizado, mantendo o usuário devidamente conectado à sua conta.
