@@ -32,7 +32,7 @@ class Usuario(models.Model):
 
     def get_areas_sidebar(self):
         if self.eh_administrador():
-            return ["Cenário", "Staff", "Dança", "Figurino", "Sonoplastia", "Roteiro"]
+            return ["Cenário", "Staff", "Dança", "Figurino", "Sonoplastia", "Tampinhas", "Roteiro"]
         return self.get_areas_ordenadas()
 
     def tem_acesso_area(self, area):
@@ -171,3 +171,16 @@ class ConclusaoTarefa(models.Model):
 
     def __str__(self):
         return f"{self.usuario.matricula} concluiu {self.tarefa.titulo}"
+
+
+class DoacaoTampinhas(models.Model):
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="doacoes_tampinhas")
+    quantidade_gramas = models.PositiveIntegerField()
+    registrado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name="doacoes_registradas")
+    data_registro = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-data_registro"]
+
+    def __str__(self):
+        return f"{self.quantidade_gramas}g para {self.usuario.matricula}"

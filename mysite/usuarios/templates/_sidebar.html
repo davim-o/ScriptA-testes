@@ -16,6 +16,11 @@
                 <span>Feed</span>
             </a>
 
+            <a href="{% url 'tampinhas' %}" class="{% if pagina_ativa == 'tampinhas' %}ativo{% endif %}">
+                <img src="{% static 'imgs/icone-tampinhas.png' %}" alt="Tampinhas">
+                <span>Tampinhas</span>
+            </a>
+
             <a href="{% static 'imgs/icone-feed.png' %}" style="display:none"></a><!-- separador visual -->
 
             {% if usuario.tem_acesso_painel %}

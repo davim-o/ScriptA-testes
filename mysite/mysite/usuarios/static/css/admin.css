@@ -887,3 +887,54 @@
         width: 100%;
     }
 }
+
+/* ── Card Registrar Doação ── */
+.form-doacao {
+    display: flex;
+    flex-direction: column;
+    max-width: 600px;
+}
+
+.select-doacao,
+.input-doacao {
+    background: #111323;
+    border: 1px solid #2d3150;
+    color: white;
+    padding: 13px 16px;
+    border-radius: 8px;
+    outline: none;
+    font-size: 14px;
+    width: 100%;
+    transition: border-color 0.2s;
+}
+
+.select-doacao:focus,
+.input-doacao:focus {
+    border-color: #7a5cff;
+}
+
+.select-doacao {
+    appearance: none;
+    background-image: url('../imgs/seta-baixo.png');
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 12px;
+    cursor: pointer;
+}
+
+.select-doacao option {
+    background: #1a1e34;
+    color: white;
+}
+
+.hint-doacao {
+    font-size: 11px;
+    color: #7b83a6;
+    margin-top: 5px;
+    display: block;
+}
+
+.form-actions-left {
+    display: flex;
+    justify-content: flex-start;
+}

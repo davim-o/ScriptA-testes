@@ -4,13 +4,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 # pyrefly: ignore [missing-import]
 from django.contrib.auth.hashers import make_password, check_password
+from decimal import Decimal
 # pyrefly: ignore [missing-import]
-from django.db import models, IntegrityError
+from django.db import models, IntegrityError, transaction
 from django.db.models import Count, Q, F
 from django.contrib import messages
 from .models import (
     Usuario, Publicacao, Curtida, Tarefa, ParticipacaoTarefa,
-    SolicitacaoArea, ObservacaoTarefa, ConclusaoTarefa
+    SolicitacaoArea, ObservacaoTarefa, ConclusaoTarefa, DoacaoTampinhas
 )
 
 AREAS_INFO = {
@@ -36,6 +37,41 @@ AREAS_ICONES = {
 
 DIRETORIAS = ["Diaren", "Diatinf", "Diacon", "Diacin"]
 ADMIN_MATRICULA = "admin"
+META_TAMPINHAS_KG = Decimal("40.0")
+
+
+def formatar_kg(valor, is_gramas=True):
+    if valor is None:
+        return "0Kg"
+    if is_gramas:
+        d = Decimal(str(valor)) / Decimal("1000")
+    else:
+        d = Decimal(str(valor))
+    s = f"{d:.3f}".rstrip("0").rstrip(".")
+    if not s or s == "-0":
+        s = "0"
+    return f"{s}Kg"
+
+
+def obter_total_doacoes_kg_formatado(com_unidade=True):
+    total_gramas = DoacaoTampinhas.objects.filter(
+        usuario__aprovado=True
+    ).exclude(
+        usuario__matricula="admin"
+    ).aggregate(total=models.Sum("quantidade_gramas"))["total"]
+
+    if total_gramas is None:
+        total_kg = Usuario.objects.filter(aprovado=True).exclude(
+            matricula="admin"
+        ).aggregate(total=models.Sum("doacao_tampinhas"))["total"] or 0
+        d = Decimal(str(total_kg))
+    else:
+        d = Decimal(total_gramas) / Decimal("1000")
+
+    s = f"{d:.3f}".rstrip("0").rstrip(".")
+    if not s or s == "-0":
+        s = "0"
+    return f"{s}Kg" if com_unidade else s
 
 
 def matricula_valida(matricula):
@@ -209,7 +245,8 @@ def painel_administrativo(request):
 
     membros = Usuario.objects.filter(aprovado=True).order_by("matricula")
     pendentes = Usuario.objects.filter(aprovado=False).order_by("matricula")
-    total_doacoes = membros.aggregate(total=models.Sum("doacao_tampinhas"))["total"] or 0
+    total_doacoes = obter_total_doacoes_kg_formatado(com_unidade=False)
+    membros_elegiveis_doacao = [m for m in membros if not m.eh_administrador()]
 
     if usuario.sub_lider:
         tarefas_base = Tarefa.objects.filter(area=usuario.sublider_de).prefetch_related("conclusoes")
@@ -234,6 +271,7 @@ def painel_administrativo(request):
         "total_membros": membros.count(),
         "total_pendentes": pendentes.count(),
         "total_doacoes": total_doacoes,
+        "membros_elegiveis_doacao": membros_elegiveis_doacao,
         "tarefas": tarefas,
         "tarefas_concluidas": tarefas_concluidas,
         "solicitacoes_area": solicitacoes_area,
@@ -246,13 +284,166 @@ def stats_painel(request):
         return JsonResponse({"erro": "Não autorizado"}, status=403)
     total_membros = Usuario.objects.filter(aprovado=True).count()
     total_pendentes = Usuario.objects.filter(aprovado=False).count()
-    total_doacoes = Usuario.objects.filter(aprovado=True).aggregate(
-        total=models.Sum("doacao_tampinhas")
-    )["total"] or 0
+    doacoes_formatado = obter_total_doacoes_kg_formatado(com_unidade=True)
     return JsonResponse({
         "membros": total_membros,
         "pendentes": total_pendentes,
-        "doacoes": f"{total_doacoes}Kg",
+        "doacoes": doacoes_formatado,
+    })
+
+
+def registrar_doacao(request):
+    usuario = usuario_logado(request)
+    if usuario is None:
+        return redirect("login")
+
+    # Apenas o sub-líder da área Tampinhas pode registrar doações
+    if usuario.eh_administrador() or not (usuario.sub_lider and usuario.sublider_de == "Tampinhas"):
+        messages.error(request, "Apenas o sub-líder da área Tampinhas pode registrar doações.")
+        if usuario.tem_acesso_painel():
+            return redirect("painel_administrativo")
+        return redirect("feed")
+
+    if request.method != "POST":
+        return redirect("painel_administrativo")
+
+    membro_id = request.POST.get("membro_id")
+    if not membro_id:
+        messages.error(request, "Selecione um membro para receber a doação.")
+        return redirect("painel_administrativo")
+
+    try:
+        membro = Usuario.objects.get(id=membro_id)
+    except (Usuario.DoesNotExist, ValueError):
+        messages.error(request, "Membro selecionado não encontrado.")
+        return redirect("painel_administrativo")
+
+    if not membro.aprovado or membro.eh_administrador():
+        messages.error(request, "Apenas membros aprovados e não administradores podem receber doações.")
+        return redirect("painel_administrativo")
+
+    qtd_str = request.POST.get("quantidade", "").strip()
+    if not qtd_str:
+        messages.error(request, "Informe a quantidade em gramas.")
+        return redirect("painel_administrativo")
+
+    if not qtd_str.isdigit():
+        messages.error(request, "A quantidade deve ser um número inteiro positivo entre 1 e 100.000 gramas.")
+        return redirect("painel_administrativo")
+
+    try:
+        qtd_gramas = int(qtd_str)
+    except (ValueError, TypeError):
+        messages.error(request, "Quantidade inválida.")
+        return redirect("painel_administrativo")
+
+    if qtd_gramas < 1 or qtd_gramas > 100000:
+        messages.error(request, "A quantidade deve ser um número inteiro positivo entre 1 e 100.000 gramas.")
+        return redirect("painel_administrativo")
+
+    try:
+        with transaction.atomic():
+            DoacaoTampinhas.objects.create(
+                usuario=membro,
+                quantidade_gramas=qtd_gramas,
+                registrado_por=usuario,
+            )
+            total_membro_gramas = DoacaoTampinhas.objects.filter(usuario=membro).aggregate(
+                tot=models.Sum("quantidade_gramas")
+            )["tot"] or 0
+            membro.doacao_tampinhas = round(float(total_membro_gramas) / 1000.0, 4)
+            membro.save(update_fields=["doacao_tampinhas"])
+    except Exception as e:
+        messages.error(request, f"Erro ao registrar doação: {str(e)}")
+        return redirect("painel_administrativo")
+
+    novo_total_formatado = formatar_kg(total_membro_gramas, is_gramas=True)
+    messages.success(
+        request,
+        f"Doação de {qtd_gramas}g registrada com sucesso para {membro.matricula}! Novo total: {novo_total_formatado}."
+    )
+    return redirect("painel_administrativo")
+
+
+def tampinhas(request):
+    usuario = usuario_logado(request)
+    if usuario is None:
+        return redirect("login")
+
+    meta_kg = META_TAMPINHAS_KG
+
+    total_gramas_geral = DoacaoTampinhas.objects.filter(
+        usuario__aprovado=True
+    ).exclude(
+        usuario__matricula="admin"
+    ).aggregate(tot=models.Sum("quantidade_gramas"))["tot"]
+
+    if total_gramas_geral is None:
+        total_kg_db = Usuario.objects.filter(aprovado=True).exclude(
+            matricula="admin"
+        ).aggregate(tot=models.Sum("doacao_tampinhas"))["tot"] or 0
+        total_geral_d = Decimal(str(total_kg_db))
+    else:
+        total_geral_d = Decimal(total_gramas_geral) / Decimal("1000")
+
+    s_tot = f"{total_geral_d:.3f}".rstrip("0").rstrip(".")
+    if not s_tot or s_tot == "-0":
+        s_tot = "0"
+    total_geral_kg = f"{s_tot}Kg"
+
+    if meta_kg > 0:
+        progresso_porcentagem = min(100.0, float((total_geral_d / meta_kg) * Decimal("100")))
+    else:
+        progresso_porcentagem = 0.0
+
+    membros = Usuario.objects.filter(aprovado=True).exclude(matricula="admin")
+    membros_validos = [m for m in membros if not m.eh_administrador()]
+
+    ranking = []
+    for m in membros_validos:
+        tot_g = DoacaoTampinhas.objects.filter(usuario=m).aggregate(
+            tot=models.Sum("quantidade_gramas")
+        )["tot"]
+        if tot_g is None and m.doacao_tampinhas > 0:
+            tot_g = int(Decimal(str(m.doacao_tampinhas)) * Decimal("1000"))
+
+        if tot_g and tot_g > 0:
+            d_membro = Decimal(tot_g) / Decimal("1000")
+            s_membro = f"{d_membro:.3f}".rstrip("0").rstrip(".")
+            if not s_membro or s_membro == "-0":
+                s_membro = "0"
+            ranking.append({
+                "usuario": m,
+                "matricula": m.matricula,
+                "total_gramas": tot_g,
+                "total_kg": d_membro,
+                "total_formatado": f"{s_membro}Kg",
+            })
+
+    # Ordenação decrescente de doações, desempate por matrícula crescente
+    ranking.sort(key=lambda x: (-x["total_gramas"], x["matricula"]))
+
+    primeiro = ranking[0] if len(ranking) > 0 else None
+    segundo = ranking[1] if len(ranking) > 1 else None
+    terceiro = ranking[2] if len(ranking) > 2 else None
+
+    demais_participantes = []
+    for idx, item in enumerate(ranking[3:], start=4):
+        item_com_posicao = dict(item)
+        item_com_posicao["posicao"] = idx
+        demais_participantes.append(item_com_posicao)
+
+    return render(request, "tampinhas.html", {
+        "usuario": usuario,
+        "total_geral_kg": total_geral_kg,
+        "progresso_porcentagem": progresso_porcentagem,
+        "meta_kg": meta_kg,
+        "primeiro": primeiro,
+        "segundo": segundo,
+        "terceiro": terceiro,
+        "demais_participantes": demais_participantes,
+        "total_participantes": len(ranking),
+        "pagina_ativa": "tampinhas",
     })
 
 

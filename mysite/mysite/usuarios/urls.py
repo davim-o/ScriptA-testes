@@ -10,9 +10,13 @@ urlpatterns=[
     path("excluir/<int:id_publicacao>/", views.excluir_publicacao, name="excluir_publicacao"),
     path("sair/", views.sair, name="sair"),
 
+    # Tampinhas
+    path("tampinhas/", views.tampinhas, name="tampinhas"),
+
     # Painel
     path("painel-administrativo/", views.painel_administrativo, name="painel_administrativo"),
     path("painel-administrativo/stats/", views.stats_painel, name="stats_painel"),
+    path("painel-administrativo/registrar-doacao/", views.registrar_doacao, name="registrar_doacao"),
     path("painel-administrativo/aprovar/<int:id_usuario>/", views.aprovar_membro, name="aprovar_membro"),
     path("painel-administrativo/recusar/<int:id_usuario>/", views.recusar_membro, name="recusar_membro"),
     path("painel-administrativo/promover/", views.promover_sublider, name="promover_sublider"),

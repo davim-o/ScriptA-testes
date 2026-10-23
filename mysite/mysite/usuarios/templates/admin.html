@@ -145,6 +145,7 @@
                                 <option value="Figurino">Figurino</option>
                                 <option value="Dança">Dança</option>
                                 <option value="Sonoplastia">Sonoplastia</option>
+                                <option value="Tampinhas">Tampinhas</option>
                                 <option value="Roteiro">Roteiro</option>
                             </select>
                         </div>
@@ -240,6 +241,39 @@
                 <p class="sem-itens">Nenhuma solicitação pendente para sua área.</p>
                 {% endfor %}
             </div>
+        </section>
+        {% endif %}
+
+        <!-- ── Registrar Doação (Apenas Sub-Líder da área Tampinhas) ── -->
+        {% if usuario.sub_lider and usuario.sublider_de == 'Tampinhas' %}
+        <section class="painel-card" id="card-registrar-doacao">
+            <div class="card-header">
+                <img src="{% static 'imgs/icone-tarefa.png' %}" alt="">
+                <h2>Registrar doação</h2>
+            </div>
+
+            <form class="form-doacao" action="{% url 'registrar_doacao' %}" method="POST" id="form-registrar-doacao">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="select-membro-doacao">Selecionar Membro</label>
+                    <select name="membro_id" id="select-membro-doacao" class="select-doacao" required>
+                        <option value="" disabled selected>Selecione um membro...</option>
+                        {% for membro_item in membros_elegiveis_doacao %}
+                            <option value="{{ membro_item.id }}">{{ membro_item.matricula }} - {{ membro_item.diretoria }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-top: 16px;">
+                    <label for="input-qtd-doacao">Quantidade (gramas)</label>
+                    <input type="number" name="quantidade" id="input-qtd-doacao" class="input-doacao" placeholder="Ex: 500" min="1" max="100000" step="1" required>
+                    <span class="hint-doacao">Informe um número inteiro positivo entre 1 e 100.000 gramas.</span>
+                </div>
+
+                <div class="form-actions-left" style="margin-top: 20px;">
+                    <button type="submit" class="btn-roxo">Registrar</button>
+                </div>
+            </form>
         </section>
         {% endif %}
 
