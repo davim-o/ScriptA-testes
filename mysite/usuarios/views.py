@@ -74,6 +74,23 @@ def obter_total_doacoes_kg_formatado(com_unidade=True):
     return f"{s}Kg" if com_unidade else s
 
 
+def limpar_mensagens(request):
+    """Consome e esvazia mensagens pendentes na sessão para evitar notificações acumuladas ou incompatíveis."""
+    try:
+        storage = messages.get_messages(request)
+        for _ in storage:
+            pass
+        storage.used = True
+    except Exception:
+        pass
+
+
+def definir_mensagem(request, nivel_fn, texto):
+    """Garante que apenas uma única notificação correspondente à ação atual seja emitida."""
+    limpar_mensagens(request)
+    nivel_fn(request, texto)
+
+
 def matricula_valida(matricula):
     return True
 
@@ -81,13 +98,19 @@ def matricula_valida(matricula):
 def usuario_logado(request):
     if hasattr(request, "_cached_usuario") and request._cached_usuario is not None:
         return request._cached_usuario
-    usuario_id = request.session.get("usuario")
+    try:
+        usuario_id = request.session.get("usuario")
+    except Exception:
+        usuario_id = None
     if not usuario_id:
         request._cached_usuario = None
         return None
-    for _ in range(3):
+    for tentativa in range(5):
         try:
             u = Usuario.objects.get(id=usuario_id)
+            if not u.aprovado and not u.eh_administrador():
+                request._cached_usuario = None
+                return None
             request._cached_usuario = u
             return u
         except Usuario.DoesNotExist:
@@ -95,9 +118,10 @@ def usuario_logado(request):
             return None
         except Exception:
             import time
-            time.sleep(0.08)
+            time.sleep(0.1 * (tentativa + 1))
     request._cached_usuario = None
     return None
+
 
 
 def cadastro(request):
@@ -171,8 +195,8 @@ def login_usuario(request):
                 if not usuario.aprovado:
                     erro = "Seu cadastro ainda está aguardando aprovação da diretoria."
                 else:
-                    request.session.cycle_key()
-                    request.session.clear()
+                    limpar_mensagens(request)
+                    request.session.flush()
                     request.session["usuario"] = usuario.id
                     request.session.modified = True
                     request._cached_usuario = usuario
@@ -299,7 +323,7 @@ def registrar_doacao(request):
 
     # Apenas o sub-líder da área Tampinhas pode registrar doações
     if usuario.eh_administrador() or not (usuario.sub_lider and usuario.sublider_de == "Tampinhas"):
-        messages.error(request, "Apenas o sub-líder da área Tampinhas pode registrar doações.")
+        definir_mensagem(request, messages.error, "Apenas o sub-líder da área Tampinhas pode registrar doações.")
         if usuario.tem_acesso_painel():
             return redirect("painel_administrativo")
         return redirect("feed")
@@ -309,36 +333,36 @@ def registrar_doacao(request):
 
     membro_id = request.POST.get("membro_id")
     if not membro_id:
-        messages.error(request, "Selecione um membro para receber a doação.")
+        definir_mensagem(request, messages.error, "Selecione um membro para receber a doação.")
         return redirect("painel_administrativo")
 
     try:
         membro = Usuario.objects.get(id=membro_id)
     except (Usuario.DoesNotExist, ValueError):
-        messages.error(request, "Membro selecionado não encontrado.")
+        definir_mensagem(request, messages.error, "Membro selecionado não encontrado.")
         return redirect("painel_administrativo")
 
     if not membro.aprovado or membro.eh_administrador():
-        messages.error(request, "Apenas membros aprovados e não administradores podem receber doações.")
+        definir_mensagem(request, messages.error, "Apenas membros aprovados e não administradores podem receber doações.")
         return redirect("painel_administrativo")
 
     qtd_str = request.POST.get("quantidade", "").strip()
     if not qtd_str:
-        messages.error(request, "Informe a quantidade em gramas.")
+        definir_mensagem(request, messages.error, "Informe a quantidade em gramas.")
         return redirect("painel_administrativo")
 
     if not qtd_str.isdigit():
-        messages.error(request, "A quantidade deve ser um número inteiro positivo entre 1 e 100.000 gramas.")
+        definir_mensagem(request, messages.error, "A quantidade deve ser um número inteiro positivo entre 1 e 100.000 gramas.")
         return redirect("painel_administrativo")
 
     try:
         qtd_gramas = int(qtd_str)
     except (ValueError, TypeError):
-        messages.error(request, "Quantidade inválida.")
+        definir_mensagem(request, messages.error, "Quantidade inválida.")
         return redirect("painel_administrativo")
 
     if qtd_gramas < 1 or qtd_gramas > 100000:
-        messages.error(request, "A quantidade deve ser um número inteiro positivo entre 1 e 100.000 gramas.")
+        definir_mensagem(request, messages.error, "A quantidade deve ser um número inteiro positivo entre 1 e 100.000 gramas.")
         return redirect("painel_administrativo")
 
     try:
@@ -354,12 +378,13 @@ def registrar_doacao(request):
             membro.doacao_tampinhas = round(float(total_membro_gramas) / 1000.0, 4)
             membro.save(update_fields=["doacao_tampinhas"])
     except Exception as e:
-        messages.error(request, f"Erro ao registrar doação: {str(e)}")
+        definir_mensagem(request, messages.error, f"Erro ao registrar doação: {str(e)}")
         return redirect("painel_administrativo")
 
     novo_total_formatado = formatar_kg(total_membro_gramas, is_gramas=True)
-    messages.success(
+    definir_mensagem(
         request,
+        messages.success,
         f"Doação de {qtd_gramas}g registrada com sucesso para {membro.matricula}! Novo total: {novo_total_formatado}."
     )
     return redirect("painel_administrativo")
@@ -452,7 +477,7 @@ def criar_tarefa(request):
     if usuario is None:
         return redirect("login")
     if not (usuario.eh_administrador() or usuario.sub_lider):
-        messages.error(request, "Acesso não autorizado.")
+        definir_mensagem(request, messages.error, "Acesso não autorizado.")
         return redirect("painel_administrativo")
     if request.method == "POST":
         tipo = request.POST.get("tipo", "fixa")
@@ -463,7 +488,7 @@ def criar_tarefa(request):
             limite = 0
 
         if tipo not in {"fixa", "prolongada"} or not titulo or limite < 1:
-            messages.error(request, "Preencha os dados da tarefa corretamente.")
+            definir_mensagem(request, messages.error, "Preencha os dados da tarefa corretamente.")
             return redirect("painel_administrativo")
 
         area_tarefa = (usuario.sublider_de or request.POST.get("area", "") or "Cenário").strip()
@@ -482,7 +507,7 @@ def criar_tarefa(request):
             tarefa.data_inicio = request.POST.get("data_inicio") or None
             tarefa.data_fim = request.POST.get("data_fim") or None
             if tarefa.data_inicio and tarefa.data_fim and tarefa.data_fim < tarefa.data_inicio:
-                messages.error(request, "O prazo não pode ser anterior à data inicial.")
+                definir_mensagem(request, messages.error, "O prazo não pode ser anterior à data inicial.")
                 return redirect("painel_administrativo")
         if "imagem" in request.FILES:
             tarefa.imagem = request.FILES["imagem"]
@@ -490,7 +515,7 @@ def criar_tarefa(request):
         ParticipacaoTarefa.objects.get_or_create(usuario=usuario, tarefa=tarefa)
         request.session["usuario"] = usuario.id
         request.session.modified = True
-        messages.success(request, f"Tarefa \"{titulo}\" criada com sucesso!")
+        definir_mensagem(request, messages.success, f"Tarefa \"{titulo}\" criada com sucesso!")
     return redirect("painel_administrativo")
 
 
@@ -499,7 +524,7 @@ def editar_tarefa(request, id_tarefa):
     if usuario is None:
         return redirect("login")
     if not (usuario.eh_administrador() or usuario.sub_lider):
-        messages.error(request, "Acesso não autorizado.")
+        definir_mensagem(request, messages.error, "Acesso não autorizado.")
         return redirect("painel_administrativo")
     if usuario.eh_administrador():
         tarefa = get_object_or_404(Tarefa, id=id_tarefa)
@@ -514,7 +539,7 @@ def editar_tarefa(request, id_tarefa):
             limite = 0
 
         if tipo not in {"fixa", "prolongada"} or not titulo or limite < 1:
-            messages.error(request, "Preencha os dados da tarefa corretamente.")
+            definir_mensagem(request, messages.error, "Preencha os dados da tarefa corretamente.")
             return redirect("painel_administrativo")
 
         tarefa.titulo = titulo
@@ -532,14 +557,14 @@ def editar_tarefa(request, id_tarefa):
             tarefa.data = None
             tarefa.horario = None
             if tarefa.data_inicio and tarefa.data_fim and tarefa.data_fim < tarefa.data_inicio:
-                messages.error(request, "O prazo não pode ser anterior à data inicial.")
+                definir_mensagem(request, messages.error, "O prazo não pode ser anterior à data inicial.")
                 return redirect("painel_administrativo")
         if "imagem" in request.FILES:
             tarefa.imagem = request.FILES["imagem"]
         tarefa.save()
         request.session["usuario"] = usuario.id
         request.session.modified = True
-        messages.success(request, "Tarefa atualizada com sucesso.")
+        definir_mensagem(request, messages.success, "Tarefa atualizada com sucesso.")
         return redirect("painel_administrativo")
     return render(request, "editar_tarefa.html", {"usuario": usuario, "tarefa": tarefa})
 
@@ -548,7 +573,7 @@ def encerrar_tarefa(request, id_tarefa):
     if usuario is None:
         return redirect("login")
     if not usuario.tem_acesso_painel():
-        messages.error(request, "Acesso não autorizado.")
+        definir_mensagem(request, messages.error, "Acesso não autorizado.")
         return redirect("painel_administrativo")
     if request.method == "POST":
         if usuario.eh_administrador():
@@ -559,7 +584,7 @@ def encerrar_tarefa(request, id_tarefa):
         tarefa.save(update_fields=["encerrada"])
         request.session["usuario"] = usuario.id
         request.session.modified = True
-        messages.success(request, "Tarefa encerrada com sucesso.")
+        definir_mensagem(request, messages.success, "Tarefa encerrada com sucesso.")
     return redirect("painel_administrativo")
 
 
@@ -782,18 +807,18 @@ def solicitar_area(request, nome_area):
         areas_usuario = usuario.get_areas_list()
         # FA04: Participante já pertence à área
         if nome_area in areas_usuario:
-            messages.info(request, f"Você já participa da área {nome_area}.")
+            definir_mensagem(request, messages.info, f"Você já participa da área {nome_area}.")
             return redirect("nova_area")
         # FA03: Solicitação já existente
         ja_solicitado = SolicitacaoArea.objects.filter(usuario=usuario, area=nome_area).exists()
         if ja_solicitado:
-            messages.info(request, f"Você já possui uma solicitação pendente para {nome_area}.")
+            definir_mensagem(request, messages.info, f"Você já possui uma solicitação pendente para {nome_area}.")
             return redirect("nova_area")
         # Fluxo Principal: Registra solicitação
         SolicitacaoArea.objects.create(usuario=usuario, area=nome_area)
         request.session["usuario"] = usuario.id
         request.session.modified = True
-        messages.success(request, f"Solicitação para {nome_area} enviada com sucesso!")
+        definir_mensagem(request, messages.success, f"Solicitação para {nome_area} enviada com sucesso!")
     return redirect("nova_area")
 
 
@@ -806,7 +831,7 @@ def cancelar_solicitacao_area(request, nome_area):
         SolicitacaoArea.objects.filter(usuario=usuario, area=nome_area).delete()
         request.session["usuario"] = usuario.id
         request.session.modified = True
-        messages.success(request, f"Solicitação para {nome_area} cancelada.")
+        definir_mensagem(request, messages.success, f"Solicitação para {nome_area} cancelada.")
     return redirect("nova_area")
 
 
@@ -818,7 +843,7 @@ def sair_da_area(request, nome_area):
         # Validação obrigatória da matrícula para confirmar saída
         matricula_digitada = request.POST.get("matricula_confirmacao", "").strip()
         if matricula_digitada != usuario.matricula:
-            messages.error(request, "Matrícula incorreta. A confirmação para sair da área falhou.")
+            definir_mensagem(request, messages.error, "Matrícula incorreta. A confirmação para sair da área falhou.")
             return redirect("nova_area")
 
         areas = usuario.get_areas_list()
@@ -831,9 +856,9 @@ def sair_da_area(request, nome_area):
             usuario.save()
             request.session["usuario"] = usuario.id
             request.session.modified = True
-            messages.success(request, f"Você saiu da área {nome_area} com sucesso.")
+            definir_mensagem(request, messages.success, f"Você saiu da área {nome_area} com sucesso.")
         elif usuario.eh_administrador():
-            messages.info(request, "Como líder geral, seu acesso é total.")
+            definir_mensagem(request, messages.info, "Como líder geral, seu acesso é total.")
     return redirect("nova_area")
 
 
@@ -842,12 +867,12 @@ def aprovar_solicitacao_area(request, id_solicitacao):
     if usuario is None:
         return redirect("login")
     if not usuario.tem_acesso_painel():
-        messages.error(request, "Você não tem acesso a esta funcionalidade.")
+        definir_mensagem(request, messages.error, "Você não tem acesso a esta funcionalidade.")
         return redirect("feed")
     if request.method == "POST":
         sol = get_object_or_404(SolicitacaoArea, id=id_solicitacao)
         if not (usuario.eh_administrador() or (usuario.sub_lider and usuario.sublider_de == sol.area)):
-            messages.error(request, "Você não tem permissão para aprovar membros nesta área.")
+            definir_mensagem(request, messages.error, "Você não tem permissão para aprovar membros nesta área.")
             return redirect("painel_administrativo")
         membro = sol.usuario
         areas = membro.get_areas_list()
@@ -858,7 +883,7 @@ def aprovar_solicitacao_area(request, id_solicitacao):
         sol.delete()
         request.session["usuario"] = usuario.id
         request.session.modified = True
-        messages.success(request, f"Solicitação de {membro.matricula} para {sol.area} aprovada!")
+        definir_mensagem(request, messages.success, f"Solicitação de {membro.matricula} para {sol.area} aprovada!")
     return redirect("painel_administrativo")
 
 
@@ -867,17 +892,17 @@ def recusar_solicitacao_area(request, id_solicitacao):
     if usuario is None:
         return redirect("login")
     if not usuario.tem_acesso_painel():
-        messages.error(request, "Você não tem acesso a esta funcionalidade.")
+        definir_mensagem(request, messages.error, "Você não tem acesso a esta funcionalidade.")
         return redirect("feed")
     if request.method == "POST":
         sol = get_object_or_404(SolicitacaoArea, id=id_solicitacao)
         if not (usuario.eh_administrador() or (usuario.sub_lider and usuario.sublider_de == sol.area)):
-            messages.error(request, "Você não tem permissão para recusar solicitações desta área.")
+            definir_mensagem(request, messages.error, "Você não tem permissão para recusar solicitações desta área.")
             return redirect("painel_administrativo")
         sol.delete()
         request.session["usuario"] = usuario.id
         request.session.modified = True
-        messages.success(request, "Solicitação de área recusada.")
+        definir_mensagem(request, messages.success, "Solicitação de área recusada.")
     return redirect("painel_administrativo")
 
 
@@ -886,12 +911,12 @@ def aprovar_membro(request, id_usuario):
     if usuario is None:
         return redirect("login")
     if not usuario.eh_administrador():
-        messages.error(request, "Apenas o líder geral pode aprovar novos participantes.")
+        definir_mensagem(request, messages.error, "Apenas o líder geral pode aprovar novos participantes.")
         return redirect("painel_administrativo")
     if request.method == "POST":
         membro = get_object_or_404(Usuario, id=id_usuario)
         if membro.aprovado:
-            messages.info(request, f"O participante {membro.matricula} já está aprovado.")
+            definir_mensagem(request, messages.info, f"O participante {membro.matricula} já está aprovado.")
             return redirect("painel_administrativo")
         # Ao aprovar o membro no sistema, cria as solicitações para os sub-líderes
         # das áreas selecionadas no cadastro. O membro tem acesso inicial apenas ao
@@ -905,7 +930,7 @@ def aprovar_membro(request, id_usuario):
         membro.save()
         request.session["usuario"] = usuario.id
         request.session.modified = True
-        messages.success(request, f"Membro {membro.matricula} aprovado no sistema! Solicitações de áreas emitidas para os sub-líderes.")
+        definir_mensagem(request, messages.success, f"Membro {membro.matricula} aprovado no sistema! Solicitações de áreas emitidas para os sub-líderes.")
     return redirect("painel_administrativo")
 
 
@@ -914,14 +939,14 @@ def recusar_membro(request, id_usuario):
     if usuario is None:
         return redirect("login")
     if not usuario.eh_administrador():
-        messages.error(request, "Apenas o líder geral pode recusar participantes.")
+        definir_mensagem(request, messages.error, "Apenas o líder geral pode recusar participantes.")
         return redirect("painel_administrativo")
     if request.method == "POST":
         membro = get_object_or_404(Usuario, id=id_usuario)
         membro.delete()
         request.session["usuario"] = usuario.id
         request.session.modified = True
-        messages.success(request, "Cadastro do participante recusado.")
+        definir_mensagem(request, messages.success, "Cadastro do participante recusado.")
     return redirect("painel_administrativo")
 
 
@@ -930,35 +955,36 @@ def promover_sublider(request):
     if usuario is None:
         return redirect("login")
     if not usuario.eh_administrador():
-        messages.error(request, "Apenas o líder geral pode promover sub-líderes.")
+        definir_mensagem(request, messages.error, "Apenas o líder geral pode promover sub-líderes.")
         return redirect("painel_administrativo")
     if request.method == "POST":
         matricula = request.POST.get("matricula", "").strip()
         area = request.POST.get("area", "").strip()
 
         if area not in TODAS_AREAS:
-            messages.error(request, "Selecione uma área válida para promover o sub-líder.")
+            definir_mensagem(request, messages.error, "Selecione uma área válida para promover o sub-líder.")
             return redirect("painel_administrativo")
 
         try:
             membro = Usuario.objects.get(matricula=matricula, aprovado=True)
         except Usuario.DoesNotExist:
-            messages.error(request, f"Membro \"{matricula}\" não encontrado (ou ainda não aprovado).")
+            definir_mensagem(request, messages.error, f"Membro \"{matricula}\" não encontrado (ou ainda não aprovado).")
             return redirect("painel_administrativo")
 
         if membro.eh_administrador():
-            messages.error(request, "O líder não pode ser promovido a sub-líder.")
+            definir_mensagem(request, messages.error, "O líder não pode ser promovido a sub-líder.")
         elif membro.sub_lider:
             onde = f" de {membro.sublider_de}" if membro.sublider_de else ""
-            messages.error(
+            definir_mensagem(
                 request,
+                messages.error,
                 f"{membro.matricula} já é sub-líder{onde}. Cada membro só pode ser sub-líder "
                 f"de uma área; remova o cargo atual antes de promovê-lo novamente."
             )
         else:
             sublider_existente = Usuario.objects.filter(sub_lider=True, sublider_de=area).first()
             if sublider_existente:
-                messages.error(request, f"A área {area} já possui um sub-líder ({sublider_existente.matricula}).")
+                definir_mensagem(request, messages.error, f"A área {area} já possui um sub-líder ({sublider_existente.matricula}).")
             else:
                 areas_atuais = membro.get_areas_list()
                 if area not in areas_atuais:
@@ -967,7 +993,7 @@ def promover_sublider(request):
                 membro.sub_lider = True
                 membro.sublider_de = area
                 membro.save()
-                messages.success(request, f"{membro.matricula} agora é sub-líder de {area}.")
+                definir_mensagem(request, messages.success, f"{membro.matricula} agora é sub-líder de {area}.")
         request.session["usuario"] = usuario.id
         request.session.modified = True
     return redirect("painel_administrativo")
@@ -978,7 +1004,7 @@ def remover_sublider(request, id_usuario):
     if usuario is None:
         return redirect("login")
     if not usuario.eh_administrador():
-        messages.error(request, "Apenas o líder geral pode remover sub-líderes.")
+        definir_mensagem(request, messages.error, "Apenas o líder geral pode remover sub-líderes.")
         return redirect("painel_administrativo")
     if request.method == "POST":
         membro = get_object_or_404(Usuario, id=id_usuario)
@@ -986,7 +1012,7 @@ def remover_sublider(request, id_usuario):
             membro.sub_lider = False
             membro.sublider_de = None
             membro.save()
-            messages.success(request, f"Cargo de sub-líder removido de {membro.matricula}.")
+            definir_mensagem(request, messages.success, f"Cargo de sub-líder removido de {membro.matricula}.")
         request.session["usuario"] = usuario.id
         request.session.modified = True
     return redirect("painel_administrativo")
@@ -997,13 +1023,13 @@ def remover_membro(request, id_usuario):
     if usuario is None:
         return redirect("login")
     if not usuario.eh_administrador():
-        messages.error(request, "Apenas o líder geral pode remover membros.")
+        definir_mensagem(request, messages.error, "Apenas o líder geral pode remover membros.")
         return redirect("painel_administrativo")
     if request.method == "POST":
         membro = get_object_or_404(Usuario, id=id_usuario)
         if not membro.eh_administrador():
             membro.delete()
-            messages.success(request, "Membro removido com sucesso.")
+            definir_mensagem(request, messages.success, "Membro removido com sucesso.")
         request.session["usuario"] = usuario.id
         request.session.modified = True
     return redirect("painel_administrativo")
@@ -1017,7 +1043,7 @@ def ver_conclusao(request, id_tarefa):
     try:
         tarefa = Tarefa.objects.get(id=id_tarefa)
     except Tarefa.DoesNotExist:
-        messages.error(request, "Tarefa não encontrada.")
+        definir_mensagem(request, messages.error, "Tarefa não encontrada.")
         return redirect("painel_administrativo" if usuario.eh_administrador() else "feed")
 
     area_nome = tarefa.area if tarefa.area else (usuario.sublider_de or "Cenário")
@@ -1067,6 +1093,7 @@ def status_tarefa(request, id_tarefa):
 
 
 def sair(request):
+    limpar_mensagens(request)
     request.session.flush()
     if hasattr(request, "_cached_usuario"):
         delattr(request, "_cached_usuario")

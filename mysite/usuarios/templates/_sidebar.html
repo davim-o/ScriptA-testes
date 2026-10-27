@@ -53,4 +53,13 @@
         </a>
     </div>
 
+    {% if messages %}
+    <div class="mensagens-django" style="display:none;" aria-hidden="true">
+        {% for message in messages %}
+            <div class="msg msg-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
 </aside>
+

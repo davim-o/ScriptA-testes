@@ -69,28 +69,59 @@ body {
     align-items: center;
     gap: 12px;
     text-decoration: none;
+    color: #ffffff;
+    outline: none;
 }
 
 .menu a {
     padding: 12px 15px;
-    color: #fff;
+    color: #ffffff;
     border-radius: 8px;
-    transition: .2s;
+    transition: background .2s, color .2s;
 }
 
 .menu a:hover,
+.menu a:focus,
+.menu a:focus-visible,
 .menu .ativo {
     background: #263b69;
+    color: #ffffff;
+}
+
+.menu a span,
+.rodape-sidebar a span,
+.texto-painel {
+    color: #ffffff !important;
+}
+
+.menu a:hover span,
+.menu a:focus span,
+.menu a:focus-visible span,
+.menu .ativo span,
+.rodape-sidebar a:hover span,
+.rodape-sidebar a:focus span,
+.rodape-sidebar a:focus-visible span {
+    color: #ffffff !important;
 }
 
 .menu img,
 .rodape-sidebar img {
     width: 18px;
     height: 18px;
+    filter: brightness(0) invert(1) !important;
+    opacity: 1 !important;
+    transition: filter .2s, opacity .2s;
 }
 
-.texto-painel {
-    color: #8A7EBE;
+.menu a:hover img,
+.menu a:focus img,
+.menu a:focus-visible img,
+.menu .ativo img,
+.rodape-sidebar a:hover img,
+.rodape-sidebar a:focus img,
+.rodape-sidebar a:focus-visible img {
+    filter: brightness(0) invert(1) !important;
+    opacity: 1 !important;
 }
 
 .sem-areas {
@@ -105,7 +136,17 @@ body {
 }
 
 .rodape-sidebar a {
-    color: #b8bfdc;
+    padding: 10px 15px;
+    color: #ffffff;
+    border-radius: 8px;
+    transition: background .2s, color .2s;
+}
+
+.rodape-sidebar a:hover,
+.rodape-sidebar a:focus,
+.rodape-sidebar a:focus-visible {
+    background: #263b69;
+    color: #ffffff;
 }
 
 
@@ -158,7 +199,7 @@ body {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background-color: #7a5cff;
+    background-color: #ffffff !important;
     display: inline-block;
     margin-left: auto;
     flex-shrink: 0;
@@ -176,13 +217,13 @@ body {
 /* ── Link editar área ── */
 
 .link-editar-area {
-    color: #9ca4c9 !important;
+    color: #ffffff !important;
     font-size: 13px;
 }
 
 .icone-mais {
     font-size: 18px;
-    color: #9ca4c9;
+    color: #ffffff !important;
     width: 18px;
     text-align: center;
 }

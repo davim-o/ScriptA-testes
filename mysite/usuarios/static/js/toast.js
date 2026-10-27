@@ -6,20 +6,27 @@
  * Garante que mensagens idênticas nunca apareçam simultaneamente.
  */
 var mensagensAtivas = new Set();
+var historicoRecente = new Map();
 
 function toast(mensagem, tipo, duracao) {
     if (!mensagem || typeof mensagem !== "string") return;
     mensagem = mensagem.trim();
     if (!mensagem) return;
 
-    // Deduplicação: se a mesma mensagem já está em exibição, não cria outra
+    var agora = Date.now();
+    // Deduplicação: se a mesma mensagem já está em exibição ou foi exibida há menos de 2s, não cria outra
     if (mensagensAtivas.has(mensagem)) {
         return;
     }
+    if (historicoRecente.has(mensagem) && (agora - historicoRecente.get(mensagem) < 2000)) {
+        return;
+    }
     mensagensAtivas.add(mensagem);
+    historicoRecente.set(mensagem, agora);
 
     tipo = tipo || "erro";
     duracao = duracao || 4000;
+
 
     var container = document.getElementById("toast-container");
     if (!container) {

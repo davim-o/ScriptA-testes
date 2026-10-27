@@ -21,13 +21,7 @@
             <h1>Painel Administrativo</h1>
         </div>
 
-        {% if messages %}
-            <div style="display:none;">
-                {% for message in messages %}
-                    <div class="msg msg-{{ message.tags }}">{{ message }}</div>
-                {% endfor %}
-            </div>
-        {% endif %}
+
 
 
 
@@ -589,6 +583,7 @@ if (typeof flatpickr !== "undefined") {
 
 // Atualização de contadores de membros e doações em tempo real
 function atualizarStatsPainel() {
+    if (document.hidden) return;
     fetch("{% url 'stats_painel' %}")
         .then(function(res) {
             if (res.ok) return res.json();
@@ -613,30 +608,37 @@ function atualizarStatsPainel() {
 
 // Atualização de status de tarefas
 function atualizarContadores() {
-    document.querySelectorAll("[data-status-url]").forEach(function(elemento) {
-        fetch(elemento.dataset.statusUrl)
-            .then(function(response) {
-                if (!response.ok) return null;
-                return response.json();
-            })
-            .then(function(dados) {
-                if (!dados) return;
-                if (elemento.classList.contains("badge-concluida")) {
-                    elemento.textContent = "✓ Concluída por " + dados.concluidos + "/" + dados.limite;
-                } else {
-                    elemento.textContent = dados.concluidos + "/" + dados.limite + " concluíram";
-                }
-                if (dados.encerrada && !elemento.classList.contains("badge-concluida")) {
-                    elemento.classList.add("badge-concluida");
-                    elemento.textContent = "✓ Concluída por " + dados.concluidos + "/" + dados.limite;
-                }
-            })
-            .catch(function(err) {});
+    if (document.hidden) return;
+    var elementos = Array.from(document.querySelectorAll("[data-status-url]"));
+    if (elementos.length === 0) return;
+
+    elementos.forEach(function(elemento, index) {
+        setTimeout(function() {
+            if (document.hidden) return;
+            fetch(elemento.dataset.statusUrl)
+                .then(function(response) {
+                    if (!response.ok) return null;
+                    return response.json();
+                })
+                .then(function(dados) {
+                    if (!dados) return;
+                    if (elemento.classList.contains("badge-concluida")) {
+                        elemento.textContent = "✓ Concluída por " + dados.concluidos + "/" + dados.limite;
+                    } else {
+                        elemento.textContent = dados.concluidos + "/" + dados.limite + " concluíram";
+                    }
+                    if (dados.encerrada && !elemento.classList.contains("badge-concluida")) {
+                        elemento.classList.add("badge-concluida");
+                        elemento.textContent = "✓ Concluída por " + dados.concluidos + "/" + dados.limite;
+                    }
+                })
+                .catch(function(err) {});
+        }, index * 150);
     });
 }
 
-setInterval(atualizarStatsPainel, 12000);
-setInterval(atualizarContadores, 15000);
+setInterval(atualizarStatsPainel, 15000);
+setInterval(atualizarContadores, 20000);
 </script>
 
 <script src="{% static 'js/toast.js' %}"></script>

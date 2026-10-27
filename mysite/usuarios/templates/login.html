@@ -43,6 +43,14 @@
                 <p class="erro-login">{{ erro }}</p>
                 {% endif %}
 
+                {% if messages %}
+                <div style="display:none;">
+                    {% for message in messages %}
+                        <div class="msg msg-{{ message.tags }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
                 <div class="butao">
                     <button type="submit">Entrar</button>
                 </div>
