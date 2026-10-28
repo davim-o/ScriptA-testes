@@ -23,7 +23,7 @@
             <img src="{% static 'imgs/cavalo.png' %}" alt="Cavalo">
         </section>
 
-        <form method="post" id="form-login">
+        <form method="post" id="form-login" autocomplete="off">
             {% csrf_token %}
             <section class="formula">
 
@@ -31,12 +31,12 @@
                     <p>Matrícula</p>
                     <input type="text" id="matricula" name="matricula"
                            placeholder="Digite sua matrícula"
-                           value="{{ matricula|default:'' }}" maxlength="20" autocomplete="username">
+                           value="{{ matricula|default:'' }}" maxlength="20" autocomplete="username" autofocus>
                 </div>
 
                 <div class="senha">
                     <p>Senha</p>
-                    <input type="password" id="password" name="senha" placeholder="Digite sua senha">
+                    <input type="password" id="password" name="senha" placeholder="Digite sua senha" autocomplete="current-password">
                 </div>
 
                 {% if erro %}

@@ -75,12 +75,14 @@ def obter_total_doacoes_kg_formatado(com_unidade=True):
 
 
 def limpar_mensagens(request):
-    """Consome e esvazia mensagens pendentes na sessão para evitar notificações acumuladas ou incompatíveis."""
+    """Consome e esvazia mensagens pendentes para evitar notificações acumuladas ou incompatíveis."""
     try:
         storage = messages.get_messages(request)
         for _ in storage:
             pass
         storage.used = True
+        if hasattr(request, "session") and "_messages" in request.session:
+            del request.session["_messages"]
     except Exception:
         pass
 
@@ -105,22 +107,19 @@ def usuario_logado(request):
     if not usuario_id:
         request._cached_usuario = None
         return None
-    for tentativa in range(5):
-        try:
-            u = Usuario.objects.get(id=usuario_id)
-            if not u.aprovado and not u.eh_administrador():
-                request._cached_usuario = None
-                return None
-            request._cached_usuario = u
-            return u
-        except Usuario.DoesNotExist:
+    try:
+        u = Usuario.objects.get(id=usuario_id)
+        if not u.aprovado and not u.eh_administrador():
             request._cached_usuario = None
             return None
-        except Exception:
-            import time
-            time.sleep(0.1 * (tentativa + 1))
-    request._cached_usuario = None
-    return None
+        request._cached_usuario = u
+        return u
+    except Usuario.DoesNotExist:
+        request._cached_usuario = None
+        return None
+    except Exception:
+        request._cached_usuario = None
+        return None
 
 
 
@@ -176,7 +175,11 @@ def cadastro(request):
 
 
 def login_usuario(request):
-    if request.method == "GET" and "usuario" in request.session:
+    if request.method == "GET" and (request.GET.get("trocar") or request.GET.get("sair")):
+        request.session.flush()
+        if hasattr(request, "_cached_usuario"):
+            delattr(request, "_cached_usuario")
+    elif request.method == "GET" and "usuario" in request.session:
         u = usuario_logado(request)
         if u is not None:
             return redirect("feed")
@@ -187,24 +190,23 @@ def login_usuario(request):
         senha = request.POST.get("senha", "")
         if not matricula:
             erro = "Informe a matrícula."
-        if erro:
-            return render(request, "login.html", {"erro": erro, "matricula": matricula})
-        try:
-            usuario = Usuario.objects.get(matricula=matricula)
-            if check_password(senha, usuario.senha):
-                if not usuario.aprovado:
-                    erro = "Seu cadastro ainda está aguardando aprovação da diretoria."
-                else:
-                    limpar_mensagens(request)
-                    request.session.flush()
-                    request.session["usuario"] = usuario.id
-                    request.session.modified = True
-                    request._cached_usuario = usuario
-                    return redirect("feed")
-            else:
+        elif not senha:
+            erro = "Informe a senha."
+        else:
+            usuario = Usuario.objects.filter(matricula__iexact=matricula).first()
+            if not usuario:
                 erro = "Matrícula ou senha inválida."
-        except Usuario.DoesNotExist:
-            erro = "Matrícula ou senha inválida."
+            elif not check_password(senha, usuario.senha):
+                erro = "Matrícula ou senha inválida."
+            elif not usuario.aprovado and not usuario.eh_administrador():
+                erro = "Seu cadastro ainda está aguardando aprovação da diretoria."
+            else:
+                limpar_mensagens(request)
+                request.session.flush()
+                request.session["usuario"] = usuario.id
+                request.session.modified = True
+                request._cached_usuario = usuario
+                return redirect("feed")
     return render(request, "login.html", {"erro": erro, "matricula": matricula if request.method == "POST" else ""})
 
 
@@ -235,6 +237,7 @@ def publicar(request):
 
 
 def curtir(request, id_publicacao):
+    limpar_mensagens(request)
     if request.method != "POST":
         return JsonResponse({"erro": "Método inválido"}, status=405)
     usuario = usuario_logado(request)
@@ -265,6 +268,7 @@ def painel_administrativo(request):
     if usuario is None:
         return redirect("login")
     if not usuario.tem_acesso_painel():
+        definir_mensagem(request, messages.error, "Você não possui permissão para acessar o Painel Administrativo.")
         return redirect("feed")
 
     membros = Usuario.objects.filter(aprovado=True).order_by("matricula")
@@ -303,6 +307,7 @@ def painel_administrativo(request):
 
 
 def stats_painel(request):
+    limpar_mensagens(request)
     usuario = usuario_logado(request)
     if usuario is None or not usuario.tem_acesso_painel():
         return JsonResponse({"erro": "Não autorizado"}, status=403)
@@ -513,8 +518,6 @@ def criar_tarefa(request):
             tarefa.imagem = request.FILES["imagem"]
         tarefa.save()
         ParticipacaoTarefa.objects.get_or_create(usuario=usuario, tarefa=tarefa)
-        request.session["usuario"] = usuario.id
-        request.session.modified = True
         definir_mensagem(request, messages.success, f"Tarefa \"{titulo}\" criada com sucesso!")
     return redirect("painel_administrativo")
 
@@ -562,8 +565,6 @@ def editar_tarefa(request, id_tarefa):
         if "imagem" in request.FILES:
             tarefa.imagem = request.FILES["imagem"]
         tarefa.save()
-        request.session["usuario"] = usuario.id
-        request.session.modified = True
         definir_mensagem(request, messages.success, "Tarefa atualizada com sucesso.")
         return redirect("painel_administrativo")
     return render(request, "editar_tarefa.html", {"usuario": usuario, "tarefa": tarefa})
@@ -582,8 +583,6 @@ def encerrar_tarefa(request, id_tarefa):
             tarefa = get_object_or_404(Tarefa, id=id_tarefa, area=usuario.sublider_de)
         tarefa.encerrada = True
         tarefa.save(update_fields=["encerrada"])
-        request.session["usuario"] = usuario.id
-        request.session.modified = True
         definir_mensagem(request, messages.success, "Tarefa encerrada com sucesso.")
     return redirect("painel_administrativo")
 
@@ -816,8 +815,6 @@ def solicitar_area(request, nome_area):
             return redirect("nova_area")
         # Fluxo Principal: Registra solicitação
         SolicitacaoArea.objects.create(usuario=usuario, area=nome_area)
-        request.session["usuario"] = usuario.id
-        request.session.modified = True
         definir_mensagem(request, messages.success, f"Solicitação para {nome_area} enviada com sucesso!")
     return redirect("nova_area")
 
@@ -829,8 +826,6 @@ def cancelar_solicitacao_area(request, nome_area):
     if request.method == "POST":
         # FA01: Cancelar Solicitação
         SolicitacaoArea.objects.filter(usuario=usuario, area=nome_area).delete()
-        request.session["usuario"] = usuario.id
-        request.session.modified = True
         definir_mensagem(request, messages.success, f"Solicitação para {nome_area} cancelada.")
     return redirect("nova_area")
 
@@ -854,8 +849,6 @@ def sair_da_area(request, nome_area):
                 usuario.sub_lider = False
                 usuario.sublider_de = None
             usuario.save()
-            request.session["usuario"] = usuario.id
-            request.session.modified = True
             definir_mensagem(request, messages.success, f"Você saiu da área {nome_area} com sucesso.")
         elif usuario.eh_administrador():
             definir_mensagem(request, messages.info, "Como líder geral, seu acesso é total.")
@@ -881,8 +874,6 @@ def aprovar_solicitacao_area(request, id_solicitacao):
             membro.areas = ",".join(areas)
             membro.save()
         sol.delete()
-        request.session["usuario"] = usuario.id
-        request.session.modified = True
         definir_mensagem(request, messages.success, f"Solicitação de {membro.matricula} para {sol.area} aprovada!")
     return redirect("painel_administrativo")
 
@@ -900,8 +891,6 @@ def recusar_solicitacao_area(request, id_solicitacao):
             definir_mensagem(request, messages.error, "Você não tem permissão para recusar solicitações desta área.")
             return redirect("painel_administrativo")
         sol.delete()
-        request.session["usuario"] = usuario.id
-        request.session.modified = True
         definir_mensagem(request, messages.success, "Solicitação de área recusada.")
     return redirect("painel_administrativo")
 
@@ -928,8 +917,6 @@ def aprovar_membro(request, id_usuario):
         membro.areas = ""
         membro.aprovado = True
         membro.save()
-        request.session["usuario"] = usuario.id
-        request.session.modified = True
         definir_mensagem(request, messages.success, f"Membro {membro.matricula} aprovado no sistema! Solicitações de áreas emitidas para os sub-líderes.")
     return redirect("painel_administrativo")
 
@@ -944,8 +931,6 @@ def recusar_membro(request, id_usuario):
     if request.method == "POST":
         membro = get_object_or_404(Usuario, id=id_usuario)
         membro.delete()
-        request.session["usuario"] = usuario.id
-        request.session.modified = True
         definir_mensagem(request, messages.success, "Cadastro do participante recusado.")
     return redirect("painel_administrativo")
 
@@ -994,8 +979,6 @@ def promover_sublider(request):
                 membro.sublider_de = area
                 membro.save()
                 definir_mensagem(request, messages.success, f"{membro.matricula} agora é sub-líder de {area}.")
-        request.session["usuario"] = usuario.id
-        request.session.modified = True
     return redirect("painel_administrativo")
 
 
@@ -1013,8 +996,6 @@ def remover_sublider(request, id_usuario):
             membro.sublider_de = None
             membro.save()
             definir_mensagem(request, messages.success, f"Cargo de sub-líder removido de {membro.matricula}.")
-        request.session["usuario"] = usuario.id
-        request.session.modified = True
     return redirect("painel_administrativo")
 
 
@@ -1030,8 +1011,6 @@ def remover_membro(request, id_usuario):
         if not membro.eh_administrador():
             membro.delete()
             definir_mensagem(request, messages.success, "Membro removido com sucesso.")
-        request.session["usuario"] = usuario.id
-        request.session.modified = True
     return redirect("painel_administrativo")
 
 
@@ -1078,6 +1057,7 @@ def ver_conclusao(request, id_tarefa):
 
 
 def status_tarefa(request, id_tarefa):
+    limpar_mensagens(request)
     usuario = usuario_logado(request)
     if usuario is None:
         return JsonResponse({"erro": "Sessão expirada"}, status=401)
@@ -1097,5 +1077,8 @@ def sair(request):
     request.session.flush()
     if hasattr(request, "_cached_usuario"):
         delattr(request, "_cached_usuario")
-    return redirect("login")
+    from django.conf import settings as django_settings
+    response = redirect("login")
+    response.delete_cookie(django_settings.SESSION_COOKIE_NAME)
+    return response
 

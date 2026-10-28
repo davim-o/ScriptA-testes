@@ -70,10 +70,33 @@ document.addEventListener("DOMContentLoaded", function() {
         var msg = (el.textContent || "").trim();
         if (msg && !mensagensProcessadas.has(msg)) {
             mensagensProcessadas.add(msg);
+
+            // Deduplicação por chave de sessão para evitar repetições ao trocar de abas
+            var chaveMsg = "toast_exibido_" + msg.replace(/\s+/g, "_").slice(0, 40);
+            try {
+                if (window.sessionStorage) {
+                    var timestampAnterior = window.sessionStorage.getItem(chaveMsg);
+                    if (timestampAnterior && (Date.now() - parseInt(timestampAnterior, 10) < 15000)) {
+                        el.remove();
+                        return;
+                    }
+                    window.sessionStorage.setItem(chaveMsg, Date.now().toString());
+                }
+            } catch (e) {}
+
             toast(msg, tipo, 4500);
         }
         // Remove do DOM para evitar reprocessamento
         el.remove();
+    });
+
+    // Se a página for restaurada do cache de navegação (bfcache), limpa toasts residuais
+    window.addEventListener("pageshow", function(e) {
+        if (e.persisted) {
+            document.querySelectorAll(".msg").forEach(function(el) { el.remove(); });
+            var container = document.getElementById("toast-container");
+            if (container) { container.innerHTML = ""; }
+        }
     });
 
     // Previne envio duplo de formulários (evita mensagens de confirmação repetitivas e ações duplicadas)

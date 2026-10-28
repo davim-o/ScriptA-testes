@@ -21,8 +21,6 @@
                 <span>Tampinhas</span>
             </a>
 
-            <a href="{% static 'imgs/icone-feed.png' %}" style="display:none"></a><!-- separador visual -->
-
             {% if usuario.tem_acesso_painel %}
                 <a href="{% url 'painel_administrativo' %}" class="{% if pagina_ativa == 'painel' %}ativo{% endif %}">
                     <img src="{% static 'imgs/icone-painel.png' %}" alt="Painel">
