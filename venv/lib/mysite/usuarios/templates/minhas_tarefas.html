@@ -1,0 +1,299 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ tarefa_selecionada.area|default:"Minhas Tarefas" }}</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/area.css' %}">
+    <link rel="stylesheet" href="{% static 'css/minhas_tarefas.css' %}">
+</head>
+<body>
+
+{% include "_sidebar.html" with area_ativa=area_ativa %}
+
+<main class="conteudo">
+    <div class="container-pagina">
+
+        <div class="titulo-pagina">
+            <h1>{{ area_ativa }}</h1>
+        </div>
+
+        <!-- Abas superiores — sempre as duas visíveis -->
+        <div class="abas">
+            <a href="{% url 'pagina_area' area_ativa %}" class="aba">Tarefas</a>
+            {% if not usuario.eh_administrador %}
+            <a href="{% url 'minhas_tarefas' area_ativa %}" class="aba ativa">Minhas Tarefas</a>
+            {% endif %}
+        </div>
+
+        {% if not tarefa_selecionada %}
+        <!-- ── Listagem ── -->
+        <div class="lista-tarefas-area">
+            {% for tarefa in tarefas %}
+            <div class="tarefa-card-area card-participando {% if tarefa.criada_por == usuario %}card-criador{% endif %}">
+                <div class="tarefa-topo">
+                    <h3 class="tarefa-titulo">{{ tarefa.titulo }}</h3>
+                    <div class="tarefa-vagas">
+                        <img src="{% static 'imgs/icone-equipe.png' %}" alt="">
+                        <span>{{ tarefa.total_participantes }}/{{ tarefa.limite_participantes }}</span>
+                    </div>
+                </div>
+                <div class="tarefa-detalhes">
+                    {% if tarefa.tipo == "fixa" %}
+                        {% if tarefa.horario %}<span class="detalhe-item"><img src="{% static 'imgs/icone-relogio.png' %}" alt="">{{ tarefa.horario|time:"H:i" }}</span>{% endif %}
+                        {% if tarefa.data %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa.data|date:"j/n" }}</span>{% endif %}
+                    {% else %}
+                        {% if tarefa.data_inicio %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa.data_inicio|date:"j/n" }}{% if tarefa.data_fim %} - {{ tarefa.data_fim|date:"j/n" }}{% endif %}</span>{% endif %}
+                    {% endif %}
+                    <div class="tarefa-acao">
+                        <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa.id %}" class="btn-ver-tarefa">Ver tarefa</a>
+                        {% if tarefa.criada_por != usuario %}
+                        <form action="{% url 'cancelar_participacao' tarefa.id %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-cancelar-mt">Cancelar</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="sem-itens">Você ainda não está participando de nenhuma tarefa.</p>
+            {% endfor %}
+        </div>
+
+        {% if tarefas_finalizadas %}
+        <h2 class="subtitulo-secao">Concluídas / Encerradas</h2>
+        <div class="lista-tarefas-area">
+            {% for tarefa in tarefas_finalizadas %}
+            <div class="tarefa-card-area card-concluida {% if tarefa.criada_por == usuario %}card-criador{% endif %}">
+                <div class="tarefa-topo">
+                    <h3 class="tarefa-titulo">{{ tarefa.titulo }}</h3>
+                    <span class="badge-encerrada">{% if tarefa.concluida %}✓ Concluída{% else %}Encerrada{% endif %}</span>
+                </div>
+                <div class="tarefa-detalhes">
+                    {% if tarefa.tipo == "fixa" %}
+                        {% if tarefa.data %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa.data|date:"j/n" }}</span>{% endif %}
+                    {% else %}
+                        {% if tarefa.data_inicio %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa.data_inicio|date:"j/n" }}{% if tarefa.data_fim %} - {{ tarefa.data_fim|date:"j/n" }}{% endif %}</span>{% endif %}
+                    {% endif %}
+                    <div class="tarefa-acao">
+                        <a href="{% url 'ver_conclusao' tarefa.id %}?origem=minhas_tarefas" class="btn-ver-conclusao">Ver entrega</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- ── Detalhe da tarefa ── -->
+        <div class="topo-navegacao-voltar">
+            <a href="{% url 'minhas_tarefas' area_ativa %}" class="btn-voltar-link">
+                <span class="seta-voltar">←</span> Voltar para Minhas Tarefas
+            </a>
+        </div>
+        <div class="tarefa-detalhe-card">
+
+            <div class="tarefa-detalhe-header">
+                <div class="tarefa-detalhe-info">
+                    <h3 class="tarefa-titulo">{{ tarefa_selecionada.titulo }}</h3>
+                    <div class="tarefa-detalhes" style="margin-top:6px">
+                        {% if tarefa_selecionada.tipo == "fixa" %}
+                            {% if tarefa_selecionada.horario %}<span class="detalhe-item"><img src="{% static 'imgs/icone-relogio.png' %}" alt="">{{ tarefa_selecionada.horario|time:"H:i" }}</span>{% endif %}
+                            {% if tarefa_selecionada.data %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa_selecionada.data|date:"j/n" }}</span>{% endif %}
+                        {% else %}
+                            {% if tarefa_selecionada.data_inicio %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa_selecionada.data_inicio|date:"j/n" }}{% if tarefa_selecionada.data_fim %} - {{ tarefa_selecionada.data_fim|date:"j/n" }}{% endif %}</span>{% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="tarefa-detalhe-vagas">
+                    <img src="{% static 'imgs/icone-equipe.png' %}" alt="">
+                    <span>{{ tarefa_selecionada.total_participantes }}/{{ tarefa_selecionada.limite_participantes }}</span>
+                </div>
+                {% if not eh_criador %}
+                <form action="{% url 'cancelar_participacao' tarefa_selecionada.id %}" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-cancelar-mt">Cancelar</button>
+                </form>
+                {% endif %}
+            </div>
+
+            <div class="sub-abas">
+                <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa_selecionada.id %}?aba=detalhes"
+                   class="sub-aba {% if aba_ativa == 'detalhes' %}ativa{% endif %}">Detalhes</a>
+                <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa_selecionada.id %}?aba=observacao"
+                   class="sub-aba {% if aba_ativa == 'observacao' %}ativa{% endif %}">Adicionar Observação</a>
+                {% if not eh_criador %}
+                <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa_selecionada.id %}?aba=concluir"
+                   class="sub-aba {% if aba_ativa == 'concluir' %}ativa{% endif %}">Concluir</a>
+                {% endif %}
+            </div>
+
+            <div class="sub-aba-conteudo">
+
+                {% if aba_ativa == "detalhes" %}
+                <div class="aba-detalhes">
+                    <div class="detalhe-secao">
+                        <p class="detalhe-label">Descrição da tarefa</p>
+                        <div class="detalhe-texto">{{ tarefa_selecionada.descricao|linebreaksbr|default:"Nenhuma descrição informada." }}</div>
+                    </div>
+                    {% if tarefa_selecionada.imagem and tarefa_selecionada.imagem.name %}
+                    <div class="detalhe-secao">
+                        <p class="detalhe-label">Fotos de apoio <span class="fotos-count">1</span></p>
+                        <div class="fotos-apoio">
+                            <a href="{{ tarefa_selecionada.imagem.url }}" target="_blank" title="Clique para ver foto de apoio">
+                                <img src="{{ tarefa_selecionada.imagem.url }}" alt="Foto de apoio" class="foto-apoio">
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if conclusao %}
+                    <div class="detalhe-secao">
+                        <p class="detalhe-label">Sua comprovação de conclusão <span class="badge-concluida" style="margin-left:8px;font-size:11px;">✓ Entregue</span></p>
+                        {% if conclusao.imagem and conclusao.imagem.name %}
+                        <div class="conclusao-imagem">
+                            <a href="{{ conclusao.imagem.url }}" target="_blank" title="Clique para ver em tamanho real">
+                                <img src="{{ conclusao.imagem.url }}" alt="Comprovação enviada" class="foto-conclusao">
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% if conclusao.comentario %}
+                        <p class="conclusao-comentario" style="margin-top:8px;">{{ conclusao.comentario|linebreaksbr }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if eh_criador and conclusoes_tarefa %}
+                    <div class="detalhe-secao secao-entregas">
+                        <div class="detalhe-header-toggle" onclick="toggleEntregas()">
+                            <p class="detalhe-label">Entregas dos participantes <span class="fotos-count">{{ conclusoes_tarefa.count }}</span></p>
+                            <button type="button" class="btn-toggle-entregas" id="btn-toggle-entregas" aria-label="Ocultar ou mostrar entregas">
+                                <span id="toggle-texto">Ocultar entregas</span>
+                                <span class="toggle-seta" id="toggle-seta">▲</span>
+                            </button>
+                        </div>
+                        <div class="lista-conclusoes lista-conclusoes-colapsavel" id="lista-conclusoes-wrapper" style="margin-top:12px;">
+                            {% for c in conclusoes_tarefa %}
+                            <div class="conclusao-item">
+                                <div class="conclusao-topo">
+                                    <div class="obs-avatar">{{ c.usuario.matricula|first|upper }}</div>
+                                    <div class="conclusao-info">
+                                        <span class="obs-nome">{{ c.usuario.matricula }}</span>
+                                        <span class="obs-data">{{ c.criada_em|date:"d/m/Y H:i" }}</span>
+                                    </div>
+                                </div>
+                                {% if c.imagem and c.imagem.name %}
+                                <div class="conclusao-imagem">
+                                    <a href="{{ c.imagem.url }}" target="_blank" title="Clique para abrir imagem original">
+                                        <img src="{{ c.imagem.url }}" alt="Comprovação de {{ c.usuario.matricula }}" class="foto-conclusao">
+                                    </a>
+                                </div>
+                                {% endif %}
+                                {% if c.comentario %}
+                                <p class="conclusao-comentario">{{ c.comentario|linebreaksbr }}</p>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% elif aba_ativa == "observacao" %}
+                <div class="aba-observacao">
+                    <div class="lista-observacoes">
+                        {% for obs in observacoes %}
+                        <div class="observacao-item">
+                            <div class="obs-avatar">{{ obs.usuario.matricula|first|upper }}</div>
+                            <div class="obs-corpo">
+                                <div class="obs-header">
+                                    <span class="obs-nome">{{ obs.usuario.matricula }}</span>
+                                    <span class="obs-data">{{ obs.criada_em|date:"d/m/Y H:i" }}</span>
+                                </div>
+                                <p class="obs-texto">{{ obs.texto|linebreaksbr }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <form action="{% url 'adicionar_observacao' area_ativa tarefa_selecionada.id %}" method="POST" class="form-observacao">
+                        {% csrf_token %}
+                        <div class="obs-input-row">
+                            <div class="obs-avatar-eu">{{ usuario.matricula|first|upper }}</div>
+                            <input type="text" name="texto" placeholder="Escreva uma observação..." class="obs-input" required>
+                            <button type="submit" class="btn-enviar-obs">Enviar Observação</button>
+                        </div>
+                        <p class="obs-aviso">⚠ Sua observação será enviada para a tarefa e ficará visível para os responsáveis.</p>
+                    </form>
+                </div>
+
+                {% elif aba_ativa == "concluir" %}
+                <div class="aba-concluir">
+                    <form action="{% url 'concluir_tarefa_usuario' area_ativa tarefa_selecionada.id %}" method="POST" enctype="multipart/form-data" class="form-concluir">
+                        {% csrf_token %}
+                        <label class="upload-imagem-label" for="img-concluir">
+                            <div id="preview-container">
+                                {% if conclusao and conclusao.imagem and conclusao.imagem.name %}
+                                    <img src="{{ conclusao.imagem.url }}" alt="Imagem enviada" class="preview-concluir">
+                                    <span class="upload-subtexto" style="margin-top:6px;color:#81c784;">✓ Imagem anexada (clique para alterar se desejar)</span>
+                                {% else %}
+                                    <img src="{% static 'imgs/icone-upload.png' %}" alt="Upload" class="icone-upload-concluir">
+                                    <span class="upload-texto">+ Adicionar imagem</span>
+                                    <span class="upload-subtexto">PNG, JPG até 10MB</span>
+                                {% endif %}
+                            </div>
+                            <input type="file" id="img-concluir" name="imagem" accept="image/*" class="input-hidden" onchange="previewImagem(this)">
+                        </label>
+                        <div class="comentario-wrap">
+                            <label class="comentario-link" for="comentario-concluir">
+                                <img src="{% static 'imgs/icone-add-imagem.png' %}" alt="" style="width:16px;opacity:.7;">
+                                Adicionar comentário
+                            </label>
+                            <textarea id="comentario-concluir" name="comentario" class="comentario-input" placeholder="Escreva o comentário...">{{ conclusao.comentario|default:"" }}</textarea>
+                        </div>
+                        <button type="submit" class="btn-concluir-tarefa">Concluir Tarefa</button>
+                    </form>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</main>
+
+<script>
+function toggleEntregas() {
+    const wrapper = document.getElementById('lista-conclusoes-wrapper');
+    const seta = document.getElementById('toggle-seta');
+    const texto = document.getElementById('toggle-texto');
+    if (!wrapper) return;
+    const isRecolhida = wrapper.classList.toggle('recolhida');
+    if (seta) seta.classList.toggle('girada', isRecolhida);
+    if (texto) texto.textContent = isRecolhida ? 'Mostrar entregas' : 'Ocultar entregas';
+}
+
+function previewImagem(input) {
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const container = document.getElementById('preview-container');
+            if (container) {
+                container.innerHTML = `
+                    <img src="${e.target.result}" alt="Preview" class="preview-concluir">
+                    <span class="upload-subtexto" style="margin-top:6px;color:#81c784;">✓ Imagem selecionada (${file.name})</span>
+                `;
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+}
+</script>
+
+<script src="{% static 'js/toast.js' %}"></script>
+</body>
+</html>

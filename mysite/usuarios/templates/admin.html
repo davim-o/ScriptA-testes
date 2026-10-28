@@ -248,6 +248,7 @@
 
             <form class="form-doacao" action="{% url 'registrar_doacao' %}" method="POST" id="form-registrar-doacao">
                 {% csrf_token %}
+                {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
                 <div class="form-group">
                     <label for="select-membro-doacao">Selecionar Membro</label>
                     <select name="membro_id" id="select-membro-doacao" class="select-doacao" required>
@@ -399,7 +400,7 @@
                     <div class="tarefa-acoes">
                         <span class="contador-participantes" data-status-url="{% url 'status_tarefa' tarefa.id %}" style="color: #9ca4c9; font-size: 13px; font-weight: 500;">{{ tarefa.total_concl|default:0 }}/{{ tarefa.limite_participantes }} concluíram</span>
                         <div style="display: flex; gap: 10px; margin-left: auto;">
-                            <a href="{% url 'editar_tarefa' tarefa.id %}" class="btn-editar">Editar</a>
+                            <a href="{% url 'editar_tarefa' tarefa.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="btn-editar">Editar</a>
                             <form action="{% url 'encerrar_tarefa' tarefa.id %}" method="POST" class="form-inline" onsubmit="return confirm('Deseja encerrar esta tarefa?')">
                                 {% csrf_token %}
                                 <button type="submit" class="btn-encerrar">Encerrar</button>
@@ -459,7 +460,7 @@
                     {% endif %}
                     <div class="tarefa-acoes">
                         <span class="badge-concluida contador-conclusoes" data-status-url="{% url 'status_tarefa' tarefa.id %}">✓ Concluída por {{ tarefa.total_concl|default:0 }}/{{ tarefa.limite_participantes }}</span>
-                        <a href="{% url 'ver_conclusao' tarefa.id %}?origem=painel" class="btn-ver-entrega">Ver entrega</a>
+                        <a href="{% url 'ver_conclusao' tarefa.id %}?origem=painel{% if user_token %}&_user_token={{ user_token|urlencode }}{% endif %}" class="btn-ver-entrega">Ver entrega</a>
                     </div>
                 </div>
                 {% empty %}

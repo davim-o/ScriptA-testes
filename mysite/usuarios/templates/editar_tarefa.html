@@ -99,7 +99,7 @@
                 </div>
 
                 <div class="form-actions form-actions-editar">
-                    <a href="{% url 'painel_administrativo' %}" class="btn-cancelar">Cancelar</a>
+                    <a href="{% url 'painel_administrativo' %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="btn-cancelar">Cancelar</a>
                     <button type="submit" class="btn-roxo">Salvar alterações</button>
                 </div>
             </form>

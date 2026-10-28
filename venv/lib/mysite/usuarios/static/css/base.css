@@ -1,0 +1,351 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    background: #111323;
+    color: white;
+}
+
+
+/* ── Sidebar ── */
+
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 230px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: #181c2f;
+    border-right: 1px solid #2d3150;
+}
+
+.usuario {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px;
+    border-bottom: 1px solid #2d3150;
+}
+
+.avatar {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #5b6390;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.dados-usuario h3 {
+    font-size: 15px;
+    margin-bottom: 3px;
+}
+
+.dados-usuario p {
+    font-size: 13px;
+    color: #9ca4c9;
+}
+
+.menu {
+    padding: 12px 10px;
+}
+
+.menu a,
+.rodape-sidebar a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: #ffffff;
+    outline: none;
+}
+
+.menu a {
+    padding: 12px 15px;
+    color: #ffffff;
+    border-radius: 8px;
+    transition: background .2s, color .2s;
+}
+
+.menu a:hover,
+.menu a:focus,
+.menu a:focus-visible,
+.menu .ativo {
+    background: #263b69;
+    color: #ffffff;
+}
+
+.menu a span,
+.rodape-sidebar a span,
+.texto-painel {
+    color: #ffffff !important;
+}
+
+.menu a:hover span,
+.menu a:focus span,
+.menu a:focus-visible span,
+.menu .ativo span,
+.rodape-sidebar a:hover span,
+.rodape-sidebar a:focus span,
+.rodape-sidebar a:focus-visible span {
+    color: #ffffff !important;
+}
+
+.menu img,
+.rodape-sidebar img {
+    width: 18px;
+    height: 18px;
+    filter: brightness(0) invert(1) !important;
+    opacity: 1 !important;
+    transition: filter .2s, opacity .2s;
+}
+
+.menu a:hover img,
+.menu a:focus img,
+.menu a:focus-visible img,
+.menu .ativo img,
+.rodape-sidebar a:hover img,
+.rodape-sidebar a:focus img,
+.rodape-sidebar a:focus-visible img {
+    filter: brightness(0) invert(1) !important;
+    opacity: 1 !important;
+}
+
+.sem-areas {
+    color: gray;
+    font-size: 0.85em;
+    padding: 8px 12px;
+}
+
+.rodape-sidebar {
+    padding: 18px;
+    border-top: 1px solid #2d3150;
+}
+
+.rodape-sidebar a {
+    padding: 10px 15px;
+    color: #ffffff;
+    border-radius: 8px;
+    transition: background .2s, color .2s;
+}
+
+.rodape-sidebar a:hover,
+.rodape-sidebar a:focus,
+.rodape-sidebar a:focus-visible {
+    background: #263b69;
+    color: #ffffff;
+}
+
+
+/* ── Conteúdo principal ── */
+
+.conteudo {
+    margin-left: 230px;
+    width: calc(100% - 230px);
+    height: 100vh;
+    overflow-y: auto;
+    display: flex;
+    justify-content: center;
+    padding: 30px;
+}
+
+.conteudo::-webkit-scrollbar-thumb {
+    background: #3d456f;
+    border-radius: 20px;
+}
+
+.container-pagina {
+    width: min(100%, 900px);
+    margin: 0 auto;
+}
+
+.conteudo a:not(.aba):not(.menu a):not(.rodape-sidebar a) {
+    color: #9c85f9;
+}
+
+.conteudo a:not(.aba):not(.menu a):not(.rodape-sidebar a):hover {
+    color: #b3a2ff;
+}
+
+.titulo-pagina {
+    margin-bottom: 20px;
+}
+
+.titulo-pagina h1 {
+    font-size: 30px;
+}
+
+
+/* ── Ponto de sub-líder na sidebar ── */
+
+.menu a {
+    position: relative;
+}
+
+.ponto-sublider {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #ffffff !important;
+    display: inline-block;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+
+/* ── Separador no menu ── */
+
+.menu-separador {
+    height: 1px;
+    background: #2d3150;
+    margin: 6px 15px;
+}
+
+/* ── Link editar área ── */
+
+.link-editar-area {
+    color: #ffffff !important;
+    font-size: 13px;
+}
+
+.icone-mais {
+    font-size: 18px;
+    color: #ffffff !important;
+    width: 18px;
+    text-align: center;
+}
+
+@media (max-width: 900px) {
+    .sidebar {
+        width: 205px;
+    }
+
+    .conteudo {
+        margin-left: 205px;
+        width: calc(100% - 205px);
+        padding: 24px;
+    }
+
+    .container-pagina {
+        width: 100%;
+    }
+}
+
+@media (max-width: 680px) {
+    body {
+        overflow: auto;
+    }
+
+    .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+        min-height: auto;
+    }
+
+    .conteudo {
+        margin-left: 0;
+        width: 100%;
+        height: auto;
+        min-height: calc(100vh - 160px);
+        padding: 20px 16px;
+    }
+
+    .usuario {
+        padding: 14px 16px;
+    }
+
+    .menu {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .menu a {
+        flex: 1 1 140px;
+    }
+
+    .menu-separador {
+        display: none;
+    }
+
+    .rodape-sidebar {
+        border-top: 1px solid #2d3150;
+    }
+}
+
+/* ── Toast de notificação global ─────────────────────────────────────── */
+.toast-container {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 20px;
+    border-radius: 10px;
+    font-size: 0.88em;
+    font-weight: 500;
+    min-width: 260px;
+    max-width: 420px;
+    text-align: center;
+    justify-content: center;
+    pointer-events: auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,.45);
+    animation: toast-in .28s cubic-bezier(.22,1,.36,1) forwards;
+}
+
+.toast.saindo {
+    animation: toast-out .28s ease-in forwards;
+}
+
+.toast-erro {
+    background: #2b1111;
+    border: 1px solid #7c2e2e;
+    color: #e89090;
+}
+
+.toast-sucesso {
+    background: #0f2a1a;
+    border: 1px solid #2e7d32;
+    color: #81c784;
+}
+
+.toast-aviso {
+    background: #2a1f0a;
+    border: 1px solid #7a5c1e;
+    color: #f0c97a;
+}
+
+@keyframes toast-in {
+    from { opacity: 0; transform: translateY(-16px) scale(.95); }
+    to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+@keyframes toast-out {
+    from { opacity: 1; transform: translateY(0)     scale(1);   }
+    to   { opacity: 0; transform: translateY(-10px) scale(.95); }
+}

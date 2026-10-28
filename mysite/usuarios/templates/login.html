@@ -25,6 +25,7 @@
 
         <form method="post" id="form-login" autocomplete="off">
             {% csrf_token %}
+            <input type="hidden" name="_from_browser" value="1">
             <section class="formula">
 
                 <div class="mat">

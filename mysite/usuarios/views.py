@@ -5,10 +5,13 @@ from django.http import JsonResponse
 # pyrefly: ignore [missing-import]
 from django.contrib.auth.hashers import make_password, check_password
 from decimal import Decimal
+from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 # pyrefly: ignore [missing-import]
 from django.db import models, IntegrityError, transaction
 from django.db.models import Count, Q, F
 from django.contrib import messages
+from django.core import signing
+from .context_processors import gerar_token_usuario, decodificar_token_usuario
 from .models import (
     Usuario, Publicacao, Curtida, Tarefa, ParticipacaoTarefa,
     SolicitacaoArea, ObservacaoTarefa, ConclusaoTarefa, DoacaoTampinhas
@@ -97,22 +100,86 @@ def matricula_valida(matricula):
     return True
 
 
+def obter_token_requisicao(request):
+    """Extrai o token assinado da aba a partir de POST, GET ou cabeçalho HTTP."""
+    token = None
+    if request.method == "POST":
+        token = request.POST.get("_user_token")
+    if not token:
+        token = request.GET.get("_user_token")
+    if not token:
+        if hasattr(request, "headers"):
+            token = request.headers.get("X-User-Token")
+        if not token and hasattr(request, "META"):
+            token = request.META.get("HTTP_X_USER_TOKEN")
+    return token.strip() if isinstance(token, str) and token.strip() else None
+
+
+def anexar_token_em_url(url_str, token):
+    if not url_str or not token:
+        return url_str
+    try:
+        partes = urlsplit(url_str)
+        if partes.path in ("/", "/sair/", "/cadastro/"):
+            return url_str
+        query_params = dict(parse_qsl(partes.query, keep_blank_values=True))
+        query_params["_user_token"] = token
+        nova_query = urlencode(query_params)
+        return urlunsplit((partes.scheme, partes.netloc, partes.path, nova_query, partes.fragment))
+    except Exception:
+        return url_str
+
+
+def redirect_autenticado(request, destino, *args, **kwargs):
+    """
+    Redireciona preservando o `_user_token` da aba ativa quando presente na requisição,
+    evitando que um redirect (302 -> GET) caia no cookie compartilhado de outra aba.
+    """
+    response = redirect(destino, *args, **kwargs)
+    token = getattr(request, "_explicit_user_token", None)
+    if token and "Location" in response:
+        response["Location"] = anexar_token_em_url(response["Location"], token)
+    return response
+
+
 def usuario_logado(request):
     if hasattr(request, "_cached_usuario") and request._cached_usuario is not None:
         return request._cached_usuario
-    try:
-        usuario_id = request.session.get("usuario")
-    except Exception:
-        usuario_id = None
+
+    usuario_id = None
+    token = obter_token_requisicao(request)
+    if token:
+        uid_token = decodificar_token_usuario(token)
+        if uid_token:
+            usuario_id = uid_token
+            request._explicit_user_token = gerar_token_usuario(usuario_id)
+            request._resolved_usuario_id = usuario_id
+            try:
+                if "usuario" not in request.session:
+                    request.session["usuario"] = usuario_id
+                    request.session.modified = True
+            except Exception:
+                pass
+
+    if not usuario_id:
+        try:
+            usuario_id = request.session.get("usuario")
+            if usuario_id:
+                request._resolved_usuario_id = usuario_id
+        except Exception:
+            usuario_id = None
+
     if not usuario_id:
         request._cached_usuario = None
         return None
+
     try:
         u = Usuario.objects.get(id=usuario_id)
         if not u.aprovado and not u.eh_administrador():
             request._cached_usuario = None
             return None
         request._cached_usuario = u
+        request._resolved_usuario_id = u.id
         return u
     except Usuario.DoesNotExist:
         request._cached_usuario = None
@@ -124,11 +191,6 @@ def usuario_logado(request):
 
 
 def cadastro(request):
-    if request.method == "GET" and "usuario" in request.session:
-        u = usuario_logado(request)
-        if u is not None:
-            return redirect("feed")
-
     contexto = {"erro": None, "form": {}}
     if request.method == "POST":
         matricula = request.POST.get("matricula", "").strip()
@@ -179,10 +241,6 @@ def login_usuario(request):
         request.session.flush()
         if hasattr(request, "_cached_usuario"):
             delattr(request, "_cached_usuario")
-    elif request.method == "GET" and "usuario" in request.session:
-        u = usuario_logado(request)
-        if u is not None:
-            return redirect("feed")
 
     erro = None
     if request.method == "POST":
@@ -206,13 +264,14 @@ def login_usuario(request):
                 request.session["usuario"] = usuario.id
                 request.session.modified = True
                 request._cached_usuario = usuario
-                return redirect("feed")
+                request._resolved_usuario_id = usuario.id
+                if request.POST.get("_from_browser") == "1":
+                    request._explicit_user_token = gerar_token_usuario(usuario.id)
+                return redirect_autenticado(request, "feed")
     return render(request, "login.html", {"erro": erro, "matricula": matricula if request.method == "POST" else ""})
 
 
 def feed(request):
-    if "usuario" not in request.session:
-        return redirect("login")
     usuario = usuario_logado(request)
     if usuario is None:
         return redirect("login")
@@ -233,11 +292,10 @@ def publicar(request):
         texto = request.POST.get("texto", "").strip()
         if texto:
             Publicacao.objects.create(usuario=usuario, texto=texto)
-    return redirect("feed")
+    return redirect_autenticado(request, "feed")
 
 
 def curtir(request, id_publicacao):
-    limpar_mensagens(request)
     if request.method != "POST":
         return JsonResponse({"erro": "Método inválido"}, status=405)
     usuario = usuario_logado(request)
@@ -255,12 +313,13 @@ def curtir(request, id_publicacao):
 
 
 def excluir_publicacao(request, id_publicacao):
-    if "usuario" not in request.session:
+    usuario = usuario_logado(request)
+    if usuario is None:
         return redirect("login")
     publicacao = get_object_or_404(Publicacao, id=id_publicacao)
-    if publicacao.usuario.id == request.session["usuario"]:
+    if publicacao.usuario_id == usuario.id:
         publicacao.delete()
-    return redirect("feed")
+    return redirect_autenticado(request, "feed")
 
 
 def painel_administrativo(request):
@@ -269,7 +328,7 @@ def painel_administrativo(request):
         return redirect("login")
     if not usuario.tem_acesso_painel():
         definir_mensagem(request, messages.error, "Você não possui permissão para acessar o Painel Administrativo.")
-        return redirect("feed")
+        return redirect_autenticado(request, "feed")
 
     membros = Usuario.objects.filter(aprovado=True).order_by("matricula")
     pendentes = Usuario.objects.filter(aprovado=False).order_by("matricula")
@@ -307,7 +366,6 @@ def painel_administrativo(request):
 
 
 def stats_painel(request):
-    limpar_mensagens(request)
     usuario = usuario_logado(request)
     if usuario is None or not usuario.tem_acesso_painel():
         return JsonResponse({"erro": "Não autorizado"}, status=403)
@@ -327,48 +385,48 @@ def registrar_doacao(request):
         return redirect("login")
 
     # Apenas o sub-líder da área Tampinhas pode registrar doações
-    if usuario.eh_administrador() or not (usuario.sub_lider and usuario.sublider_de == "Tampinhas"):
+    if not (usuario.sub_lider and usuario.sublider_de == "Tampinhas"):
         definir_mensagem(request, messages.error, "Apenas o sub-líder da área Tampinhas pode registrar doações.")
         if usuario.tem_acesso_painel():
-            return redirect("painel_administrativo")
-        return redirect("feed")
+            return redirect_autenticado(request, "painel_administrativo")
+        return redirect_autenticado(request, "feed")
 
     if request.method != "POST":
-        return redirect("painel_administrativo")
+        return redirect_autenticado(request, "painel_administrativo")
 
     membro_id = request.POST.get("membro_id")
     if not membro_id:
         definir_mensagem(request, messages.error, "Selecione um membro para receber a doação.")
-        return redirect("painel_administrativo")
+        return redirect_autenticado(request, "painel_administrativo")
 
     try:
         membro = Usuario.objects.get(id=membro_id)
     except (Usuario.DoesNotExist, ValueError):
         definir_mensagem(request, messages.error, "Membro selecionado não encontrado.")
-        return redirect("painel_administrativo")
+        return redirect_autenticado(request, "painel_administrativo")
 
     if not membro.aprovado or membro.eh_administrador():
         definir_mensagem(request, messages.error, "Apenas membros aprovados e não administradores podem receber doações.")
-        return redirect("painel_administrativo")
+        return redirect_autenticado(request, "painel_administrativo")
 
     qtd_str = request.POST.get("quantidade", "").strip()
     if not qtd_str:
         definir_mensagem(request, messages.error, "Informe a quantidade em gramas.")
-        return redirect("painel_administrativo")
+        return redirect_autenticado(request, "painel_administrativo")
 
     if not qtd_str.isdigit():
         definir_mensagem(request, messages.error, "A quantidade deve ser um número inteiro positivo entre 1 e 100.000 gramas.")
-        return redirect("painel_administrativo")
+        return redirect_autenticado(request, "painel_administrativo")
 
     try:
         qtd_gramas = int(qtd_str)
     except (ValueError, TypeError):
         definir_mensagem(request, messages.error, "Quantidade inválida.")
-        return redirect("painel_administrativo")
+        return redirect_autenticado(request, "painel_administrativo")
 
     if qtd_gramas < 1 or qtd_gramas > 100000:
         definir_mensagem(request, messages.error, "A quantidade deve ser um número inteiro positivo entre 1 e 100.000 gramas.")
-        return redirect("painel_administrativo")
+        return redirect_autenticado(request, "painel_administrativo")
 
     try:
         with transaction.atomic():
@@ -384,7 +442,7 @@ def registrar_doacao(request):
             membro.save(update_fields=["doacao_tampinhas"])
     except Exception as e:
         definir_mensagem(request, messages.error, f"Erro ao registrar doação: {str(e)}")
-        return redirect("painel_administrativo")
+        return redirect_autenticado(request, "painel_administrativo")
 
     novo_total_formatado = formatar_kg(total_membro_gramas, is_gramas=True)
     definir_mensagem(
@@ -392,7 +450,7 @@ def registrar_doacao(request):
         messages.success,
         f"Doação de {qtd_gramas}g registrada com sucesso para {membro.matricula}! Novo total: {novo_total_formatado}."
     )
-    return redirect("painel_administrativo")
+    return redirect_autenticado(request, "painel_administrativo")
 
 
 def tampinhas(request):
@@ -483,7 +541,7 @@ def criar_tarefa(request):
         return redirect("login")
     if not (usuario.eh_administrador() or usuario.sub_lider):
         definir_mensagem(request, messages.error, "Acesso não autorizado.")
-        return redirect("painel_administrativo")
+        return redirect_autenticado(request, "painel_administrativo")
     if request.method == "POST":
         tipo = request.POST.get("tipo", "fixa")
         titulo = request.POST.get("titulo", "").strip()
@@ -494,7 +552,7 @@ def criar_tarefa(request):
 
         if tipo not in {"fixa", "prolongada"} or not titulo or limite < 1:
             definir_mensagem(request, messages.error, "Preencha os dados da tarefa corretamente.")
-            return redirect("painel_administrativo")
+            return redirect_autenticado(request, "painel_administrativo")
 
         area_tarefa = (usuario.sublider_de or request.POST.get("area", "") or "Cenário").strip()
         tarefa = Tarefa(
@@ -513,13 +571,13 @@ def criar_tarefa(request):
             tarefa.data_fim = request.POST.get("data_fim") or None
             if tarefa.data_inicio and tarefa.data_fim and tarefa.data_fim < tarefa.data_inicio:
                 definir_mensagem(request, messages.error, "O prazo não pode ser anterior à data inicial.")
-                return redirect("painel_administrativo")
+                return redirect_autenticado(request, "painel_administrativo")
         if "imagem" in request.FILES:
             tarefa.imagem = request.FILES["imagem"]
         tarefa.save()
         ParticipacaoTarefa.objects.get_or_create(usuario=usuario, tarefa=tarefa)
         definir_mensagem(request, messages.success, f"Tarefa \"{titulo}\" criada com sucesso!")
-    return redirect("painel_administrativo")
+    return redirect_autenticado(request, "painel_administrativo")
 
 
 def editar_tarefa(request, id_tarefa):
@@ -528,7 +586,7 @@ def editar_tarefa(request, id_tarefa):
         return redirect("login")
     if not (usuario.eh_administrador() or usuario.sub_lider):
         definir_mensagem(request, messages.error, "Acesso não autorizado.")
-        return redirect("painel_administrativo")
+        return redirect_autenticado(request, "painel_administrativo")
     if usuario.eh_administrador():
         tarefa = get_object_or_404(Tarefa, id=id_tarefa)
     else:
@@ -543,7 +601,7 @@ def editar_tarefa(request, id_tarefa):
 
         if tipo not in {"fixa", "prolongada"} or not titulo or limite < 1:
             definir_mensagem(request, messages.error, "Preencha os dados da tarefa corretamente.")
-            return redirect("painel_administrativo")
+            return redirect_autenticado(request, "painel_administrativo")
 
         tarefa.titulo = titulo
         tarefa.tipo = tipo
@@ -561,12 +619,12 @@ def editar_tarefa(request, id_tarefa):
             tarefa.horario = None
             if tarefa.data_inicio and tarefa.data_fim and tarefa.data_fim < tarefa.data_inicio:
                 definir_mensagem(request, messages.error, "O prazo não pode ser anterior à data inicial.")
-                return redirect("painel_administrativo")
+                return redirect_autenticado(request, "painel_administrativo")
         if "imagem" in request.FILES:
             tarefa.imagem = request.FILES["imagem"]
         tarefa.save()
         definir_mensagem(request, messages.success, "Tarefa atualizada com sucesso.")
-        return redirect("painel_administrativo")
+        return redirect_autenticado(request, "painel_administrativo")
     return render(request, "editar_tarefa.html", {"usuario": usuario, "tarefa": tarefa})
 
 def encerrar_tarefa(request, id_tarefa):
@@ -575,7 +633,7 @@ def encerrar_tarefa(request, id_tarefa):
         return redirect("login")
     if not usuario.tem_acesso_painel():
         definir_mensagem(request, messages.error, "Acesso não autorizado.")
-        return redirect("painel_administrativo")
+        return redirect_autenticado(request, "painel_administrativo")
     if request.method == "POST":
         if usuario.eh_administrador():
             tarefa = get_object_or_404(Tarefa, id=id_tarefa)
@@ -584,7 +642,7 @@ def encerrar_tarefa(request, id_tarefa):
         tarefa.encerrada = True
         tarefa.save(update_fields=["encerrada"])
         definir_mensagem(request, messages.success, "Tarefa encerrada com sucesso.")
-    return redirect("painel_administrativo")
+    return redirect_autenticado(request, "painel_administrativo")
 
 
 def pagina_area(request, nome_area):
@@ -592,7 +650,7 @@ def pagina_area(request, nome_area):
     if usuario is None:
         return redirect("login")
     if not usuario.tem_acesso_area(nome_area):
-        return redirect("feed")
+        return redirect_autenticado(request, "feed")
     ids_concluidos = ConclusaoTarefa.objects.filter(usuario=usuario).values_list("tarefa_id", flat=True)
     if usuario.eh_administrador():
         tarefas = Tarefa.objects.filter(area=nome_area).prefetch_related("participacoes").order_by("-criada_em")
@@ -618,16 +676,16 @@ def participar_tarefa(request, id_tarefa):
     if request.method == "POST":
         tarefa = get_object_or_404(Tarefa, id=id_tarefa)
         if not usuario.tem_acesso_area(tarefa.area):
-            return redirect("feed")
+            return redirect_autenticado(request, "feed")
         if tarefa.encerrada:
-            return redirect("pagina_area", nome_area=tarefa.area)
+            return redirect_autenticado(request, "pagina_area", nome_area=tarefa.area)
         if tarefa.eh_criador(usuario):
             # O criador já participa da própria tarefa; não entra na contagem
-            return redirect("pagina_area", nome_area=tarefa.area)
+            return redirect_autenticado(request, "pagina_area", nome_area=tarefa.area)
         ja_inscrito = ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).exists()
         if not ja_inscrito and tarefa.tem_vaga():
             ParticipacaoTarefa.objects.create(usuario=usuario, tarefa=tarefa)
-        return redirect("pagina_area", nome_area=tarefa.area)
+        return redirect_autenticado(request, "pagina_area", nome_area=tarefa.area)
 
 
 def cancelar_participacao(request, id_tarefa):
@@ -638,7 +696,7 @@ def cancelar_participacao(request, id_tarefa):
         tarefa = get_object_or_404(Tarefa, id=id_tarefa)
         if not tarefa.encerrada and not tarefa.eh_criador(usuario):
             ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).delete()
-        return redirect("pagina_area", nome_area=tarefa.area)
+        return redirect_autenticado(request, "pagina_area", nome_area=tarefa.area)
 
 
 # ─── Minhas Tarefas ───────────────────────────────────────────────────────────
@@ -650,10 +708,10 @@ def minhas_tarefas(request, nome_area=None, id_tarefa=None):
     if not nome_area:
         areas = usuario.get_areas_sidebar()
         if areas:
-            return redirect("minhas_tarefas", nome_area=areas[0])
-        return redirect("feed")
+            return redirect_autenticado(request, "minhas_tarefas", nome_area=areas[0])
+        return redirect_autenticado(request, "feed")
     if not usuario.tem_acesso_area(nome_area):
-        return redirect("feed")
+        return redirect_autenticado(request, "feed")
 
     # Tarefas em que o usuário participa + tarefas que ele mesmo criou
     # (o sub-líder já participa de todas as que cria).
@@ -688,7 +746,7 @@ def minhas_tarefas(request, nome_area=None, id_tarefa=None):
         # O usuário precisa participar da tarefa ou ter privilégio de liderança/criação
         participa = ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa_selecionada).exists()
         if not (participa or eh_criador or usuario.eh_administrador()):
-            return redirect("minhas_tarefas", nome_area=nome_area)
+            return redirect_autenticado(request, "minhas_tarefas", nome_area=nome_area)
         if eh_criador and aba_ativa == "concluir":
             aba_ativa = "detalhes"
         observacoes = tarefa_selecionada.observacoes.select_related("usuario").order_by("criada_em")
@@ -726,11 +784,11 @@ def adicionar_observacao(request, nome_area, id_tarefa):
         tarefa = get_object_or_404(Tarefa, id=id_tarefa)
         participa = ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).exists()
         if not participa and not tarefa.eh_criador(usuario):
-            return redirect("minhas_tarefas", nome_area=nome_area)
+            return redirect_autenticado(request, "minhas_tarefas", nome_area=nome_area)
         texto = request.POST.get("texto", "").strip()
         if texto:
             ObservacaoTarefa.objects.create(usuario=usuario, tarefa=tarefa, texto=texto)
-        return redirect(f"/area/{nome_area}/minhas-tarefas/{id_tarefa}/?aba=observacao")
+        return redirect_autenticado(request, f"/area/{nome_area}/minhas-tarefas/{id_tarefa}/?aba=observacao")
 
 
 def concluir_tarefa_usuario(request, nome_area, id_tarefa):
@@ -741,11 +799,11 @@ def concluir_tarefa_usuario(request, nome_area, id_tarefa):
         tarefa = get_object_or_404(Tarefa, id=id_tarefa)
         participa = ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).exists()
         if tarefa.eh_criador(usuario) or not participa:
-            return redirect("minhas_tarefas", nome_area=nome_area)
+            return redirect_autenticado(request, "minhas_tarefas", nome_area=nome_area)
 
         conclusao_existente = ConclusaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).first()
         if tarefa.encerrada and not conclusao_existente:
-            return redirect("minhas_tarefas", nome_area=nome_area)
+            return redirect_autenticado(request, "minhas_tarefas", nome_area=nome_area)
 
         comentario = request.POST.get("comentario", "").strip()
         conclusao, criada = ConclusaoTarefa.objects.get_or_create(
@@ -764,7 +822,7 @@ def concluir_tarefa_usuario(request, nome_area, id_tarefa):
             tarefa.concluida = True
             tarefa.save(update_fields=["encerrada", "concluida"])
 
-        return redirect(f"/area/{nome_area}/minhas-tarefas/{id_tarefa}/?aba=detalhes")
+        return redirect_autenticado(request, f"/area/{nome_area}/minhas-tarefas/{id_tarefa}/?aba=detalhes")
 
 
 # ─── Gerenciamento de áreas ──────────────────────────────────────────────────
@@ -807,16 +865,16 @@ def solicitar_area(request, nome_area):
         # FA04: Participante já pertence à área
         if nome_area in areas_usuario:
             definir_mensagem(request, messages.info, f"Você já participa da área {nome_area}.")
-            return redirect("nova_area")
+            return redirect_autenticado(request, "nova_area")
         # FA03: Solicitação já existente
         ja_solicitado = SolicitacaoArea.objects.filter(usuario=usuario, area=nome_area).exists()
         if ja_solicitado:
             definir_mensagem(request, messages.info, f"Você já possui uma solicitação pendente para {nome_area}.")
-            return redirect("nova_area")
+            return redirect_autenticado(request, "nova_area")
         # Fluxo Principal: Registra solicitação
         SolicitacaoArea.objects.create(usuario=usuario, area=nome_area)
         definir_mensagem(request, messages.success, f"Solicitação para {nome_area} enviada com sucesso!")
-    return redirect("nova_area")
+    return redirect_autenticado(request, "nova_area")
 
 
 def cancelar_solicitacao_area(request, nome_area):
@@ -827,7 +885,7 @@ def cancelar_solicitacao_area(request, nome_area):
         # FA01: Cancelar Solicitação
         SolicitacaoArea.objects.filter(usuario=usuario, area=nome_area).delete()
         definir_mensagem(request, messages.success, f"Solicitação para {nome_area} cancelada.")
-    return redirect("nova_area")
+    return redirect_autenticado(request, "nova_area")
 
 
 def sair_da_area(request, nome_area):
@@ -839,7 +897,7 @@ def sair_da_area(request, nome_area):
         matricula_digitada = request.POST.get("matricula_confirmacao", "").strip()
         if matricula_digitada != usuario.matricula:
             definir_mensagem(request, messages.error, "Matrícula incorreta. A confirmação para sair da área falhou.")
-            return redirect("nova_area")
+            return redirect_autenticado(request, "nova_area")
 
         areas = usuario.get_areas_list()
         if nome_area in areas:
@@ -852,7 +910,7 @@ def sair_da_area(request, nome_area):
             definir_mensagem(request, messages.success, f"Você saiu da área {nome_area} com sucesso.")
         elif usuario.eh_administrador():
             definir_mensagem(request, messages.info, "Como líder geral, seu acesso é total.")
-    return redirect("nova_area")
+    return redirect_autenticado(request, "nova_area")
 
 
 def aprovar_solicitacao_area(request, id_solicitacao):
@@ -861,12 +919,12 @@ def aprovar_solicitacao_area(request, id_solicitacao):
         return redirect("login")
     if not usuario.tem_acesso_painel():
         definir_mensagem(request, messages.error, "Você não tem acesso a esta funcionalidade.")
-        return redirect("feed")
+        return redirect_autenticado(request, "feed")
     if request.method == "POST":
         sol = get_object_or_404(SolicitacaoArea, id=id_solicitacao)
         if not (usuario.eh_administrador() or (usuario.sub_lider and usuario.sublider_de == sol.area)):
             definir_mensagem(request, messages.error, "Você não tem permissão para aprovar membros nesta área.")
-            return redirect("painel_administrativo")
+            return redirect_autenticado(request, "painel_administrativo")
         membro = sol.usuario
         areas = membro.get_areas_list()
         if sol.area not in areas:
@@ -875,7 +933,7 @@ def aprovar_solicitacao_area(request, id_solicitacao):
             membro.save()
         sol.delete()
         definir_mensagem(request, messages.success, f"Solicitação de {membro.matricula} para {sol.area} aprovada!")
-    return redirect("painel_administrativo")
+    return redirect_autenticado(request, "painel_administrativo")
 
 
 def recusar_solicitacao_area(request, id_solicitacao):
@@ -884,15 +942,15 @@ def recusar_solicitacao_area(request, id_solicitacao):
         return redirect("login")
     if not usuario.tem_acesso_painel():
         definir_mensagem(request, messages.error, "Você não tem acesso a esta funcionalidade.")
-        return redirect("feed")
+        return redirect_autenticado(request, "feed")
     if request.method == "POST":
         sol = get_object_or_404(SolicitacaoArea, id=id_solicitacao)
         if not (usuario.eh_administrador() or (usuario.sub_lider and usuario.sublider_de == sol.area)):
             definir_mensagem(request, messages.error, "Você não tem permissão para recusar solicitações desta área.")
-            return redirect("painel_administrativo")
+            return redirect_autenticado(request, "painel_administrativo")
         sol.delete()
         definir_mensagem(request, messages.success, "Solicitação de área recusada.")
-    return redirect("painel_administrativo")
+    return redirect_autenticado(request, "painel_administrativo")
 
 
 def aprovar_membro(request, id_usuario):
@@ -901,12 +959,12 @@ def aprovar_membro(request, id_usuario):
         return redirect("login")
     if not usuario.eh_administrador():
         definir_mensagem(request, messages.error, "Apenas o líder geral pode aprovar novos participantes.")
-        return redirect("painel_administrativo")
+        return redirect_autenticado(request, "painel_administrativo")
     if request.method == "POST":
         membro = get_object_or_404(Usuario, id=id_usuario)
         if membro.aprovado:
             definir_mensagem(request, messages.info, f"O participante {membro.matricula} já está aprovado.")
-            return redirect("painel_administrativo")
+            return redirect_autenticado(request, "painel_administrativo")
         # Ao aprovar o membro no sistema, cria as solicitações para os sub-líderes
         # das áreas selecionadas no cadastro. O membro tem acesso inicial apenas ao
         # feed e ao editar áreas, desbloqueando as áreas conforme cada sub-líder aprovar.
@@ -918,7 +976,7 @@ def aprovar_membro(request, id_usuario):
         membro.aprovado = True
         membro.save()
         definir_mensagem(request, messages.success, f"Membro {membro.matricula} aprovado no sistema! Solicitações de áreas emitidas para os sub-líderes.")
-    return redirect("painel_administrativo")
+    return redirect_autenticado(request, "painel_administrativo")
 
 
 def recusar_membro(request, id_usuario):
@@ -927,12 +985,12 @@ def recusar_membro(request, id_usuario):
         return redirect("login")
     if not usuario.eh_administrador():
         definir_mensagem(request, messages.error, "Apenas o líder geral pode recusar participantes.")
-        return redirect("painel_administrativo")
+        return redirect_autenticado(request, "painel_administrativo")
     if request.method == "POST":
         membro = get_object_or_404(Usuario, id=id_usuario)
         membro.delete()
         definir_mensagem(request, messages.success, "Cadastro do participante recusado.")
-    return redirect("painel_administrativo")
+    return redirect_autenticado(request, "painel_administrativo")
 
 
 def promover_sublider(request):
@@ -941,20 +999,20 @@ def promover_sublider(request):
         return redirect("login")
     if not usuario.eh_administrador():
         definir_mensagem(request, messages.error, "Apenas o líder geral pode promover sub-líderes.")
-        return redirect("painel_administrativo")
+        return redirect_autenticado(request, "painel_administrativo")
     if request.method == "POST":
         matricula = request.POST.get("matricula", "").strip()
         area = request.POST.get("area", "").strip()
 
         if area not in TODAS_AREAS:
             definir_mensagem(request, messages.error, "Selecione uma área válida para promover o sub-líder.")
-            return redirect("painel_administrativo")
+            return redirect_autenticado(request, "painel_administrativo")
 
         try:
             membro = Usuario.objects.get(matricula=matricula, aprovado=True)
         except Usuario.DoesNotExist:
             definir_mensagem(request, messages.error, f"Membro \"{matricula}\" não encontrado (ou ainda não aprovado).")
-            return redirect("painel_administrativo")
+            return redirect_autenticado(request, "painel_administrativo")
 
         if membro.eh_administrador():
             definir_mensagem(request, messages.error, "O líder não pode ser promovido a sub-líder.")
@@ -979,7 +1037,7 @@ def promover_sublider(request):
                 membro.sublider_de = area
                 membro.save()
                 definir_mensagem(request, messages.success, f"{membro.matricula} agora é sub-líder de {area}.")
-    return redirect("painel_administrativo")
+    return redirect_autenticado(request, "painel_administrativo")
 
 
 def remover_sublider(request, id_usuario):
@@ -988,7 +1046,7 @@ def remover_sublider(request, id_usuario):
         return redirect("login")
     if not usuario.eh_administrador():
         definir_mensagem(request, messages.error, "Apenas o líder geral pode remover sub-líderes.")
-        return redirect("painel_administrativo")
+        return redirect_autenticado(request, "painel_administrativo")
     if request.method == "POST":
         membro = get_object_or_404(Usuario, id=id_usuario)
         if not membro.eh_administrador():
@@ -996,7 +1054,7 @@ def remover_sublider(request, id_usuario):
             membro.sublider_de = None
             membro.save()
             definir_mensagem(request, messages.success, f"Cargo de sub-líder removido de {membro.matricula}.")
-    return redirect("painel_administrativo")
+    return redirect_autenticado(request, "painel_administrativo")
 
 
 def remover_membro(request, id_usuario):
@@ -1005,13 +1063,13 @@ def remover_membro(request, id_usuario):
         return redirect("login")
     if not usuario.eh_administrador():
         definir_mensagem(request, messages.error, "Apenas o líder geral pode remover membros.")
-        return redirect("painel_administrativo")
+        return redirect_autenticado(request, "painel_administrativo")
     if request.method == "POST":
         membro = get_object_or_404(Usuario, id=id_usuario)
         if not membro.eh_administrador():
             membro.delete()
             definir_mensagem(request, messages.success, "Membro removido com sucesso.")
-    return redirect("painel_administrativo")
+    return redirect_autenticado(request, "painel_administrativo")
 
 
 
@@ -1023,7 +1081,7 @@ def ver_conclusao(request, id_tarefa):
         tarefa = Tarefa.objects.get(id=id_tarefa)
     except Tarefa.DoesNotExist:
         definir_mensagem(request, messages.error, "Tarefa não encontrada.")
-        return redirect("painel_administrativo" if usuario.eh_administrador() else "feed")
+        return redirect_autenticado(request, "painel_administrativo" if usuario.eh_administrador() else "feed")
 
     area_nome = tarefa.area if tarefa.area else (usuario.sublider_de or "Cenário")
     conclusoes = ConclusaoTarefa.objects.filter(
@@ -1044,6 +1102,10 @@ def ver_conclusao(request, id_tarefa):
         nome_voltar = "Tarefas"
         aba_ativa_conclusao = "tarefas"
 
+    token_aba = getattr(request, "_explicit_user_token", None) or gerar_token_usuario(usuario.id)
+    if token_aba:
+        url_voltar = anexar_token_em_url(url_voltar, token_aba)
+
     return render(request, "ver_conclusao.html", {
         "usuario": usuario,
         "tarefa": tarefa,
@@ -1057,7 +1119,6 @@ def ver_conclusao(request, id_tarefa):
 
 
 def status_tarefa(request, id_tarefa):
-    limpar_mensagens(request)
     usuario = usuario_logado(request)
     if usuario is None:
         return JsonResponse({"erro": "Sessão expirada"}, status=401)

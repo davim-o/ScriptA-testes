@@ -393,3 +393,42 @@ class TampinhasRankingAndPresentationTests(TestCase):
         response = self.client.get(reverse("tampinhas"))
         self.assertEqual(response.context["progresso_porcentagem"], 100.0)
         self.assertEqual(response.context["total_geral_kg"], "50Kg")
+
+
+class MultiTabSessionIsolationTests(TestCase):
+    def setUp(self):
+        self.senha = "Senha123"
+        self.admin = Usuario.objects.create(
+            matricula="admin",
+            senha=make_password(self.senha),
+            diretoria="Líder",
+            areas="",
+            aprovado=True,
+        )
+        self.sublider_202409 = Usuario.objects.create(
+            matricula="202409",
+            senha=make_password(self.senha),
+            diretoria="Diatinf",
+            areas="Tampinhas",
+            aprovado=True,
+            sub_lider=True,
+            sublider_de="Tampinhas",
+        )
+
+    def test_clicking_painel_administrativo_keeps_202409_even_if_cookie_is_admin(self):
+        from .context_processors import gerar_token_usuario
+
+        token_202409 = gerar_token_usuario(self.sublider_202409.id)
+        # Simula que o cookie de sessão compartilhado do navegador foi sobrescrito pelo admin em outra aba
+        self.client.post(reverse("login"), {"matricula": "admin", "senha": self.senha})
+
+        # Aba do perfil 202409 clica em "Painel administrativo" (GET com _user_token da aba)
+        response = self.client.get(
+            reverse("painel_administrativo"),
+            {"_user_token": token_202409},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["usuario"].matricula, "202409")
+        self.assertContains(response, "Registrar doação")
+        self.assertNotContains(response, "Promover Sub-Líderes")
+

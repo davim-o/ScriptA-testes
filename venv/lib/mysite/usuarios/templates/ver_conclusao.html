@@ -1,0 +1,130 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrega — {{ tarefa.titulo }}</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/area.css' %}">
+    <link rel="stylesheet" href="{% static 'css/minhas_tarefas.css' %}">
+</head>
+<body>
+
+{% include "_sidebar.html" %}
+
+<main class="conteudo">
+    <div class="container-pagina">
+
+        <div class="titulo-pagina">
+            <h1>{{ area_ativa }}</h1>
+        </div>
+
+        <div class="abas">
+            <a href="{% url 'pagina_area' area_ativa %}" class="aba {% if aba_ativa_conclusao == 'tarefas' %}ativa{% endif %}">Tarefas</a>
+            {% if not usuario.eh_administrador %}
+            <a href="{% url 'minhas_tarefas' area_ativa %}" class="aba {% if aba_ativa_conclusao == 'minhas_tarefas' %}ativa{% endif %}">Minhas Tarefas</a>
+            {% endif %}
+        </div>
+
+        <div class="topo-navegacao-voltar">
+            <a href="{{ url_voltar }}" class="btn-voltar-link">
+                <span class="seta-voltar">←</span> Voltar para {{ nome_voltar }}
+            </a>
+        </div>
+
+        <div class="tarefa-detalhe-card">
+            <div class="tarefa-detalhe-header">
+                <div class="tarefa-detalhe-info">
+                    <h3 class="tarefa-titulo">{{ tarefa.titulo }}</h3>
+                    <div class="tarefa-detalhes" style="margin-top:6px">
+                        {% if tarefa.tipo == "fixa" and tarefa.horario %}
+                        <span class="detalhe-item">
+                            <img src="{% static 'imgs/icone-relogio.png' %}" alt="">
+                            {{ tarefa.horario|time:"H:i" }}
+                        </span>
+                        {% endif %}
+                        {% if tarefa.tipo == "fixa" and tarefa.data %}
+                        <span class="detalhe-item">
+                            <img src="{% static 'imgs/icone-calendario.png' %}" alt="">
+                            {{ tarefa.data|date:"j/n" }}
+                        </span>
+                        {% elif tarefa.data_inicio %}
+                        <span class="detalhe-item">
+                            <img src="{% static 'imgs/icone-calendario.png' %}" alt="">
+                            {{ tarefa.data_inicio|date:"j/n" }}{% if tarefa.data_fim %} - {{ tarefa.data_fim|date:"j/n" }}{% endif %}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="tarefa-detalhe-vagas">
+                    <img src="{% static 'imgs/icone-equipe.png' %}" alt="">
+                    <span>{{ tarefa.total_participantes }}/{{ tarefa.limite_participantes }}</span>
+                </div>
+                <span class="badge-concluida-header">✓ Concluída</span>
+            </div>
+
+            {% if tarefa.imagem and tarefa.imagem.name %}
+            <div class="detalhe-secao" style="padding: 16px 24px 0;">
+                <p class="detalhe-label">Fotos de apoio <span class="fotos-count">1</span></p>
+                <div class="fotos-apoio">
+                    <a href="{{ tarefa.imagem.url }}" target="_blank" title="Clique para ver foto de apoio">
+                        <img src="{{ tarefa.imagem.url }}" alt="Foto de apoio" class="foto-apoio">
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="sub-aba-conteudo">
+                <div class="detalhe-header-toggle" onclick="toggleEntregas()">
+                    <p class="detalhe-label">Entregas dos participantes <span class="fotos-count">{{ conclusoes.count }}</span></p>
+                    <button type="button" class="btn-toggle-entregas" id="btn-toggle-entregas" aria-label="Ocultar ou mostrar entregas">
+                        <span id="toggle-texto">Ocultar entregas</span>
+                        <span class="toggle-seta" id="toggle-seta">▲</span>
+                    </button>
+                </div>
+
+                <div class="lista-conclusoes lista-conclusoes-colapsavel" id="lista-conclusoes-wrapper" style="margin-top:12px;">
+                    {% for c in conclusoes %}
+                    <div class="conclusao-item">
+                        <div class="conclusao-topo">
+                            <div class="obs-avatar">{{ c.usuario.matricula|first|upper }}</div>
+                            <div class="conclusao-info">
+                                <span class="obs-nome">{{ c.usuario.matricula }}</span>
+                                <span class="obs-data">{{ c.criada_em|date:"d/m/Y H:i" }}</span>
+                            </div>
+                        </div>
+                        {% if c.imagem and c.imagem.name %}
+                        <div class="conclusao-imagem">
+                            <a href="{{ c.imagem.url }}" target="_blank" title="Clique para abrir a imagem em tamanho original">
+                                <img src="{{ c.imagem.url }}" alt="Comprovação enviada por {{ c.usuario.matricula }}" class="foto-conclusao">
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% if c.comentario %}
+                        <p class="conclusao-comentario">{{ c.comentario|linebreaksbr }}</p>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <p class="sem-itens">Nenhuma entrega registrada ainda.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<script>
+function toggleEntregas() {
+    const wrapper = document.getElementById('lista-conclusoes-wrapper');
+    const seta = document.getElementById('toggle-seta');
+    const texto = document.getElementById('toggle-texto');
+    if (!wrapper) return;
+    const isRecolhida = wrapper.classList.toggle('recolhida');
+    if (seta) seta.classList.toggle('girada', isRecolhida);
+    if (texto) texto.textContent = isRecolhida ? 'Mostrar entregas' : 'Ocultar entregas';
+}
+</script>
+</body>
+</html>

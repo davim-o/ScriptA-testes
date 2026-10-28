@@ -21,9 +21,9 @@
         </div>
 
         <div class="abas">
-            <a href="{% url 'pagina_area' area_ativa %}" class="aba {% if aba_ativa_conclusao == 'tarefas' %}ativa{% endif %}">Tarefas</a>
+            <a href="{% url 'pagina_area' area_ativa %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba {% if aba_ativa_conclusao == 'tarefas' %}ativa{% endif %}">Tarefas</a>
             {% if not usuario.eh_administrador %}
-            <a href="{% url 'minhas_tarefas' area_ativa %}" class="aba {% if aba_ativa_conclusao == 'minhas_tarefas' %}ativa{% endif %}">Minhas Tarefas</a>
+            <a href="{% url 'minhas_tarefas' area_ativa %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba {% if aba_ativa_conclusao == 'minhas_tarefas' %}ativa{% endif %}">Minhas Tarefas</a>
             {% endif %}
         </div>
 
@@ -126,5 +126,6 @@ function toggleEntregas() {
     if (texto) texto.textContent = isRecolhida ? 'Mostrar entregas' : 'Ocultar entregas';
 }
 </script>
+<script src="{% static 'js/toast.js' %}"></script>
 </body>
 </html>

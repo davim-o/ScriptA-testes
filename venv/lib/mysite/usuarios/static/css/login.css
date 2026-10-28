@@ -1,0 +1,259 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #0B1020;
+    color: white;
+}
+
+header {
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding: 24px clamp(24px, 5vw, 60px);
+}
+
+header img {
+    height: 72px;
+    width: auto;
+    object-fit: contain;
+}
+
+h1 {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-size: clamp(1.45rem, 2.2vw, 1.85rem);
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+main {
+    flex: 1;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 10px clamp(20px, 4vw, 60px) 40px;
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: clamp(36px, 5vw, 70px);
+    align-items: center;
+}
+
+.imagens {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(14px, 2vw, 24px);
+    margin: 0 auto;
+    width: 100%;
+}
+
+.imagens img {
+    width: clamp(75px, 7.5vw, 98px);
+    height: clamp(75px, 7.5vw, 98px);
+    object-fit: contain;
+    display: block;
+    transition: transform 0.25s ease, filter 0.25s ease;
+    filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45));
+}
+
+.imagens img:hover {
+    transform: scale(1.1);
+    filter: drop-shadow(0 8px 20px rgba(139, 119, 252, 0.5));
+}
+
+form {
+    width: 100%;
+    max-width: 400px;
+    padding: 30px 24px;
+    color: white;
+    border-radius: 18px;
+    background-color: #0c1022;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #1e2649;
+    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.4);
+}
+
+.formula {
+    width: 100%;
+}
+
+.mat,
+.senha {
+    margin-bottom: 18px;
+}
+
+.mat p,
+.senha p {
+    margin: 0 0 7px 4px;
+    font-size: 13.5px;
+    color: #cbd5e1;
+}
+
+input {
+    width: 100%;
+    height: 44px;
+    border-radius: 9px;
+    background-color: #070a16;
+    border: 1px solid #20284d;
+    color: white;
+    padding: 0 13px;
+    font-size: 13.5px;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+}
+
+input:focus {
+    border-color: #8b77fc;
+    box-shadow: 0 0 0 3px rgba(139, 119, 252, 0.15);
+}
+
+input::placeholder {
+    color: #6f7699;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px #070a16 inset;
+    -webkit-text-fill-color: white;
+    caret-color: white;
+}
+
+.erro-login {
+    width: 100%;
+    margin: -2px 0 16px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(173,53,53,.18);
+    border: 1px solid #713030;
+    color: #e89090;
+    font-size: 13px;
+    text-align: center;
+}
+
+.butao {
+    margin-top: 10px;
+}
+
+.butao button {
+    width: 100%;
+    height: 46px;
+    border-radius: 10px;
+    background-color: #8b77fc;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 14.5px;
+    font-weight: 600;
+    transition: background .2s, transform .2s;
+}
+
+.butao button:hover {
+    background: #7964f4;
+    transform: translateY(-1px);
+}
+
+#cadbutao {
+    margin-top: 16px;
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    color: #7d84a5;
+    font-size: 13px;
+}
+
+#cadbutao a {
+    color: #9C85F9;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+#cadbutao a:hover {
+    color: #b3a2ff;
+}
+
+footer {
+    width: 100%;
+    min-height: 68px;
+    background-color: #090D19;
+    color: #686f8d;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 12px;
+}
+
+@media (max-width: 920px) {
+    header {
+        justify-content: center;
+        padding-bottom: 10px;
+    }
+
+    main {
+        grid-template-columns: 1fr;
+        max-width: 480px;
+        margin-top: 10px;
+        padding-bottom: 30px;
+    }
+
+    .imagens {
+        order: 2;
+        gap: 20px 24px;
+        margin-top: 24px;
+    }
+
+    .imagens img {
+        width: 110px;
+        height: 110px;
+    }
+
+    form {
+        order: 1;
+    }
+}
+
+@media (max-width: 480px) {
+    header {
+        gap: 16px;
+        padding: 18px 16px;
+    }
+
+    header img {
+        width: 72px;
+        height: 72px;
+    }
+
+    h1 {
+        font-size: 1.75rem;
+    }
+
+    main {
+        width: calc(100% - 24px);
+        margin-bottom: 24px;
+        padding: 10px 0 24px;
+    }
+
+    form {
+        padding: 24px 18px;
+    }
+
+    .imagens img {
+        width: 80px;
+        height: 80px;
+    }
+}

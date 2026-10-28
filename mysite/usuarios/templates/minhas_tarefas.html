@@ -22,9 +22,9 @@
 
         <!-- Abas superiores — sempre as duas visíveis -->
         <div class="abas">
-            <a href="{% url 'pagina_area' area_ativa %}" class="aba">Tarefas</a>
+            <a href="{% url 'pagina_area' area_ativa %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba">Tarefas</a>
             {% if not usuario.eh_administrador %}
-            <a href="{% url 'minhas_tarefas' area_ativa %}" class="aba ativa">Minhas Tarefas</a>
+            <a href="{% url 'minhas_tarefas' area_ativa %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba ativa">Minhas Tarefas</a>
             {% endif %}
         </div>
 
@@ -48,7 +48,7 @@
                         {% if tarefa.data_inicio %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa.data_inicio|date:"j/n" }}{% if tarefa.data_fim %} - {{ tarefa.data_fim|date:"j/n" }}{% endif %}</span>{% endif %}
                     {% endif %}
                     <div class="tarefa-acao">
-                        <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa.id %}" class="btn-ver-tarefa">Ver tarefa</a>
+                        <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="btn-ver-tarefa">Ver tarefa</a>
                         {% if tarefa.criada_por != usuario %}
                         <form action="{% url 'cancelar_participacao' tarefa.id %}" method="POST">
                             {% csrf_token %}
@@ -79,7 +79,7 @@
                         {% if tarefa.data_inicio %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa.data_inicio|date:"j/n" }}{% if tarefa.data_fim %} - {{ tarefa.data_fim|date:"j/n" }}{% endif %}</span>{% endif %}
                     {% endif %}
                     <div class="tarefa-acao">
-                        <a href="{% url 'ver_conclusao' tarefa.id %}?origem=minhas_tarefas" class="btn-ver-conclusao">Ver entrega</a>
+                        <a href="{% url 'ver_conclusao' tarefa.id %}?origem=minhas_tarefas{% if user_token %}&_user_token={{ user_token|urlencode }}{% endif %}" class="btn-ver-conclusao">Ver entrega</a>
                     </div>
                 </div>
             </div>
@@ -90,7 +90,7 @@
         {% else %}
         <!-- ── Detalhe da tarefa ── -->
         <div class="topo-navegacao-voltar">
-            <a href="{% url 'minhas_tarefas' area_ativa %}" class="btn-voltar-link">
+            <a href="{% url 'minhas_tarefas' area_ativa %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="btn-voltar-link">
                 <span class="seta-voltar">←</span> Voltar para Minhas Tarefas
             </a>
         </div>
@@ -121,12 +121,12 @@
             </div>
 
             <div class="sub-abas">
-                <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa_selecionada.id %}?aba=detalhes"
+                <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa_selecionada.id %}?aba=detalhes{% if user_token %}&_user_token={{ user_token|urlencode }}{% endif %}"
                    class="sub-aba {% if aba_ativa == 'detalhes' %}ativa{% endif %}">Detalhes</a>
-                <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa_selecionada.id %}?aba=observacao"
+                <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa_selecionada.id %}?aba=observacao{% if user_token %}&_user_token={{ user_token|urlencode }}{% endif %}"
                    class="sub-aba {% if aba_ativa == 'observacao' %}ativa{% endif %}">Adicionar Observação</a>
                 {% if not eh_criador %}
-                <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa_selecionada.id %}?aba=concluir"
+                <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa_selecionada.id %}?aba=concluir{% if user_token %}&_user_token={{ user_token|urlencode }}{% endif %}"
                    class="sub-aba {% if aba_ativa == 'concluir' %}ativa{% endif %}">Concluir</a>
                 {% endif %}
             </div>

@@ -20,9 +20,9 @@
         </div>
 
         <div class="abas">
-            <a href="{% url 'pagina_area' nome_area %}" class="aba ativa">Tarefas</a>
+            <a href="{% url 'pagina_area' nome_area %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba ativa">Tarefas</a>
             {% if not usuario.eh_administrador %}
-            <a href="{% url 'minhas_tarefas' nome_area %}" class="aba">Minhas Tarefas</a>
+            <a href="{% url 'minhas_tarefas' nome_area %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba">Minhas Tarefas</a>
             {% endif %}
         </div>
 
@@ -62,10 +62,10 @@
 
                         <div class="tarefa-acao">
                             {% if usuario.eh_administrador %}
-                                <a href="{% url 'ver_conclusao' tarefa.id %}?origem=tarefas" class="btn-ver-conclusao">Visualizar</a>
+                                <a href="{% url 'ver_conclusao' tarefa.id %}?origem=tarefas{% if user_token %}&_user_token={{ user_token|urlencode }}{% endif %}" class="btn-ver-conclusao">Visualizar</a>
                             {% elif tarefa.id in ids_concluidos %}
                                 <span class="txt-concluida">Concluída</span>
-                                <a href="{% url 'ver_conclusao' tarefa.id %}?origem=tarefas" class="btn-ver-conclusao">Ver entrega</a>
+                                <a href="{% url 'ver_conclusao' tarefa.id %}?origem=tarefas{% if user_token %}&_user_token={{ user_token|urlencode }}{% endif %}" class="btn-ver-conclusao">Ver entrega</a>
                             {% elif tarefa.id in participando %}
                                 <span class="btn-participando" aria-label="Você está participando desta tarefa">Participando</span>
                             {% elif tarefa.tem_vaga %}
