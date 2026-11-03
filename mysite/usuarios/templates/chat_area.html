@@ -1,0 +1,144 @@
+{% load static usuarios_extras %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ nome_area }} — Chat</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/area.css' %}">
+</head>
+<body>
+
+{% include "_sidebar.html" %}
+
+<main class="conteudo">
+    <div class="container-pagina">
+
+        <div class="titulo-pagina">
+            <h1>{{ nome_area }}</h1>
+        </div>
+
+        <div class="abas">
+            <a href="{% url 'chat_area' nome_area %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba ativa">Chat</a>
+            <a href="{% url 'pagina_area' nome_area %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba">Tarefas</a>
+            {% if not usuario.eh_administrador %}
+            <a href="{% url 'minhas_tarefas' nome_area %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba">Minhas Tarefas</a>
+            {% endif %}
+        </div>
+
+        <!-- Caixa de publicação no chat da área -->
+        <section class="chat-nova-mensagem" id="box-nova-mensagem">
+            <form action="{% url 'publicar_chat_area' nome_area %}" method="POST" id="form-chat-area">
+                {% csrf_token %}
+                <input type="hidden" name="resposta_a" id="input-resposta-a" value="">
+
+                <div class="chat-preview-resposta" id="preview-resposta-chat" style="display: none;">
+                    <div class="chat-preview-info">
+                        <div class="chat-avatar chat-avatar-pequeno avatar-chat-roxo" id="preview-resposta-avatar">U</div>
+                        <div class="chat-citacao-textos">
+                            <span class="chat-citacao-autor" id="preview-resposta-autor"></span>
+                            <p class="chat-citacao-mensagem" id="preview-resposta-texto"></p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-cancelar-resposta" id="btn-cancelar-resposta" title="Cancelar resposta">✕</button>
+                </div>
+
+                <div class="chat-topo-publicacao">
+                    <div class="chat-avatar avatar-chat-escuro">
+                        {{ usuario.matricula|first|upper }}
+                    </div>
+                    <textarea
+                        name="texto"
+                        id="textarea-chat-area"
+                        placeholder="A {{ usuario.diretoria|lower|default:'equipe' }} vai ganhar!"
+                        required></textarea>
+                </div>
+
+                <div class="chat-acoes-publicacao">
+                    <button type="submit" class="btn-publicar-chat">Publicar</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Lista de mensagens do chat da área -->
+        <section class="lista-mensagens-chat">
+            {% for msg in mensagens %}
+            <article class="chat-card {% if msg.resposta_a %}chat-card-com-resposta{% endif %}" id="mensagem-{{ msg.id }}">
+
+                {% if msg.resposta_a %}
+                <div class="chat-resposta-citacao">
+                    <div class="chat-avatar chat-avatar-pequeno {{ msg.resposta_a.usuario.matricula|cor_avatar }}">
+                        {{ msg.resposta_a.usuario.matricula|first|upper }}
+                    </div>
+                    <div class="chat-citacao-textos">
+                        <span class="chat-citacao-autor">{{ msg.resposta_a.usuario.matricula }}</span>
+                        <p class="chat-citacao-mensagem">{{ msg.resposta_a.texto }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="chat-corpo-card">
+                    <div class="chat-avatar {{ msg.usuario.matricula|cor_avatar }}">
+                        {{ msg.usuario.matricula|first|upper }}
+                    </div>
+
+                    <div class="chat-conteudo-principal">
+                        <div class="chat-cabecalho-linha">
+                            <h3 class="chat-autor">{{ msg.usuario.matricula }}</h3>
+                        </div>
+
+                        <p class="chat-texto">{{ msg.texto }}</p>
+
+                        <div class="chat-rodape-acoes">
+                            <button type="button" class="btn-curtir-chat {% if msg.id in curtidas %}curtido{% endif %}" data-id="{{ msg.id }}">
+                                <img
+                                    class="icone-curtir-chat"
+                                    src="{% if msg.id in curtidas %}{% static 'imgs/coracao-vermelho.png' %}{% else %}{% static 'imgs/coracao-cinza.png' %}{% endif %}"
+                                    alt="Curtir">
+                                <span class="contador-curtidas-chat">{{ msg.total_curtidas }}</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                class="btn-responder-chat"
+                                data-id="{{ msg.id }}"
+                                data-autor="{{ msg.usuario.matricula }}"
+                                data-inicial="{{ msg.usuario.matricula|first|upper }}"
+                                data-cor="{{ msg.usuario.matricula|cor_avatar }}"
+                                data-texto="{{ msg.texto|truncatechars:140 }}">
+                                <svg class="icone-responder-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 17 4 12 9 7"></polyline>
+                                    <path d="M20 18v-2a4 4 0 0 0-4-4H4"></path>
+                                </svg>
+                                <span>Responder</span>
+                            </button>
+
+                            {% if msg.usuario_id == usuario.id or usuario.eh_administrador or usuario.sub_lider and usuario.sublider_de == nome_area %}
+                            <form action="{% url 'excluir_mensagem_area' msg.id %}" method="POST" class="form-excluir-chat">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-excluir-chat" title="Excluir mensagem">
+                                    <img src="{% static 'imgs/lixeira.png' %}" alt="Excluir">
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+            </article>
+            {% empty %}
+            <div class="sem-mensagens-chat">
+                Nenhuma mensagem nesta área ainda. Comece a conversa!
+            </div>
+            {% endfor %}
+        </section>
+
+    </div>
+</main>
+
+<script src="{% static 'js/chat_area.js' %}"></script>
+<script src="{% static 'js/toast.js' %}"></script>
+</body>
+</html>
+

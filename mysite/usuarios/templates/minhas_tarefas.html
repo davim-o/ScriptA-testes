@@ -20,8 +20,9 @@
             <h1>{{ area_ativa }}</h1>
         </div>
 
-        <!-- Abas superiores — sempre as duas visíveis -->
+        <!-- Abas superiores — sempre visíveis -->
         <div class="abas">
+            <a href="{% url 'chat_area' area_ativa %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba">Chat</a>
             <a href="{% url 'pagina_area' area_ativa %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba">Tarefas</a>
             {% if not usuario.eh_administrador %}
             <a href="{% url 'minhas_tarefas' area_ativa %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba ativa">Minhas Tarefas</a>

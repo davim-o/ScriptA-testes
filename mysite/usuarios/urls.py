@@ -30,6 +30,10 @@ urlpatterns=[
 
     # Áreas
     path("area/<str:nome_area>/", views.pagina_area, name="pagina_area"),
+    path("area/<str:nome_area>/chat/", views.chat_area, name="chat_area"),
+    path("area/<str:nome_area>/chat/publicar/", views.publicar_chat_area, name="publicar_chat_area"),
+    path("area/chat/curtir/<int:id_mensagem>/", views.curtir_mensagem_area, name="curtir_mensagem_area"),
+    path("area/chat/excluir/<int:id_mensagem>/", views.excluir_mensagem_area, name="excluir_mensagem_area"),
     path("area/participar/<int:id_tarefa>/", views.participar_tarefa, name="participar_tarefa"),
     path("area/cancelar/<int:id_tarefa>/", views.cancelar_participacao, name="cancelar_participacao"),
 

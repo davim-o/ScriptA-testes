@@ -184,3 +184,38 @@ class DoacaoTampinhas(models.Model):
 
     def __str__(self):
         return f"{self.quantidade_gramas}g para {self.usuario.matricula}"
+
+
+class MensagemArea(models.Model):
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="mensagens_area")
+    area = models.CharField(max_length=50)
+    texto = models.TextField()
+    resposta_a = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="respostas",
+    )
+    criada_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-criada_em"]
+
+    def total_curtidas(self):
+        return self.curtidas.count()
+
+    def __str__(self):
+        return f"[{self.area}] {self.usuario.matricula} - {self.id}"
+
+
+class CurtidaMensagemArea(models.Model):
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="curtidas_mensagem_area")
+    mensagem = models.ForeignKey(MensagemArea, on_delete=models.CASCADE, related_name="curtidas")
+
+    class Meta:
+        unique_together = ("usuario", "mensagem")
+
+    def __str__(self):
+        return f"{self.usuario.matricula} curtiu msg {self.mensagem_id}"
+

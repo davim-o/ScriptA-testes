@@ -3,7 +3,7 @@ from django.contrib.auth.hashers import make_password
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import ParticipacaoTarefa, Tarefa, Usuario, DoacaoTampinhas
+from .models import ParticipacaoTarefa, Tarefa, Usuario, DoacaoTampinhas, MensagemArea, CurtidaMensagemArea
 from .views import formatar_kg, META_TAMPINHAS_KG
 
 
@@ -431,4 +431,75 @@ class MultiTabSessionIsolationTests(TestCase):
         self.assertEqual(response.context["usuario"].matricula, "202409")
         self.assertContains(response, "Registrar doação")
         self.assertNotContains(response, "Promover Sub-Líderes")
+
+
+class ChatAreaTests(TestCase):
+    def setUp(self):
+        self.senha = "Senha123"
+        self.membro_cenario_1 = Usuario.objects.create(
+            matricula="Maria Joaquina",
+            senha=make_password(self.senha),
+            diretoria="Diatinf",
+            areas="Cenário",
+            aprovado=True,
+        )
+        self.membro_cenario_2 = Usuario.objects.create(
+            matricula="Cirilo Jr.",
+            senha=make_password(self.senha),
+            diretoria="Diatinf",
+            areas="Cenário",
+            aprovado=True,
+        )
+        self.membro_staff = Usuario.objects.create(
+            matricula="Jorginho Staff",
+            senha=make_password(self.senha),
+            diretoria="Diaren",
+            areas="Staff",
+            aprovado=True,
+        )
+
+    def test_chat_is_isolated_per_area(self):
+        self.client.post(reverse("login"), {"matricula": self.membro_cenario_1.matricula, "senha": self.senha})
+        self.client.post(
+            reverse("publicar_chat_area", args=["Cenário"]),
+            {"texto": "Mensagem exclusiva do Cenário!"},
+        )
+        self.assertEqual(MensagemArea.objects.filter(area="Cenário").count(), 1)
+        self.assertEqual(MensagemArea.objects.filter(area="Staff").count(), 0)
+
+        resp_cenario = self.client.get(reverse("chat_area", args=["Cenário"]))
+        self.assertEqual(resp_cenario.status_code, 200)
+        self.assertContains(resp_cenario, "Mensagem exclusiva do Cenário!")
+
+        # Membro de outra área (Staff) não vê a mensagem no chat de Staff e não acessa Cenário
+        self.client.post(reverse("login"), {"matricula": self.membro_staff.matricula, "senha": self.senha})
+        resp_staff = self.client.get(reverse("chat_area", args=["Staff"]))
+        self.assertEqual(resp_staff.status_code, 200)
+        self.assertNotContains(resp_staff, "Mensagem exclusiva do Cenário!")
+
+        resp_bloqueado = self.client.get(reverse("chat_area", args=["Cenário"]))
+        self.assertRedirects(resp_bloqueado, reverse("feed"))
+
+    def test_reply_and_like_in_area_chat(self):
+        self.client.post(reverse("login"), {"matricula": self.membro_cenario_1.matricula, "senha": self.senha})
+        msg_original = MensagemArea.objects.create(
+            usuario=self.membro_cenario_2,
+            area="Cenário",
+            texto="Vamos ganhar esse ano!",
+        )
+
+        # Responder à mensagem
+        self.client.post(
+            reverse("publicar_chat_area", args=["Cenário"]),
+            {"texto": "Vamos!!!!!", "resposta_a": str(msg_original.id)},
+        )
+        resposta = MensagemArea.objects.filter(area="Cenário", texto="Vamos!!!!!").first()
+        self.assertIsNotNone(resposta)
+        self.assertEqual(resposta.resposta_a_id, msg_original.id)
+
+        # Curtir a mensagem
+        resp_like = self.client.post(reverse("curtir_mensagem_area", args=[msg_original.id]))
+        self.assertEqual(resp_like.status_code, 200)
+        self.assertEqual(resp_like.json(), {"curtido": True, "curtidas": 1})
+
 

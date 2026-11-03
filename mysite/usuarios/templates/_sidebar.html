@@ -31,7 +31,7 @@
             <div class="menu-separador"></div>
 
             {% for area in usuario.get_areas_sidebar %}
-                <a href="{% url 'pagina_area' area %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="{% if area_ativa == area %}ativo{% endif %}">
+                <a href="{% url 'chat_area' area %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="{% if area_ativa == area %}ativo{% endif %}">
                     <img src="{% static 'imgs/icone-area.png' %}" alt=""><span>{{ area }}</span>
                     {% if usuario.sub_lider and area == usuario.sublider_de %}<span class="ponto-sublider"></span>{% endif %}
                 </a>

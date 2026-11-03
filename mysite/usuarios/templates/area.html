@@ -20,6 +20,7 @@
         </div>
 
         <div class="abas">
+            <a href="{% url 'chat_area' nome_area %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba">Chat</a>
             <a href="{% url 'pagina_area' nome_area %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba ativa">Tarefas</a>
             {% if not usuario.eh_administrador %}
             <a href="{% url 'minhas_tarefas' nome_area %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba">Minhas Tarefas</a>

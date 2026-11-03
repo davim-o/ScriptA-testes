@@ -14,7 +14,8 @@ from django.core import signing
 from .context_processors import gerar_token_usuario, decodificar_token_usuario
 from .models import (
     Usuario, Publicacao, Curtida, Tarefa, ParticipacaoTarefa,
-    SolicitacaoArea, ObservacaoTarefa, ConclusaoTarefa, DoacaoTampinhas
+    SolicitacaoArea, ObservacaoTarefa, ConclusaoTarefa, DoacaoTampinhas,
+    MensagemArea, CurtidaMensagemArea
 )
 
 AREAS_INFO = {
@@ -651,6 +652,8 @@ def pagina_area(request, nome_area):
         return redirect("login")
     if not usuario.tem_acesso_area(nome_area):
         return redirect_autenticado(request, "feed")
+    if request.GET.get("aba") == "chat":
+        return chat_area(request, nome_area)
     ids_concluidos = ConclusaoTarefa.objects.filter(usuario=usuario).values_list("tarefa_id", flat=True)
     if usuario.eh_administrador():
         tarefas = Tarefa.objects.filter(area=nome_area).prefetch_related("participacoes").order_by("-criada_em")
@@ -667,6 +670,98 @@ def pagina_area(request, nome_area):
         "area_ativa": nome_area,
         "pagina_ativa": "",
     })
+
+
+def chat_area(request, nome_area):
+    usuario = usuario_logado(request)
+    if usuario is None:
+        return redirect("login")
+    if nome_area not in TODAS_AREAS or not usuario.tem_acesso_area(nome_area):
+        return redirect_autenticado(request, "feed")
+
+    mensagens = (
+        MensagemArea.objects.filter(area=nome_area)
+        .select_related("usuario", "resposta_a", "resposta_a__usuario")
+        .prefetch_related("curtidas")
+        .order_by("-criada_em")
+    )
+    curtidas = set(
+        CurtidaMensagemArea.objects.filter(
+            usuario=usuario, mensagem__area=nome_area
+        ).values_list("mensagem_id", flat=True)
+    )
+    return render(request, "chat_area.html", {
+        "usuario": usuario,
+        "nome_area": nome_area,
+        "mensagens": mensagens,
+        "curtidas": curtidas,
+        "area_ativa": nome_area,
+        "pagina_ativa": "",
+    })
+
+
+def publicar_chat_area(request, nome_area):
+    usuario = usuario_logado(request)
+    if usuario is None:
+        return redirect("login")
+    if nome_area not in TODAS_AREAS or not usuario.tem_acesso_area(nome_area):
+        return redirect_autenticado(request, "feed")
+
+    if request.method == "POST":
+        texto = request.POST.get("texto", "").strip()
+        resposta_a_id = (request.POST.get("resposta_a") or "").strip()
+        resposta_a_obj = None
+        if resposta_a_id.isdigit():
+            resposta_a_obj = MensagemArea.objects.filter(
+                id=int(resposta_a_id), area=nome_area
+            ).first()
+        if texto:
+            MensagemArea.objects.create(
+                usuario=usuario,
+                area=nome_area,
+                texto=texto,
+                resposta_a=resposta_a_obj,
+            )
+    return redirect_autenticado(request, "chat_area", nome_area=nome_area)
+
+
+def curtir_mensagem_area(request, id_mensagem):
+    if request.method != "POST":
+        return JsonResponse({"erro": "Método inválido"}, status=405)
+    usuario = usuario_logado(request)
+    if usuario is None:
+        return JsonResponse({"erro": "Sessão expirada"}, status=401)
+    mensagem = get_object_or_404(MensagemArea, id=id_mensagem)
+    if not usuario.tem_acesso_area(mensagem.area):
+        return JsonResponse({"erro": "Acesso negado"}, status=403)
+
+    curtida = CurtidaMensagemArea.objects.filter(usuario=usuario, mensagem=mensagem)
+    if curtida.exists():
+        curtida.delete()
+        curtido = False
+    else:
+        CurtidaMensagemArea.objects.create(usuario=usuario, mensagem=mensagem)
+        curtido = True
+    return JsonResponse({"curtido": curtido, "curtidas": mensagem.total_curtidas()})
+
+
+def excluir_mensagem_area(request, id_mensagem):
+    usuario = usuario_logado(request)
+    if usuario is None:
+        return redirect("login")
+    mensagem = get_object_or_404(MensagemArea, id=id_mensagem)
+    nome_area = mensagem.area
+    if not usuario.tem_acesso_area(nome_area):
+        return redirect_autenticado(request, "feed")
+    if request.method == "POST":
+        pode_excluir = (
+            mensagem.usuario_id == usuario.id
+            or usuario.eh_administrador()
+            or (usuario.sub_lider and usuario.sublider_de == nome_area)
+        )
+        if pode_excluir:
+            mensagem.delete()
+    return redirect_autenticado(request, "chat_area", nome_area=nome_area)
 
 
 def participar_tarefa(request, id_tarefa):
