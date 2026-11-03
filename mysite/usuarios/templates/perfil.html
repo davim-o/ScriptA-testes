@@ -1,0 +1,358 @@
+{% load static usuarios_extras %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil — {{ perfil_usuario.nome_exibicao }}</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/feed.css' %}">
+    <link rel="stylesheet" href="{% static 'css/perfil.css' %}">
+</head>
+<body>
+
+{% include "_sidebar.html" %}
+
+<main class="conteudo">
+    <div class="container-pagina container-perfil">
+
+        <div class="titulo-pagina cabecalho-pagina-perfil">
+            <h1>{% if eh_proprio_perfil %}Meu Perfil{% else %}Perfil do Membro{% endif %}</h1>
+            {% if not eh_proprio_perfil %}
+            <a href="javascript:history.back()" class="btn-voltar-perfil">← Voltar</a>
+            {% endif %}
+        </div>
+
+        <!-- Card Principal de Identidade do Perfil -->
+        <section class="perfil-hero-card">
+            <div class="perfil-banner"></div>
+
+            <div class="perfil-corpo">
+                <div class="perfil-topo-linha">
+                    <div class="perfil-avatar-wrapper">
+                        <div class="perfil-avatar-grande {{ perfil_usuario.matricula|cor_avatar }}" id="avatar-principal-perfil">
+                            {% if perfil_usuario.foto and perfil_usuario.foto.name %}
+                                <img src="{{ perfil_usuario.foto.url }}" alt="{{ perfil_usuario.nome_exibicao }}" class="perfil-foto-img">
+                            {% else %}
+                                <span>{{ perfil_usuario.inicial_perfil }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if eh_proprio_perfil %}
+                    <div class="perfil-acoes-topo">
+                        <button type="button" class="btn-abrir-edicao" id="btn-toggle-edicao" onclick="alternarEdicaoPerfil()">
+                            ✎ Editar perfil
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="perfil-identidade">
+                    <div class="perfil-nome-linha">
+                        <h2 class="perfil-nome">{{ perfil_usuario.nome_exibicao }}</h2>
+                        <span class="perfil-tag-cargo {{ perfil_usuario.cargo_classe }}">
+                            {% if perfil_usuario.eh_administrador %}
+                                ADM
+                            {% elif perfil_usuario.sub_lider %}
+                                Sub-Líder{% if perfil_usuario.sublider_de %} • {{ perfil_usuario.sublider_de }}{% endif %}
+                            {% else %}
+                                Membro
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <div class="perfil-metadados">
+                        <span class="meta-item">
+                            <img src="{% static 'imgs/icone-usuario.png' %}" alt="">
+                            Matrícula: <strong>{{ perfil_usuario.matricula }}</strong>
+                        </span>
+                        <span class="meta-separador">•</span>
+                        <span class="meta-item">
+                            Diretoria: <strong>{{ perfil_usuario.diretoria }}</strong>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="perfil-bio-bloco">
+                    <span class="perfil-secao-label">Sobre / Bio</span>
+                    {% if perfil_usuario.bio %}
+                        <p class="perfil-bio-texto">{{ perfil_usuario.bio }}</p>
+                    {% else %}
+                        <p class="perfil-bio-vazia">
+                            {% if eh_proprio_perfil %}
+                                Você ainda não adicionou uma bio. Clique em "Editar perfil" para se apresentar à equipe!
+                            {% else %}
+                                Este membro ainda não adicionou uma bio.
+                            {% endif %}
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        {% if eh_proprio_perfil %}
+        <!-- Seção Colapsável de Edição do Perfil -->
+        <section class="perfil-edicao-card" id="secao-editar-perfil" style="display: none;">
+            <div class="edicao-header">
+                <h3>Editar Informações do Perfil</h3>
+                <button type="button" class="btn-fechar-edicao" onclick="alternarEdicaoPerfil()" title="Fechar">✕</button>
+            </div>
+
+            <form action="{% url 'editar_perfil' %}" method="POST" enctype="multipart/form-data" class="form-editar-perfil">
+                {% csrf_token %}
+
+                <div class="edicao-foto-linha">
+                    <div class="edicao-avatar-preview {{ perfil_usuario.matricula|cor_avatar }}" id="preview-avatar-edicao">
+                        {% if perfil_usuario.foto and perfil_usuario.foto.name %}
+                            <img src="{{ perfil_usuario.foto.url }}" alt="Preview" class="perfil-foto-img" id="img-preview-edicao">
+                        {% else %}
+                            <span id="inicial-preview-edicao">{{ perfil_usuario.inicial_perfil }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="edicao-foto-controles">
+                        <label for="input-foto-perfil" class="btn-selecionar-foto">
+                            <img src="{% static 'imgs/icone-add-imagem.png' %}" alt="">
+                            <span>Escolher foto de perfil</span>
+                        </label>
+                        <input type="file" id="input-foto-perfil" name="foto" accept="image/*" class="input-hidden" onchange="previsualizarFotoPerfil(this)">
+                        <span class="edicao-foto-dica" id="nome-arquivo-foto">PNG ou JPG. Recomendado formato quadrado.</span>
+
+                        {% if perfil_usuario.foto and perfil_usuario.foto.name %}
+                        <label class="checkbox-remover-foto">
+                            <input type="checkbox" name="remover_foto" value="1" id="check-remover-foto" onchange="alternarRemoverFoto(this)">
+                            <span>Remover foto atual</span>
+                        </label>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="edicao-campo">
+                    <label for="input-nome-perfil">Nome de exibição</label>
+                    <input
+                        type="text"
+                        id="input-nome-perfil"
+                        name="nome"
+                        value="{{ perfil_usuario.nome_exibicao }}"
+                        placeholder="Digite seu nome completo ou apelido"
+                        maxlength="100"
+                        required>
+                </div>
+
+                <div class="edicao-campo">
+                    <div class="edicao-label-row">
+                        <label for="input-bio-perfil">Bio</label>
+                        <span class="contador-bio" id="contador-bio">0/500</span>
+                    </div>
+                    <textarea
+                        id="input-bio-perfil"
+                        name="bio"
+                        rows="3"
+                        maxlength="500"
+                        placeholder="Conte um pouco sobre você, sua diretoria e sua área na gincana...">{{ perfil_usuario.bio }}</textarea>
+                </div>
+
+                <div class="edicao-acoes">
+                    <button type="button" class="btn-cancelar-edicao" onclick="alternarEdicaoPerfil()">Cancelar</button>
+                    <button type="submit" class="btn-salvar-perfil">Salvar alterações</button>
+                </div>
+            </form>
+        </section>
+        {% endif %}
+
+        <!-- Grid de Estatísticas: Tampinhas, Cargo/Matrícula e Áreas -->
+        <section class="perfil-stats-grid">
+            <!-- Card Contribuição com Tampinhas -->
+            <div class="perfil-stat-card card-destaque-tampinhas">
+                <div class="stat-icone-circulo icone-tampinhas-bg">
+                    <img src="{% static 'imgs/icone-tampinhas.png' %}" alt="Tampinhas">
+                </div>
+                <div class="stat-conteudo">
+                    <span class="stat-label">Contribuição com Tampinhas</span>
+                    <div class="stat-valor-grande">{{ contribuicao_tampinhas_kg }}</div>
+                    <span class="stat-subtexto">
+                        {{ contribuicao_tampinhas_gramas }}g acumulados ({{ total_doacoes_registradas }} doação{{ total_doacoes_registradas|pluralize:"ões" }})
+                    </span>
+                </div>
+                <a href="{% url 'tampinhas' %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-ver-ranking">
+                    Ver ranking →
+                </a>
+            </div>
+
+            <!-- Card Cargo e Matrícula -->
+            <div class="perfil-stat-card">
+                <div class="stat-icone-circulo icone-cargo-bg">
+                    <img src="{% static 'imgs/icone-usuario.png' %}" alt="Cargo">
+                </div>
+                <div class="stat-conteudo">
+                    <span class="stat-label">Cargo & Matrícula</span>
+                    <div class="stat-valor-medio">{{ perfil_usuario.cargo_detalhado }}</div>
+                    <span class="stat-subtexto">Matrícula: {{ perfil_usuario.matricula }} • {{ perfil_usuario.diretoria }}</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Card de Áreas do Usuário -->
+        <section class="perfil-secao-card">
+            <div class="secao-card-header">
+                <img src="{% static 'imgs/icone-area.png' %}" alt="">
+                <h3>Áreas de Participação</h3>
+            </div>
+
+            {% if areas_perfil %}
+            <div class="lista-areas-perfil">
+                {% for area_item in areas_perfil %}
+                    {% if usuario.tem_acesso_area and area_item.nome in usuario.get_areas_sidebar %}
+                    <a href="{% url 'chat_area' area_item.nome %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="chip-area-perfil chip-clicavel">
+                        <img src="{% static area_item.icone %}" alt="">
+                        <span>{{ area_item.nome }}</span>
+                        {% if area_item.eh_sublider %}
+                            <span class="mini-badge-sublider">Sub-Líder</span>
+                        {% endif %}
+                    </a>
+                    {% else %}
+                    <div class="chip-area-perfil">
+                        <img src="{% static area_item.icone %}" alt="">
+                        <span>{{ area_item.nome }}</span>
+                        {% if area_item.eh_sublider %}
+                            <span class="mini-badge-sublider">Sub-Líder</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="texto-vazio-secao">Nenhuma área vinculada no momento.</p>
+            {% endif %}
+        </section>
+
+        <!-- Publicações Recentes do Usuário no Feed -->
+        <section class="perfil-secao-card">
+            <div class="secao-card-header">
+                <img src="{% static 'imgs/icone-feed.png' %}" alt="">
+                <h3>Publicações no Feed</h3>
+            </div>
+
+            <div class="feed">
+                {% for publicacao in publicacoes_usuario %}
+                <article class="card">
+                    <div class="cabecalho">
+                        <div class="avatar">
+                            {% if publicacao.usuario.foto and publicacao.usuario.foto.name %}
+                                <img src="{{ publicacao.usuario.foto.url }}" alt="{{ publicacao.usuario.nome_exibicao }}" class="avatar-foto-img">
+                            {% else %}
+                                {{ publicacao.usuario.inicial_perfil }}
+                            {% endif %}
+                        </div>
+                        <div class="info">
+                            <h3>{{ publicacao.usuario.nome_exibicao }}</h3>
+                            <p>{{ publicacao.usuario.diretoria }} • Matrícula: {{ publicacao.usuario.matricula }}</p>
+                            <small>{{ publicacao.data|date:"d/m/Y • H:i" }}</small>
+                        </div>
+                    </div>
+
+                    <div class="corpo-card">
+                        <div class="avatar-espaco"></div>
+                        <div class="texto">{{ publicacao.texto }}</div>
+                    </div>
+
+                    <div class="rodape-card">
+                        <div class="avatar-espaco"></div>
+                        <div class="rodape-acoes">
+                            <button class="curtir" data-id="{{ publicacao.id }}">
+                                <img
+                                    class="icone-curtir"
+                                    src="{% if publicacao.id in curtidas %}{% static 'imgs/coracao-vermelho.png' %}{% else %}{% static 'imgs/coracao-cinza.png' %}{% endif %}"
+                                    alt="Curtir">
+                                <span>{{ publicacao.total_curtidas }}</span>
+                            </button>
+
+                            {% if publicacao.usuario.id == usuario.id %}
+                            <form action="{% url 'excluir_publicacao' publicacao.id %}" method="POST" class="form-excluir">
+                                {% csrf_token %}
+                                <button type="submit" class="excluir">
+                                    <img src="{% static 'imgs/lixeira.png' %}" alt="Excluir">
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </article>
+                {% empty %}
+                <p class="texto-vazio-secao">Nenhuma publicação realizada no feed ainda.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+    </div>
+</main>
+
+<script src="{% static 'js/feed.js' %}"></script>
+{% if eh_proprio_perfil %}
+<script>
+function alternarEdicaoPerfil() {
+    var secao = document.getElementById("secao-editar-perfil");
+    if (!secao) return;
+    var visivel = secao.style.display !== "none";
+    secao.style.display = visivel ? "none" : "block";
+    if (!visivel && secao.scrollIntoView) {
+        secao.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        var inputNome = document.getElementById("input-nome-perfil");
+        if (inputNome) inputNome.focus();
+    }
+}
+
+function previsualizarFotoPerfil(input) {
+    var previewContainer = document.getElementById("preview-avatar-edicao");
+    var nomeArquivo = document.getElementById("nome-arquivo-foto");
+    var checkRemover = document.getElementById("check-remover-foto");
+    if (input.files && input.files[0]) {
+        var file = input.files[0];
+        if (nomeArquivo) {
+            nomeArquivo.textContent = "✓ Foto selecionada: " + file.name;
+            nomeArquivo.style.color = "#81c784";
+        }
+        if (checkRemover) {
+            checkRemover.checked = false;
+        }
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            if (previewContainer) {
+                previewContainer.innerHTML = '<img src="' + e.target.result + '" alt="Preview" class="perfil-foto-img">';
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function alternarRemoverFoto(checkbox) {
+    var nomeArquivo = document.getElementById("nome-arquivo-foto");
+    var inputFoto = document.getElementById("input-foto-perfil");
+    if (checkbox.checked) {
+        if (inputFoto) inputFoto.value = "";
+        if (nomeArquivo) {
+            nomeArquivo.textContent = "A foto atual será removida ao salvar.";
+            nomeArquivo.style.color = "#f0c97a";
+        }
+    } else if (nomeArquivo) {
+        nomeArquivo.textContent = "PNG ou JPG. Recomendado formato quadrado.";
+        nomeArquivo.style.color = "";
+    }
+}
+
+(function inicializarContadorBio() {
+    var textareaBio = document.getElementById("input-bio-perfil");
+    var contador = document.getElementById("contador-bio");
+    if (!textareaBio || !contador) return;
+    function atualizar() {
+        contador.textContent = (textareaBio.value || "").length + "/500";
+    }
+    textareaBio.addEventListener("input", atualizar);
+    atualizar();
+})();
+</script>
+{% endif %}
+<script src="{% static 'js/toast.js' %}"></script>
+</body>
+</html>

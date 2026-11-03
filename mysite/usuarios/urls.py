@@ -13,6 +13,11 @@ urlpatterns=[
     # Tampinhas
     path("tampinhas/", views.tampinhas, name="tampinhas"),
 
+    # Perfil
+    path("perfil/", views.meu_perfil, name="meu_perfil"),
+    path("perfil/editar/", views.editar_perfil, name="editar_perfil"),
+    path("perfil/<int:id_usuario>/", views.ver_perfil, name="ver_perfil"),
+
     # Painel
     path("painel-administrativo/", views.painel_administrativo, name="painel_administrativo"),
     path("painel-administrativo/stats/", views.stats_painel, name="stats_painel"),

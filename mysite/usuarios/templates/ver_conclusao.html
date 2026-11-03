@@ -89,9 +89,15 @@
                     {% for c in conclusoes %}
                     <div class="conclusao-item">
                         <div class="conclusao-topo">
-                            <div class="obs-avatar">{{ c.usuario.matricula|first|upper }}</div>
+                            <a href="{% url 'ver_perfil' c.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="obs-avatar" style="overflow:hidden;text-decoration:none;">
+                                {% if c.usuario.foto and c.usuario.foto.name %}
+                                    <img src="{{ c.usuario.foto.url }}" alt="{{ c.usuario.nome_exibicao }}" class="avatar-foto-img">
+                                {% else %}
+                                    {{ c.usuario.inicial_perfil }}
+                                {% endif %}
+                            </a>
                             <div class="conclusao-info">
-                                <span class="obs-nome">{{ c.usuario.matricula }}</span>
+                                <a href="{% url 'ver_perfil' c.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="obs-nome link-perfil-usuario">{{ c.usuario.nome_exibicao }}</a>
                                 <span class="obs-data">{{ c.criada_em|date:"d/m/Y H:i" }}</span>
                             </div>
                         </div>

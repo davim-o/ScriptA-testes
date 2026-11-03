@@ -45,9 +45,13 @@
                 </div>
 
                 <div class="chat-topo-publicacao">
-                    <div class="chat-avatar avatar-chat-escuro">
-                        {{ usuario.matricula|first|upper }}
-                    </div>
+                    <a href="{% url 'meu_perfil' %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="chat-avatar avatar-chat-escuro" title="Meu perfil">
+                        {% if usuario.foto and usuario.foto.name %}
+                            <img src="{{ usuario.foto.url }}" alt="{{ usuario.nome_exibicao }}" class="avatar-foto-img">
+                        {% else %}
+                            {{ usuario.inicial_perfil }}
+                        {% endif %}
+                    </a>
                     <textarea
                         name="texto"
                         id="textarea-chat-area"
@@ -68,24 +72,34 @@
 
                 {% if msg.resposta_a %}
                 <div class="chat-resposta-citacao">
-                    <div class="chat-avatar chat-avatar-pequeno {{ msg.resposta_a.usuario.matricula|cor_avatar }}">
-                        {{ msg.resposta_a.usuario.matricula|first|upper }}
-                    </div>
+                    <a href="{% url 'ver_perfil' msg.resposta_a.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="chat-avatar chat-avatar-pequeno {{ msg.resposta_a.usuario.matricula|cor_avatar }}" title="Ver perfil de {{ msg.resposta_a.usuario.nome_exibicao }}">
+                        {% if msg.resposta_a.usuario.foto and msg.resposta_a.usuario.foto.name %}
+                            <img src="{{ msg.resposta_a.usuario.foto.url }}" alt="{{ msg.resposta_a.usuario.nome_exibicao }}" class="avatar-foto-img">
+                        {% else %}
+                            {{ msg.resposta_a.usuario.inicial_perfil }}
+                        {% endif %}
+                    </a>
                     <div class="chat-citacao-textos">
-                        <span class="chat-citacao-autor">{{ msg.resposta_a.usuario.matricula }}</span>
+                        <a href="{% url 'ver_perfil' msg.resposta_a.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="chat-citacao-autor link-perfil-usuario">{{ msg.resposta_a.usuario.nome_exibicao }}</a>
                         <p class="chat-citacao-mensagem">{{ msg.resposta_a.texto }}</p>
                     </div>
                 </div>
                 {% endif %}
 
                 <div class="chat-corpo-card">
-                    <div class="chat-avatar {{ msg.usuario.matricula|cor_avatar }}">
-                        {{ msg.usuario.matricula|first|upper }}
-                    </div>
+                    <a href="{% url 'ver_perfil' msg.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="chat-avatar {{ msg.usuario.matricula|cor_avatar }}" title="Ver perfil de {{ msg.usuario.nome_exibicao }}">
+                        {% if msg.usuario.foto and msg.usuario.foto.name %}
+                            <img src="{{ msg.usuario.foto.url }}" alt="{{ msg.usuario.nome_exibicao }}" class="avatar-foto-img">
+                        {% else %}
+                            {{ msg.usuario.inicial_perfil }}
+                        {% endif %}
+                    </a>
 
                     <div class="chat-conteudo-principal">
                         <div class="chat-cabecalho-linha">
-                            <h3 class="chat-autor">{{ msg.usuario.matricula }}</h3>
+                            <a href="{% url 'ver_perfil' msg.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">
+                                <h3 class="chat-autor">{{ msg.usuario.nome_exibicao }}</h3>
+                            </a>
                         </div>
 
                         <p class="chat-texto">{{ msg.texto }}</p>
@@ -103,8 +117,8 @@
                                 type="button"
                                 class="btn-responder-chat"
                                 data-id="{{ msg.id }}"
-                                data-autor="{{ msg.usuario.matricula }}"
-                                data-inicial="{{ msg.usuario.matricula|first|upper }}"
+                                data-autor="{{ msg.usuario.nome_exibicao }}"
+                                data-inicial="{{ msg.usuario.inicial_perfil }}"
                                 data-cor="{{ msg.usuario.matricula|cor_avatar }}"
                                 data-texto="{{ msg.texto|truncatechars:140 }}">
                                 <svg class="icone-responder-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

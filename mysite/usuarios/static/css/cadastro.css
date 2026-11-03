@@ -90,6 +90,7 @@ form {
     width: 100%;
 }
 
+.nome-cadastro,
 .mat,
 .senha,
 .diretoria,
@@ -97,6 +98,7 @@ form {
     margin-bottom: 18px;
 }
 
+.nome-cadastro p,
 .mat p,
 .senha p,
 .diretoria p,

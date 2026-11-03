@@ -180,9 +180,15 @@
                             {% for c in conclusoes_tarefa %}
                             <div class="conclusao-item">
                                 <div class="conclusao-topo">
-                                    <div class="obs-avatar">{{ c.usuario.matricula|first|upper }}</div>
+                                    <a href="{% url 'ver_perfil' c.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="obs-avatar" style="overflow:hidden;text-decoration:none;">
+                                        {% if c.usuario.foto and c.usuario.foto.name %}
+                                            <img src="{{ c.usuario.foto.url }}" alt="{{ c.usuario.nome_exibicao }}" class="avatar-foto-img">
+                                        {% else %}
+                                            {{ c.usuario.inicial_perfil }}
+                                        {% endif %}
+                                    </a>
                                     <div class="conclusao-info">
-                                        <span class="obs-nome">{{ c.usuario.matricula }}</span>
+                                        <a href="{% url 'ver_perfil' c.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="obs-nome link-perfil-usuario">{{ c.usuario.nome_exibicao }}</a>
                                         <span class="obs-data">{{ c.criada_em|date:"d/m/Y H:i" }}</span>
                                     </div>
                                 </div>
@@ -208,10 +214,16 @@
                     <div class="lista-observacoes">
                         {% for obs in observacoes %}
                         <div class="observacao-item">
-                            <div class="obs-avatar">{{ obs.usuario.matricula|first|upper }}</div>
+                            <a href="{% url 'ver_perfil' obs.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="obs-avatar" style="overflow:hidden;text-decoration:none;">
+                                {% if obs.usuario.foto and obs.usuario.foto.name %}
+                                    <img src="{{ obs.usuario.foto.url }}" alt="{{ obs.usuario.nome_exibicao }}" class="avatar-foto-img">
+                                {% else %}
+                                    {{ obs.usuario.inicial_perfil }}
+                                {% endif %}
+                            </a>
                             <div class="obs-corpo">
                                 <div class="obs-header">
-                                    <span class="obs-nome">{{ obs.usuario.matricula }}</span>
+                                    <a href="{% url 'ver_perfil' obs.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="obs-nome link-perfil-usuario">{{ obs.usuario.nome_exibicao }}</a>
                                     <span class="obs-data">{{ obs.criada_em|date:"d/m/Y H:i" }}</span>
                                 </div>
                                 <p class="obs-texto">{{ obs.texto|linebreaksbr }}</p>

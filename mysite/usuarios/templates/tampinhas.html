@@ -34,15 +34,21 @@
             <div class="podio-container">
                 <!-- 2º Lugar (Esquerda) -->
                 <div class="podio-coluna podio-segundo">
-                    <div class="podio-avatar avatar-prata">
+                    <div class="podio-avatar avatar-prata" style="overflow:hidden;">
                         {% if segundo %}
-                            {{ segundo.matricula|first|upper }}
+                            {% if segundo.usuario.foto and segundo.usuario.foto.name %}
+                                <img src="{{ segundo.usuario.foto.url }}" alt="{{ segundo.usuario.nome_exibicao }}" class="avatar-foto-img">
+                            {% else %}
+                                {{ segundo.usuario.inicial_perfil }}
+                            {% endif %}
                         {% else %}
                             -
                         {% endif %}
                     </div>
                     <span class="podio-matricula">
-                        {% if segundo %}{{ segundo.matricula }}{% else %}—{% endif %}
+                        {% if segundo %}
+                            <a href="{% url 'ver_perfil' segundo.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">{{ segundo.usuario.nome_exibicao }}</a>
+                        {% else %}—{% endif %}
                     </span>
                     <span class="podio-total total-prata">
                         {% if segundo %}{{ segundo.total_formatado }}{% else %}—{% endif %}
@@ -52,15 +58,21 @@
 
                 <!-- 1º Lugar (Centro - Mais alto) -->
                 <div class="podio-coluna podio-primeiro">
-                    <div class="podio-avatar avatar-ouro">
+                    <div class="podio-avatar avatar-ouro" style="overflow:hidden;">
                         {% if primeiro %}
-                            {{ primeiro.matricula|first|upper }}
+                            {% if primeiro.usuario.foto and primeiro.usuario.foto.name %}
+                                <img src="{{ primeiro.usuario.foto.url }}" alt="{{ primeiro.usuario.nome_exibicao }}" class="avatar-foto-img">
+                            {% else %}
+                                {{ primeiro.usuario.inicial_perfil }}
+                            {% endif %}
                         {% else %}
                             -
                         {% endif %}
                     </div>
                     <span class="podio-matricula">
-                        {% if primeiro %}{{ primeiro.matricula }}{% else %}—{% endif %}
+                        {% if primeiro %}
+                            <a href="{% url 'ver_perfil' primeiro.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">{{ primeiro.usuario.nome_exibicao }}</a>
+                        {% else %}—{% endif %}
                     </span>
                     <span class="podio-total total-ouro">
                         {% if primeiro %}{{ primeiro.total_formatado }}{% else %}—{% endif %}
@@ -70,15 +82,21 @@
 
                 <!-- 3º Lugar (Direita) -->
                 <div class="podio-coluna podio-terceiro">
-                    <div class="podio-avatar avatar-bronze">
+                    <div class="podio-avatar avatar-bronze" style="overflow:hidden;">
                         {% if terceiro %}
-                            {{ terceiro.matricula|first|upper }}
+                            {% if terceiro.usuario.foto and terceiro.usuario.foto.name %}
+                                <img src="{{ terceiro.usuario.foto.url }}" alt="{{ terceiro.usuario.nome_exibicao }}" class="avatar-foto-img">
+                            {% else %}
+                                {{ terceiro.usuario.inicial_perfil }}
+                            {% endif %}
                         {% else %}
                             -
                         {% endif %}
                     </div>
                     <span class="podio-matricula">
-                        {% if terceiro %}{{ terceiro.matricula }}{% else %}—{% endif %}
+                        {% if terceiro %}
+                            <a href="{% url 'ver_perfil' terceiro.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">{{ terceiro.usuario.nome_exibicao }}</a>
+                        {% else %}—{% endif %}
                     </span>
                     <span class="podio-total total-bronze">
                         {% if terceiro %}{{ terceiro.total_formatado }}{% else %}—{% endif %}
@@ -95,10 +113,14 @@
                 {% for item in demais_participantes %}
                     <div class="item-ranking-linha">
                         <span class="ranking-posicao">{{ item.posicao }}</span>
-                        <div class="ranking-avatar">
-                            {{ item.matricula|first|upper }}
-                        </div>
-                        <span class="ranking-matricula">{{ item.matricula }}</span>
+                        <a href="{% url 'ver_perfil' item.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="ranking-avatar" style="overflow:hidden;text-decoration:none;color:inherit;">
+                            {% if item.usuario.foto and item.usuario.foto.name %}
+                                <img src="{{ item.usuario.foto.url }}" alt="{{ item.usuario.nome_exibicao }}" class="avatar-foto-img">
+                            {% else %}
+                                {{ item.usuario.inicial_perfil }}
+                            {% endif %}
+                        </a>
+                        <a href="{% url 'ver_perfil' item.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="ranking-matricula link-perfil-usuario">{{ item.usuario.nome_exibicao }}</a>
                         <span class="ranking-total">{{ item.total_formatado }}</span>
                     </div>
                 {% empty %}

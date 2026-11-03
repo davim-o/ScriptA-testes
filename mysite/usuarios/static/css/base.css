@@ -35,6 +35,14 @@ body {
     gap: 12px;
     padding: 18px;
     border-bottom: 1px solid #2d3150;
+    text-decoration: none;
+    color: #ffffff;
+    transition: background 0.2s;
+}
+
+.usuario:hover,
+.usuario.usuario-ativo {
+    background: #1f2540;
 }
 
 .avatar {
@@ -47,6 +55,38 @@ body {
     background: #5b6390;
     font-size: 18px;
     font-weight: bold;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.avatar-foto-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+}
+
+.link-perfil-usuario {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none !important;
+    color: inherit !important;
+    transition: opacity 0.2s;
+}
+
+.link-perfil-usuario:hover {
+    opacity: 0.9;
+}
+
+.link-perfil-usuario:hover h3,
+.link-perfil-usuario:hover .chat-autor,
+.link-perfil-usuario:hover .obs-nome,
+.link-perfil-usuario:hover .ranking-matricula,
+.link-perfil-usuario:hover .podio-matricula {
+    color: #b3a2ff !important;
+    text-decoration: underline;
 }
 
 .dados-usuario h3 {

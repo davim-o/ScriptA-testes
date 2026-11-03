@@ -470,9 +470,11 @@
     justify-content: center;
     font-size: 19px;
     font-weight: 700;
-    color: #ffffff;
+    color: #ffffff !important;
     flex-shrink: 0;
     user-select: none;
+    overflow: hidden;
+    text-decoration: none;
 }
 
 .chat-avatar-pequeno {

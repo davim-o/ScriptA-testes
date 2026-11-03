@@ -2,15 +2,26 @@
 <aside class="sidebar">
 
     <div>
-        <div class="usuario">
-            <div class="avatar">{{ usuario.matricula|first|upper }}</div>
+        <a href="{% url 'meu_perfil' %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="usuario {% if pagina_ativa == 'perfil' %}usuario-ativo{% endif %}" title="Acessar meu perfil">
+            <div class="avatar">
+                {% if usuario.foto and usuario.foto.name %}
+                    <img src="{{ usuario.foto.url }}" alt="{{ usuario.nome_exibicao }}" class="avatar-foto-img">
+                {% else %}
+                    {{ usuario.inicial_perfil }}
+                {% endif %}
+            </div>
             <div class="dados-usuario">
-                <h3>{{ usuario.matricula }}</h3>
+                <h3>{{ usuario.nome_exibicao }}</h3>
                 <p>{{ usuario.diretoria }} - {% if usuario.eh_administrador %}Líder{% elif usuario.sub_lider %}Sub-Líder{% else %}Membro{% endif %}</p>
             </div>
-        </div>
+        </a>
 
         <nav class="menu">
+            <a href="{% url 'meu_perfil' %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="{% if pagina_ativa == 'perfil' %}ativo{% endif %}">
+                <img src="{% static 'imgs/icone-usuario.png' %}" alt="Perfil">
+                <span>Meu perfil</span>
+            </a>
+
             <a href="{% url 'feed' %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="{% if pagina_ativa == 'feed' %}ativo{% endif %}">
                 <img src="{% static 'imgs/icone-feed.png' %}" alt="Feed">
                 <span>Feed</span>

@@ -30,9 +30,13 @@
 
                 <div class="topo-publicacao">
 
-                    <div class="avatar">
-                        {{ usuario.matricula|first|upper }}
-                    </div>
+                    <a href="{% url 'meu_perfil' %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="avatar" title="Meu perfil">
+                        {% if usuario.foto and usuario.foto.name %}
+                            <img src="{{ usuario.foto.url }}" alt="{{ usuario.nome_exibicao }}" class="avatar-foto-img">
+                        {% else %}
+                            {{ usuario.inicial_perfil }}
+                        {% endif %}
+                    </a>
 
                     <textarea
                         name="texto"
@@ -58,15 +62,23 @@
 
                 <div class="cabecalho">
 
-                    <div class="avatar">
-                        {{ publicacao.usuario.matricula|first|upper }}
-                    </div>
+                    <a href="{% url 'ver_perfil' publicacao.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="avatar" title="Ver perfil de {{ publicacao.usuario.nome_exibicao }}">
+                        {% if publicacao.usuario.foto and publicacao.usuario.foto.name %}
+                            <img src="{{ publicacao.usuario.foto.url }}" alt="{{ publicacao.usuario.nome_exibicao }}" class="avatar-foto-img">
+                        {% else %}
+                            {{ publicacao.usuario.inicial_perfil }}
+                        {% endif %}
+                    </a>
 
                     <div class="info">
 
-                        <h3>{{ publicacao.usuario.matricula }}</h3>
+                        <h3>
+                            <a href="{% url 'ver_perfil' publicacao.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">
+                                {{ publicacao.usuario.nome_exibicao }}
+                            </a>
+                        </h3>
 
-                        <p>{{ publicacao.usuario.diretoria }}</p>
+                        <p>{{ publicacao.usuario.diretoria }}{% if publicacao.usuario.nome and publicacao.usuario.nome != publicacao.usuario.matricula %} • {{ publicacao.usuario.matricula }}{% endif %}</p>
 
                         <small>{{ publicacao.data|date:"d/m/Y • H:i" }}</small>
 

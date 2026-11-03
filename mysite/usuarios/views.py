@@ -194,18 +194,24 @@ def usuario_logado(request):
 def cadastro(request):
     contexto = {"erro": None, "form": {}}
     if request.method == "POST":
+        nome = request.POST.get("nome", "").strip()
         matricula = request.POST.get("matricula", "").strip()
         senha = request.POST.get("senha", "")
         diretoria = request.POST.get("diretoria", "").strip()
         areas_selecionadas = [a for a in request.POST.getlist("areas") if a in TODAS_AREAS]
         contexto["form"] = {
+            "nome": nome,
             "matricula": matricula,
             "diretoria": diretoria,
             "areas": areas_selecionadas,
         }
 
         erro = None
-        if not matricula:
+        if "nome" in request.POST and not nome:
+            erro = "Informe seu nome."
+        elif len(nome) > 100:
+            erro = "O nome deve ter no máximo 100 caracteres."
+        elif not matricula:
             erro = "Informe a matrícula."
         elif len(matricula) > 20:
             erro = "A matrícula deve ter no máximo 20 números."
@@ -221,6 +227,7 @@ def cadastro(request):
         if erro is None:
             try:
                 Usuario.objects.create(
+                    nome=nome or matricula,
                     matricula=matricula,
                     senha=make_password(senha),
                     diretoria=diretoria,
@@ -1226,6 +1233,98 @@ def status_tarefa(request, id_tarefa):
         "limite": tarefa.limite_participantes,
         "encerrada": tarefa.encerrada,
     })
+
+
+# ─── Perfil de Usuário ───────────────────────────────────────────────────────
+
+def meu_perfil(request):
+    return ver_perfil(request, id_usuario=None)
+
+
+def ver_perfil(request, id_usuario=None):
+    usuario = usuario_logado(request)
+    if usuario is None:
+        return redirect("login")
+
+    if id_usuario is None:
+        perfil_usuario = usuario
+    else:
+        perfil_usuario = get_object_or_404(Usuario, id=id_usuario)
+
+    eh_proprio_perfil = (perfil_usuario.id == usuario.id)
+    contribuicao_tampinhas_kg = perfil_usuario.total_tampinhas_formatado()
+    contribuicao_tampinhas_gramas = perfil_usuario.total_tampinhas_gramas()
+    total_doacoes_registradas = perfil_usuario.doacoes_tampinhas.count()
+
+    if perfil_usuario.eh_administrador():
+        lista_nomes_areas = list(TODAS_AREAS)
+    else:
+        lista_nomes_areas = perfil_usuario.get_areas_ordenadas()
+
+    areas_perfil = [
+        {
+            "nome": area_nome,
+            "icone": AREAS_ICONES.get(area_nome, "imgs/icone-area.png"),
+            "eh_sublider": bool(perfil_usuario.sub_lider and perfil_usuario.sublider_de == area_nome),
+        }
+        for area_nome in lista_nomes_areas
+    ]
+
+    publicacoes_usuario = (
+        Publicacao.objects.filter(usuario=perfil_usuario)
+        .select_related("usuario")
+        .prefetch_related("curtidas")
+        .order_by("-data")[:10]
+    )
+    curtidas = set(
+        Curtida.objects.filter(usuario=usuario).values_list("publicacao_id", flat=True)
+    )
+
+    return render(request, "perfil.html", {
+        "usuario": usuario,
+        "perfil_usuario": perfil_usuario,
+        "eh_proprio_perfil": eh_proprio_perfil,
+        "contribuicao_tampinhas_kg": contribuicao_tampinhas_kg,
+        "contribuicao_tampinhas_gramas": contribuicao_tampinhas_gramas,
+        "total_doacoes_registradas": total_doacoes_registradas,
+        "areas_perfil": areas_perfil,
+        "publicacoes_usuario": publicacoes_usuario,
+        "curtidas": curtidas,
+        "pagina_ativa": "perfil" if eh_proprio_perfil else "",
+        "area_ativa": "",
+    })
+
+
+def editar_perfil(request):
+    usuario = usuario_logado(request)
+    if usuario is None:
+        return redirect("login")
+
+    if request.method == "POST":
+        nome = request.POST.get("nome", "").strip()
+        bio = request.POST.get("bio", "").strip()
+        remover_foto = request.POST.get("remover_foto") == "1"
+
+        if not nome:
+            definir_mensagem(request, messages.error, "Informe um nome válido para o seu perfil.")
+            return redirect_autenticado(request, "meu_perfil")
+        if len(nome) > 100:
+            definir_mensagem(request, messages.error, "O nome deve ter no máximo 100 caracteres.")
+            return redirect_autenticado(request, "meu_perfil")
+        if len(bio) > 500:
+            definir_mensagem(request, messages.error, "A bio deve ter no máximo 500 caracteres.")
+            return redirect_autenticado(request, "meu_perfil")
+
+        usuario.nome = nome
+        usuario.bio = bio
+        if "foto" in request.FILES:
+            usuario.foto = request.FILES["foto"]
+        elif remover_foto:
+            usuario.foto = None
+        usuario.save()
+        definir_mensagem(request, messages.success, "Perfil atualizado com sucesso!")
+
+    return redirect_autenticado(request, "meu_perfil")
 
 
 def sair(request):

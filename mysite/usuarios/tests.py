@@ -503,3 +503,70 @@ class ChatAreaTests(TestCase):
         self.assertEqual(resp_like.json(), {"curtido": True, "curtidas": 1})
 
 
+class PerfilTests(TestCase):
+    def setUp(self):
+        self.senha = "Senha123"
+        self.membro = Usuario.objects.create(
+            nome="João Dias",
+            matricula="202450",
+            senha=make_password(self.senha),
+            diretoria="Diatinf",
+            areas="Cenário,Staff",
+            aprovado=True,
+            bio="Participante da equipe de Cenário!",
+        )
+        self.sublider = Usuario.objects.create(
+            nome="Maria Joaquina",
+            matricula="202451",
+            senha=make_password(self.senha),
+            diretoria="Diatinf",
+            areas="Cenário",
+            aprovado=True,
+            sub_lider=True,
+            sublider_de="Cenário",
+        )
+        DoacaoTampinhas.objects.create(usuario=self.membro, quantidade_gramas=1500)
+
+    def test_cadastro_saves_nome(self):
+        response = self.client.post(reverse("cadastro"), {
+            "nome": "Cirilo Jr.",
+            "matricula": "202488",
+            "senha": "Senha123",
+            "diretoria": "Diatinf",
+            "areas": ["Cenário"],
+        })
+        self.assertRedirects(response, reverse("login"))
+        novo = Usuario.objects.get(matricula="202488")
+        self.assertEqual(novo.nome, "Cirilo Jr.")
+
+    def test_meu_perfil_and_edit_nome_and_bio(self):
+        self.client.post(reverse("login"), {"matricula": self.membro.matricula, "senha": self.senha})
+        resp = self.client.get(reverse("meu_perfil"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "João Dias")
+        self.assertContains(resp, "202450")
+        self.assertContains(resp, "Membro")
+        self.assertContains(resp, "1.5Kg")
+        self.assertContains(resp, "secao-editar-perfil")
+
+        # Editar nome e bio
+        resp_edit = self.client.post(reverse("editar_perfil"), {
+            "nome": "João Dias Silva",
+            "bio": "Nova bio atualizada no perfil!",
+        })
+        self.assertRedirects(resp_edit, reverse("meu_perfil"))
+        self.membro.refresh_from_db()
+        self.assertEqual(self.membro.nome, "João Dias Silva")
+        self.assertEqual(self.membro.bio, "Nova bio atualizada no perfil!")
+
+    def test_other_user_can_view_profile_readonly(self):
+        self.client.post(reverse("login"), {"matricula": self.membro.matricula, "senha": self.senha})
+        resp = self.client.get(reverse("ver_perfil", args=[self.sublider.id]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Maria Joaquina")
+        self.assertContains(resp, "202451")
+        self.assertContains(resp, "Sub-Líder")
+        self.assertNotContains(resp, "secao-editar-perfil")
+
+
+

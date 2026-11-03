@@ -50,10 +50,16 @@
                 {% for pendente in pendentes %}
                 <div class="item-linha">
                     <div class="info-principal">
-                        <div class="avatar avatar-roxo">{{ pendente.matricula|first|upper }}</div>
+                        <a href="{% url 'ver_perfil' pendente.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="avatar avatar-roxo" style="overflow:hidden;text-decoration:none;color:white;">
+                            {% if pendente.foto and pendente.foto.name %}
+                                <img src="{{ pendente.foto.url }}" alt="{{ pendente.nome_exibicao }}" class="avatar-foto-img">
+                            {% else %}
+                                {{ pendente.inicial_perfil }}
+                            {% endif %}
+                        </a>
                         <div class="textos">
-                            <h3>{{ pendente.matricula }}</h3>
-                            <p>{{ pendente.diretoria }}</p>
+                            <h3><a href="{% url 'ver_perfil' pendente.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">{{ pendente.nome_exibicao }}</a></h3>
+                            <p>{{ pendente.diretoria }} • Matrícula: {{ pendente.matricula }}</p>
                         </div>
                     </div>
                     <div class="acoes">
@@ -166,10 +172,16 @@
                 {% for membro in membros %}
                 <div class="item-linha">
                     <div class="info-principal">
-                        <div class="avatar avatar-verde">{{ membro.matricula|first|upper }}</div>
+                        <a href="{% url 'ver_perfil' membro.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="avatar avatar-verde" style="overflow:hidden;text-decoration:none;color:white;">
+                            {% if membro.foto and membro.foto.name %}
+                                <img src="{{ membro.foto.url }}" alt="{{ membro.nome_exibicao }}" class="avatar-foto-img">
+                            {% else %}
+                                {{ membro.inicial_perfil }}
+                            {% endif %}
+                        </a>
                         <div class="textos">
                             <div class="nome-badges">
-                                <h3>{{ membro.matricula }}</h3>
+                                <h3><a href="{% url 'ver_perfil' membro.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">{{ membro.nome_exibicao }}</a></h3>
                                 {% if membro.sub_lider %}
                                     <span class="badge-sublider">Sub-Líder</span>
                                     <form action="{% url 'remover_sublider' membro.id %}" method="POST" class="form-inline">
@@ -210,10 +222,16 @@
                 {% for sol in solicitacoes_area %}
                 <div class="item-linha">
                     <div class="info-principal">
-                        <div class="avatar avatar-roxo">{{ sol.usuario.matricula|first|upper }}</div>
+                        <a href="{% url 'ver_perfil' sol.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="avatar avatar-roxo" style="overflow:hidden;text-decoration:none;color:white;">
+                            {% if sol.usuario.foto and sol.usuario.foto.name %}
+                                <img src="{{ sol.usuario.foto.url }}" alt="{{ sol.usuario.nome_exibicao }}" class="avatar-foto-img">
+                            {% else %}
+                                {{ sol.usuario.inicial_perfil }}
+                            {% endif %}
+                        </a>
                         <div class="textos">
-                            <h3>{{ sol.usuario.matricula }}</h3>
-                            <p>{{ sol.usuario.diretoria }}</p>
+                            <h3><a href="{% url 'ver_perfil' sol.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">{{ sol.usuario.nome_exibicao }}</a></h3>
+                            <p>{{ sol.usuario.diretoria }} • Matrícula: {{ sol.usuario.matricula }}</p>
                         </div>
                     </div>
                     <div class="acoes">
@@ -254,7 +272,7 @@
                     <select name="membro_id" id="select-membro-doacao" class="select-doacao" required>
                         <option value="" disabled selected>Selecione um membro...</option>
                         {% for membro_item in membros_elegiveis_doacao %}
-                            <option value="{{ membro_item.id }}">{{ membro_item.matricula }} - {{ membro_item.diretoria }}</option>
+                            <option value="{{ membro_item.id }}">{{ membro_item.nome_exibicao }} ({{ membro_item.matricula }}) - {{ membro_item.diretoria }}</option>
                         {% endfor %}
                     </select>
                 </div>
