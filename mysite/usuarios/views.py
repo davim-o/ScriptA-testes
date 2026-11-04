@@ -208,20 +208,20 @@ def cadastro(request):
 
         erro = None
         if "nome" in request.POST and not nome:
-            erro = "Informe seu nome."
+            erro = "Informe seu nome para o cadastro."
         elif len(nome) > 100:
             erro = "O nome deve ter no máximo 100 caracteres."
         elif not matricula:
-            erro = "Informe a matrícula."
+            erro = "Informe a sua matrícula."
         elif len(matricula) > 20:
-            erro = "A matrícula deve ter no máximo 20 números."
+            erro = "A matrícula deve ter no máximo 20 caracteres."
         elif not senha:
-            erro = "Informe a senha."
+            erro = "Informe uma senha."
         elif diretoria not in DIRETORIAS:
-            erro = "Selecione uma diretoria."
+            erro = "Selecione uma diretoria válida (Diaren, Diatinf, Diacon ou Diacin)."
         elif not areas_selecionadas:
             erro = "Selecione pelo menos uma área para participar."
-        elif Usuario.objects.filter(matricula=matricula).exists():
+        elif Usuario.objects.filter(matricula__iexact=matricula).exists():
             erro = "Essa matrícula já está cadastrada."
 
         if erro is None:
@@ -298,17 +298,21 @@ def publicar(request):
         return redirect("login")
     if request.method == "POST":
         texto = request.POST.get("texto", "").strip()
-        if texto:
+        if not texto:
+            definir_mensagem(request, messages.error, "Digite uma mensagem antes de publicar no feed.")
+        elif len(texto) > 300:
+            definir_mensagem(request, messages.error, f"A publicação excede o limite de 300 caracteres ({len(texto)}/300).")
+        else:
             Publicacao.objects.create(usuario=usuario, texto=texto)
     return redirect_autenticado(request, "feed")
 
 
 def curtir(request, id_publicacao):
     if request.method != "POST":
-        return JsonResponse({"erro": "Método inválido"}, status=405)
+        return JsonResponse({"erro": "Método inválido. Use uma requisição POST."}, status=405)
     usuario = usuario_logado(request)
     if usuario is None:
-        return JsonResponse({"erro": "Sessão expirada"}, status=401)
+        return JsonResponse({"erro": "Sua sessão expirou. Faça login novamente."}, status=401)
     publicacao = get_object_or_404(Publicacao, id=id_publicacao)
     curtida = Curtida.objects.filter(usuario=usuario, publicacao=publicacao)
     if curtida.exists():
@@ -325,8 +329,11 @@ def excluir_publicacao(request, id_publicacao):
     if usuario is None:
         return redirect("login")
     publicacao = get_object_or_404(Publicacao, id=id_publicacao)
-    if publicacao.usuario_id == usuario.id:
+    if publicacao.usuario_id == usuario.id or usuario.eh_administrador():
         publicacao.delete()
+        definir_mensagem(request, messages.success, "Publicação excluída com sucesso.")
+    else:
+        definir_mensagem(request, messages.error, "Você só pode excluir as suas próprias publicações.")
     return redirect_autenticado(request, "feed")
 
 
@@ -548,7 +555,7 @@ def criar_tarefa(request):
     if usuario is None:
         return redirect("login")
     if not (usuario.eh_administrador() or usuario.sub_lider):
-        definir_mensagem(request, messages.error, "Acesso não autorizado.")
+        definir_mensagem(request, messages.error, "Apenas o líder ou sub-líderes podem criar tarefas.")
         return redirect_autenticado(request, "painel_administrativo")
     if request.method == "POST":
         tipo = request.POST.get("tipo", "fixa")
@@ -558,8 +565,17 @@ def criar_tarefa(request):
         except (TypeError, ValueError):
             limite = 0
 
-        if tipo not in {"fixa", "prolongada"} or not titulo or limite < 1:
-            definir_mensagem(request, messages.error, "Preencha os dados da tarefa corretamente.")
+        if not titulo:
+            definir_mensagem(request, messages.error, "Informe o título da tarefa.")
+            return redirect_autenticado(request, "painel_administrativo")
+        if len(titulo) > 100:
+            definir_mensagem(request, messages.error, "O título da tarefa deve ter no máximo 100 caracteres.")
+            return redirect_autenticado(request, "painel_administrativo")
+        if tipo not in {"fixa", "prolongada"}:
+            definir_mensagem(request, messages.error, "Selecione um tipo de tarefa válido (Data fixa ou Prolongada).")
+            return redirect_autenticado(request, "painel_administrativo")
+        if limite < 1:
+            definir_mensagem(request, messages.error, "O limite de participantes deve ser de pelo menos 1 pessoa.")
             return redirect_autenticado(request, "painel_administrativo")
 
         area_tarefa = (usuario.sublider_de or request.POST.get("area", "") or "Cenário").strip()
@@ -578,7 +594,7 @@ def criar_tarefa(request):
             tarefa.data_inicio = request.POST.get("data_inicio") or None
             tarefa.data_fim = request.POST.get("data_fim") or None
             if tarefa.data_inicio and tarefa.data_fim and tarefa.data_fim < tarefa.data_inicio:
-                definir_mensagem(request, messages.error, "O prazo não pode ser anterior à data inicial.")
+                definir_mensagem(request, messages.error, "A data de término (prazo) não pode ser anterior à data inicial.")
                 return redirect_autenticado(request, "painel_administrativo")
         if "imagem" in request.FILES:
             tarefa.imagem = request.FILES["imagem"]
@@ -593,7 +609,7 @@ def editar_tarefa(request, id_tarefa):
     if usuario is None:
         return redirect("login")
     if not (usuario.eh_administrador() or usuario.sub_lider):
-        definir_mensagem(request, messages.error, "Acesso não autorizado.")
+        definir_mensagem(request, messages.error, "Apenas o líder ou sub-líderes podem editar tarefas.")
         return redirect_autenticado(request, "painel_administrativo")
     if usuario.eh_administrador():
         tarefa = get_object_or_404(Tarefa, id=id_tarefa)
@@ -607,8 +623,17 @@ def editar_tarefa(request, id_tarefa):
         except (TypeError, ValueError):
             limite = 0
 
-        if tipo not in {"fixa", "prolongada"} or not titulo or limite < 1:
-            definir_mensagem(request, messages.error, "Preencha os dados da tarefa corretamente.")
+        if not titulo:
+            definir_mensagem(request, messages.error, "Informe o título da tarefa.")
+            return redirect_autenticado(request, "painel_administrativo")
+        if len(titulo) > 100:
+            definir_mensagem(request, messages.error, "O título da tarefa deve ter no máximo 100 caracteres.")
+            return redirect_autenticado(request, "painel_administrativo")
+        if tipo not in {"fixa", "prolongada"}:
+            definir_mensagem(request, messages.error, "Selecione um tipo de tarefa válido (Data fixa ou Prolongada).")
+            return redirect_autenticado(request, "painel_administrativo")
+        if limite < 1:
+            definir_mensagem(request, messages.error, "O limite de participantes deve ser de pelo menos 1 pessoa.")
             return redirect_autenticado(request, "painel_administrativo")
 
         tarefa.titulo = titulo
@@ -626,21 +651,22 @@ def editar_tarefa(request, id_tarefa):
             tarefa.data = None
             tarefa.horario = None
             if tarefa.data_inicio and tarefa.data_fim and tarefa.data_fim < tarefa.data_inicio:
-                definir_mensagem(request, messages.error, "O prazo não pode ser anterior à data inicial.")
+                definir_mensagem(request, messages.error, "A data de término (prazo) não pode ser anterior à data inicial.")
                 return redirect_autenticado(request, "painel_administrativo")
         if "imagem" in request.FILES:
             tarefa.imagem = request.FILES["imagem"]
         tarefa.save()
-        definir_mensagem(request, messages.success, "Tarefa atualizada com sucesso.")
+        definir_mensagem(request, messages.success, f"Tarefa \"{titulo}\" atualizada com sucesso.")
         return redirect_autenticado(request, "painel_administrativo")
     return render(request, "editar_tarefa.html", {"usuario": usuario, "tarefa": tarefa})
+
 
 def encerrar_tarefa(request, id_tarefa):
     usuario = usuario_logado(request)
     if usuario is None:
         return redirect("login")
     if not usuario.tem_acesso_painel():
-        definir_mensagem(request, messages.error, "Acesso não autorizado.")
+        definir_mensagem(request, messages.error, "Você não possui permissão para encerrar tarefas.")
         return redirect_autenticado(request, "painel_administrativo")
     if request.method == "POST":
         if usuario.eh_administrador():
@@ -649,7 +675,48 @@ def encerrar_tarefa(request, id_tarefa):
             tarefa = get_object_or_404(Tarefa, id=id_tarefa, area=usuario.sublider_de)
         tarefa.encerrada = True
         tarefa.save(update_fields=["encerrada"])
-        definir_mensagem(request, messages.success, "Tarefa encerrada com sucesso.")
+        definir_mensagem(request, messages.success, f"Tarefa \"{tarefa.titulo}\" encerrada com sucesso.")
+    return redirect_autenticado(request, "painel_administrativo")
+
+
+def excluir_tarefa_concluida(request, id_tarefa):
+    usuario = usuario_logado(request)
+    if usuario is None:
+        return redirect("login")
+    if not usuario.tem_acesso_painel():
+        definir_mensagem(request, messages.error, "Você não possui permissão para excluir tarefas.")
+        return redirect_autenticado(request, "feed")
+
+    if request.method == "POST":
+        tarefa = get_object_or_404(Tarefa, id=id_tarefa)
+        pode_gerenciar = (
+            usuario.eh_administrador()
+            or (usuario.sub_lider and usuario.sublider_de == tarefa.area)
+            or tarefa.eh_criador(usuario)
+        )
+        if not pode_gerenciar:
+            definir_mensagem(request, messages.error, "Você só pode excluir tarefas concluídas da sua própria área.")
+            return redirect_autenticado(request, "painel_administrativo")
+
+        if not (tarefa.encerrada or tarefa.concluida):
+            definir_mensagem(
+                request,
+                messages.error,
+                f"A tarefa \"{tarefa.titulo}\" ainda está ativa. Encerre ou conclua a tarefa antes de excluí-la."
+            )
+            origem = request.POST.get("origem", "").strip()
+            if origem == "minhas_tarefas":
+                return redirect_autenticado(request, "minhas_tarefas", nome_area=tarefa.area)
+            return redirect_autenticado(request, "painel_administrativo")
+
+        titulo_tarefa = tarefa.titulo
+        area_tarefa = tarefa.area
+        origem = request.POST.get("origem", "").strip()
+        tarefa.delete()
+        definir_mensagem(request, messages.success, f"Tarefa concluída \"{titulo_tarefa}\" excluída com sucesso.")
+        if origem == "minhas_tarefas" and area_tarefa:
+            return redirect_autenticado(request, "minhas_tarefas", nome_area=area_tarefa)
+
     return redirect_autenticado(request, "painel_administrativo")
 
 
@@ -712,6 +779,7 @@ def publicar_chat_area(request, nome_area):
     if usuario is None:
         return redirect("login")
     if nome_area not in TODAS_AREAS or not usuario.tem_acesso_area(nome_area):
+        definir_mensagem(request, messages.error, f"Você não tem permissão para enviar mensagens no chat da área {nome_area}.")
         return redirect_autenticado(request, "feed")
 
     if request.method == "POST":
@@ -722,7 +790,11 @@ def publicar_chat_area(request, nome_area):
             resposta_a_obj = MensagemArea.objects.filter(
                 id=int(resposta_a_id), area=nome_area
             ).first()
-        if texto:
+        if not texto:
+            definir_mensagem(request, messages.error, "Digite uma mensagem antes de publicar no chat da área.")
+        elif len(texto) > 300:
+            definir_mensagem(request, messages.error, f"A mensagem excede o limite de 300 caracteres ({len(texto)}/300).")
+        else:
             MensagemArea.objects.create(
                 usuario=usuario,
                 area=nome_area,
@@ -734,13 +806,13 @@ def publicar_chat_area(request, nome_area):
 
 def curtir_mensagem_area(request, id_mensagem):
     if request.method != "POST":
-        return JsonResponse({"erro": "Método inválido"}, status=405)
+        return JsonResponse({"erro": "Método inválido. Use uma requisição POST."}, status=405)
     usuario = usuario_logado(request)
     if usuario is None:
-        return JsonResponse({"erro": "Sessão expirada"}, status=401)
+        return JsonResponse({"erro": "Sua sessão expirou. Faça login novamente."}, status=401)
     mensagem = get_object_or_404(MensagemArea, id=id_mensagem)
     if not usuario.tem_acesso_area(mensagem.area):
-        return JsonResponse({"erro": "Acesso negado"}, status=403)
+        return JsonResponse({"erro": f"Você não pertence à área {mensagem.area}."}, status=403)
 
     curtida = CurtidaMensagemArea.objects.filter(usuario=usuario, mensagem=mensagem)
     if curtida.exists():
@@ -759,6 +831,7 @@ def excluir_mensagem_area(request, id_mensagem):
     mensagem = get_object_or_404(MensagemArea, id=id_mensagem)
     nome_area = mensagem.area
     if not usuario.tem_acesso_area(nome_area):
+        definir_mensagem(request, messages.error, f"Você não faz parte da área {nome_area}.")
         return redirect_autenticado(request, "feed")
     if request.method == "POST":
         pode_excluir = (
@@ -768,6 +841,9 @@ def excluir_mensagem_area(request, id_mensagem):
         )
         if pode_excluir:
             mensagem.delete()
+            definir_mensagem(request, messages.success, "Mensagem excluída do chat.")
+        else:
+            definir_mensagem(request, messages.error, "Você não tem permissão para excluir esta mensagem.")
     return redirect_autenticado(request, "chat_area", nome_area=nome_area)
 
 
@@ -778,15 +854,23 @@ def participar_tarefa(request, id_tarefa):
     if request.method == "POST":
         tarefa = get_object_or_404(Tarefa, id=id_tarefa)
         if not usuario.tem_acesso_area(tarefa.area):
+            definir_mensagem(request, messages.error, f"Você precisa fazer parte da área {tarefa.area} para participar desta tarefa.")
             return redirect_autenticado(request, "feed")
         if tarefa.encerrada:
+            definir_mensagem(request, messages.error, f"A tarefa \"{tarefa.titulo}\" já foi encerrada e não aceita novos participantes.")
             return redirect_autenticado(request, "pagina_area", nome_area=tarefa.area)
         if tarefa.eh_criador(usuario):
             # O criador já participa da própria tarefa; não entra na contagem
+            definir_mensagem(request, messages.info, "Como responsável pela tarefa, você já acompanha sua execução.")
             return redirect_autenticado(request, "pagina_area", nome_area=tarefa.area)
         ja_inscrito = ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).exists()
-        if not ja_inscrito and tarefa.tem_vaga():
+        if ja_inscrito:
+            definir_mensagem(request, messages.info, f"Você já está participando da tarefa \"{tarefa.titulo}\".")
+        elif not tarefa.tem_vaga():
+            definir_mensagem(request, messages.error, f"As vagas para a tarefa \"{tarefa.titulo}\" já foram preenchidas.")
+        else:
             ParticipacaoTarefa.objects.create(usuario=usuario, tarefa=tarefa)
+            definir_mensagem(request, messages.success, f"Você entrou na tarefa \"{tarefa.titulo}\"!")
         return redirect_autenticado(request, "pagina_area", nome_area=tarefa.area)
 
 
@@ -796,8 +880,13 @@ def cancelar_participacao(request, id_tarefa):
         return redirect("login")
     if request.method == "POST":
         tarefa = get_object_or_404(Tarefa, id=id_tarefa)
-        if not tarefa.encerrada and not tarefa.eh_criador(usuario):
+        if tarefa.encerrada:
+            definir_mensagem(request, messages.error, "Não é possível cancelar a participação em uma tarefa já encerrada.")
+        elif tarefa.eh_criador(usuario):
+            definir_mensagem(request, messages.error, "O criador da tarefa não pode cancelar a própria participação.")
+        else:
             ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).delete()
+            definir_mensagem(request, messages.info, f"Participação na tarefa \"{tarefa.titulo}\" cancelada.")
         return redirect_autenticado(request, "pagina_area", nome_area=tarefa.area)
 
 
@@ -885,10 +974,13 @@ def adicionar_observacao(request, nome_area, id_tarefa):
     if request.method == "POST":
         tarefa = get_object_or_404(Tarefa, id=id_tarefa)
         participa = ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).exists()
-        if not participa and not tarefa.eh_criador(usuario):
+        if not participa and not tarefa.eh_criador(usuario) and not usuario.eh_administrador():
+            definir_mensagem(request, messages.error, "Apenas participantes ou o responsável pela tarefa podem adicionar observações.")
             return redirect_autenticado(request, "minhas_tarefas", nome_area=nome_area)
         texto = request.POST.get("texto", "").strip()
-        if texto:
+        if not texto:
+            definir_mensagem(request, messages.error, "Digite o texto da observação antes de enviar.")
+        else:
             ObservacaoTarefa.objects.create(usuario=usuario, tarefa=tarefa, texto=texto)
         return redirect_autenticado(request, f"/area/{nome_area}/minhas-tarefas/{id_tarefa}/?aba=observacao")
 
@@ -900,11 +992,16 @@ def concluir_tarefa_usuario(request, nome_area, id_tarefa):
     if request.method == "POST":
         tarefa = get_object_or_404(Tarefa, id=id_tarefa)
         participa = ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).exists()
-        if tarefa.eh_criador(usuario) or not participa:
+        if tarefa.eh_criador(usuario):
+            definir_mensagem(request, messages.error, "O criador da tarefa não registra entrega individual; acompanhe as conclusões na aba Detalhes.")
+            return redirect_autenticado(request, "minhas_tarefas", nome_area=nome_area)
+        if not participa:
+            definir_mensagem(request, messages.error, "Você precisa participar da tarefa para enviá-la como concluída.")
             return redirect_autenticado(request, "minhas_tarefas", nome_area=nome_area)
 
         conclusao_existente = ConclusaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).first()
         if tarefa.encerrada and not conclusao_existente:
+            definir_mensagem(request, messages.error, "Esta tarefa já foi encerrada e não aceita novas conclusões.")
             return redirect_autenticado(request, "minhas_tarefas", nome_area=nome_area)
 
         comentario = request.POST.get("comentario", "").strip()
@@ -924,6 +1021,7 @@ def concluir_tarefa_usuario(request, nome_area, id_tarefa):
             tarefa.concluida = True
             tarefa.save(update_fields=["encerrada", "concluida"])
 
+        definir_mensagem(request, messages.success, "Conclusão da tarefa enviada com sucesso!")
         return redirect_autenticado(request, f"/area/{nome_area}/minhas-tarefas/{id_tarefa}/?aba=detalhes")
 
 
@@ -1270,16 +1368,6 @@ def ver_perfil(request, id_usuario=None):
         for area_nome in lista_nomes_areas
     ]
 
-    publicacoes_usuario = (
-        Publicacao.objects.filter(usuario=perfil_usuario)
-        .select_related("usuario")
-        .prefetch_related("curtidas")
-        .order_by("-data")[:10]
-    )
-    curtidas = set(
-        Curtida.objects.filter(usuario=usuario).values_list("publicacao_id", flat=True)
-    )
-
     return render(request, "perfil.html", {
         "usuario": usuario,
         "perfil_usuario": perfil_usuario,
@@ -1288,8 +1376,6 @@ def ver_perfil(request, id_usuario=None):
         "contribuicao_tampinhas_gramas": contribuicao_tampinhas_gramas,
         "total_doacoes_registradas": total_doacoes_registradas,
         "areas_perfil": areas_perfil,
-        "publicacoes_usuario": publicacoes_usuario,
-        "curtidas": curtidas,
         "pagina_ativa": "perfil" if eh_proprio_perfil else "",
         "area_ativa": "",
     })
@@ -1306,7 +1392,7 @@ def editar_perfil(request):
         remover_foto = request.POST.get("remover_foto") == "1"
 
         if not nome:
-            definir_mensagem(request, messages.error, "Informe um nome válido para o seu perfil.")
+            definir_mensagem(request, messages.error, "O nome de exibição não pode ficar em branco.")
             return redirect_autenticado(request, "meu_perfil")
         if len(nome) > 100:
             definir_mensagem(request, messages.error, "O nome deve ter no máximo 100 caracteres.")
@@ -1314,6 +1400,21 @@ def editar_perfil(request):
         if len(bio) > 500:
             definir_mensagem(request, messages.error, "A bio deve ter no máximo 500 caracteres.")
             return redirect_autenticado(request, "meu_perfil")
+
+        if "foto" in request.FILES:
+            arquivo_foto = request.FILES["foto"]
+            content_type = getattr(arquivo_foto, "content_type", "") or ""
+            nome_arq = (getattr(arquivo_foto, "name", "") or "").lower()
+            extensoes_validas = (".jpg", ".jpeg", ".png", ".webp", ".gif")
+            if content_type and not content_type.startswith("image/"):
+                definir_mensagem(request, messages.error, "O arquivo enviado não é uma imagem válida (use JPG, PNG, WEBP ou GIF).")
+                return redirect_autenticado(request, "meu_perfil")
+            if nome_arq and not nome_arq.endswith(extensoes_validas) and not content_type.startswith("image/"):
+                definir_mensagem(request, messages.error, "Formato de imagem não suportado. Use JPG, PNG, WEBP ou GIF.")
+                return redirect_autenticado(request, "meu_perfil")
+            if getattr(arquivo_foto, "size", 0) > 5 * 1024 * 1024:
+                definir_mensagem(request, messages.error, "A foto de perfil deve ter no máximo 5 MB.")
+                return redirect_autenticado(request, "meu_perfil")
 
         usuario.nome = nome
         usuario.bio = bio

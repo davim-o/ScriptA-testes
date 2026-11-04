@@ -692,6 +692,26 @@
     color: #fff !important;
 }
 
+.btn-excluir-tarefa-concluida {
+    background-color: #c0392b;
+    color: #ffffff;
+    border: 1px solid #c0392b;
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-excluir-tarefa-concluida:hover {
+    background-color: #a93226;
+    border-color: #a93226;
+}
+
 
 .imagem-tarefa-concluida {
     margin: 14px 0;

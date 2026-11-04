@@ -119,6 +119,7 @@
                                 data-id="{{ msg.id }}"
                                 data-autor="{{ msg.usuario.nome_exibicao }}"
                                 data-inicial="{{ msg.usuario.inicial_perfil }}"
+                                data-foto="{% if msg.usuario.foto and msg.usuario.foto.name %}{{ msg.usuario.foto.url }}{% endif %}"
                                 data-cor="{{ msg.usuario.matricula|cor_avatar }}"
                                 data-texto="{{ msg.texto|truncatechars:140 }}">
                                 <svg class="icone-responder-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

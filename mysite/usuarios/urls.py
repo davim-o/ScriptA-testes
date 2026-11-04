@@ -30,6 +30,7 @@ urlpatterns=[
     path("painel-administrativo/criar-tarefa/", views.criar_tarefa, name="criar_tarefa"),
     path("painel-administrativo/editar-tarefa/<int:id_tarefa>/", views.editar_tarefa, name="editar_tarefa"),
     path("painel-administrativo/encerrar-tarefa/<int:id_tarefa>/", views.encerrar_tarefa, name="encerrar_tarefa"),
+    path("painel-administrativo/excluir-tarefa/<int:id_tarefa>/", views.excluir_tarefa_concluida, name="excluir_tarefa_concluida"),
     path("painel-administrativo/aprovar-area/<int:id_solicitacao>/", views.aprovar_solicitacao_area, name="aprovar_solicitacao_area"),
     path("painel-administrativo/recusar-area/<int:id_solicitacao>/", views.recusar_solicitacao_area, name="recusar_solicitacao_area"),
 

@@ -81,6 +81,13 @@
                     {% endif %}
                     <div class="tarefa-acao">
                         <a href="{% url 'ver_conclusao' tarefa.id %}?origem=minhas_tarefas{% if user_token %}&_user_token={{ user_token|urlencode }}{% endif %}" class="btn-ver-conclusao">Ver entrega</a>
+                        {% if tarefa.criada_por == usuario or usuario.eh_administrador or usuario.sub_lider and usuario.sublider_de == area_ativa %}
+                        <form action="{% url 'excluir_tarefa_concluida' tarefa.id %}" method="POST" onsubmit="return confirm('Deseja realmente excluir esta tarefa concluída?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="origem" value="minhas_tarefas">
+                            <button type="submit" class="btn-cancelar-mt">Excluir</button>
+                        </form>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -234,7 +241,13 @@
                     <form action="{% url 'adicionar_observacao' area_ativa tarefa_selecionada.id %}" method="POST" class="form-observacao">
                         {% csrf_token %}
                         <div class="obs-input-row">
-                            <div class="obs-avatar-eu">{{ usuario.matricula|first|upper }}</div>
+                            <div class="obs-avatar-eu">
+                                {% if usuario.foto and usuario.foto.name %}
+                                    <img src="{{ usuario.foto.url }}" alt="{{ usuario.nome_exibicao }}" class="avatar-foto-img">
+                                {% else %}
+                                    {{ usuario.inicial_perfil }}
+                                {% endif %}
+                            </div>
                             <input type="text" name="texto" placeholder="Escreva uma observação..." class="obs-input" required>
                             <button type="submit" class="btn-enviar-obs">Enviar Observação</button>
                         </div>

@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perfil — {{ perfil_usuario.nome_exibicao }}</title>
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
-    <link rel="stylesheet" href="{% static 'css/feed.css' %}">
     <link rel="stylesheet" href="{% static 'css/perfil.css' %}">
 </head>
 <body>
@@ -161,9 +160,8 @@
         </section>
         {% endif %}
 
-        <!-- Grid de Estatísticas: Tampinhas, Cargo/Matrícula e Áreas -->
+        <!-- Destaque: Contribuição com Tampinhas -->
         <section class="perfil-stats-grid">
-            <!-- Card Contribuição com Tampinhas -->
             <div class="perfil-stat-card card-destaque-tampinhas">
                 <div class="stat-icone-circulo icone-tampinhas-bg">
                     <img src="{% static 'imgs/icone-tampinhas.png' %}" alt="Tampinhas">
@@ -178,18 +176,6 @@
                 <a href="{% url 'tampinhas' %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-ver-ranking">
                     Ver ranking →
                 </a>
-            </div>
-
-            <!-- Card Cargo e Matrícula -->
-            <div class="perfil-stat-card">
-                <div class="stat-icone-circulo icone-cargo-bg">
-                    <img src="{% static 'imgs/icone-usuario.png' %}" alt="Cargo">
-                </div>
-                <div class="stat-conteudo">
-                    <span class="stat-label">Cargo & Matrícula</span>
-                    <div class="stat-valor-medio">{{ perfil_usuario.cargo_detalhado }}</div>
-                    <span class="stat-subtexto">Matrícula: {{ perfil_usuario.matricula }} • {{ perfil_usuario.diretoria }}</span>
-                </div>
             </div>
         </section>
 
@@ -227,70 +213,14 @@
             {% endif %}
         </section>
 
-        <!-- Publicações Recentes do Usuário no Feed -->
-        <section class="perfil-secao-card">
-            <div class="secao-card-header">
-                <img src="{% static 'imgs/icone-feed.png' %}" alt="">
-                <h3>Publicações no Feed</h3>
-            </div>
-
-            <div class="feed">
-                {% for publicacao in publicacoes_usuario %}
-                <article class="card">
-                    <div class="cabecalho">
-                        <div class="avatar">
-                            {% if publicacao.usuario.foto and publicacao.usuario.foto.name %}
-                                <img src="{{ publicacao.usuario.foto.url }}" alt="{{ publicacao.usuario.nome_exibicao }}" class="avatar-foto-img">
-                            {% else %}
-                                {{ publicacao.usuario.inicial_perfil }}
-                            {% endif %}
-                        </div>
-                        <div class="info">
-                            <h3>{{ publicacao.usuario.nome_exibicao }}</h3>
-                            <p>{{ publicacao.usuario.diretoria }} • Matrícula: {{ publicacao.usuario.matricula }}</p>
-                            <small>{{ publicacao.data|date:"d/m/Y • H:i" }}</small>
-                        </div>
-                    </div>
-
-                    <div class="corpo-card">
-                        <div class="avatar-espaco"></div>
-                        <div class="texto">{{ publicacao.texto }}</div>
-                    </div>
-
-                    <div class="rodape-card">
-                        <div class="avatar-espaco"></div>
-                        <div class="rodape-acoes">
-                            <button class="curtir" data-id="{{ publicacao.id }}">
-                                <img
-                                    class="icone-curtir"
-                                    src="{% if publicacao.id in curtidas %}{% static 'imgs/coracao-vermelho.png' %}{% else %}{% static 'imgs/coracao-cinza.png' %}{% endif %}"
-                                    alt="Curtir">
-                                <span>{{ publicacao.total_curtidas }}</span>
-                            </button>
-
-                            {% if publicacao.usuario.id == usuario.id %}
-                            <form action="{% url 'excluir_publicacao' publicacao.id %}" method="POST" class="form-excluir">
-                                {% csrf_token %}
-                                <button type="submit" class="excluir">
-                                    <img src="{% static 'imgs/lixeira.png' %}" alt="Excluir">
-                                </button>
-                            </form>
-                            {% endif %}
-                        </div>
-                    </div>
-                </article>
-                {% empty %}
-                <p class="texto-vazio-secao">Nenhuma publicação realizada no feed ainda.</p>
-                {% endfor %}
-            </div>
-        </section>
-
     </div>
 </main>
 
-<script src="{% static 'js/feed.js' %}"></script>
 {% if eh_proprio_perfil %}
 <script>
+var fotoOriginalUrl = "{% if perfil_usuario.foto and perfil_usuario.foto.name %}{{ perfil_usuario.foto.url|escapejs }}{% endif %}";
+var inicialUsuarioPerfil = "{{ perfil_usuario.inicial_perfil|escapejs }}";
+
 function alternarEdicaoPerfil() {
     var secao = document.getElementById("secao-editar-perfil");
     if (!secao) return;
@@ -329,15 +259,24 @@ function previsualizarFotoPerfil(input) {
 function alternarRemoverFoto(checkbox) {
     var nomeArquivo = document.getElementById("nome-arquivo-foto");
     var inputFoto = document.getElementById("input-foto-perfil");
+    var previewContainer = document.getElementById("preview-avatar-edicao");
     if (checkbox.checked) {
         if (inputFoto) inputFoto.value = "";
+        if (previewContainer) {
+            previewContainer.textContent = inicialUsuarioPerfil;
+        }
         if (nomeArquivo) {
             nomeArquivo.textContent = "A foto atual será removida ao salvar.";
             nomeArquivo.style.color = "#f0c97a";
         }
-    } else if (nomeArquivo) {
-        nomeArquivo.textContent = "PNG ou JPG. Recomendado formato quadrado.";
-        nomeArquivo.style.color = "";
+    } else {
+        if (previewContainer && fotoOriginalUrl) {
+            previewContainer.innerHTML = '<img src="' + fotoOriginalUrl + '" alt="Preview" class="perfil-foto-img">';
+        }
+        if (nomeArquivo) {
+            nomeArquivo.textContent = "PNG ou JPG. Recomendado formato quadrado.";
+            nomeArquivo.style.color = "";
+        }
     }
 }
 

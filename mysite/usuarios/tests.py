@@ -3,7 +3,10 @@ from django.contrib.auth.hashers import make_password
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import ParticipacaoTarefa, Tarefa, Usuario, DoacaoTampinhas, MensagemArea, CurtidaMensagemArea
+from .models import (
+    ParticipacaoTarefa, Tarefa, Usuario, DoacaoTampinhas,
+    MensagemArea, CurtidaMensagemArea, SolicitacaoArea, Publicacao
+)
 from .views import formatar_kg, META_TAMPINHAS_KG
 
 
@@ -567,6 +570,72 @@ class PerfilTests(TestCase):
         self.assertContains(resp, "202451")
         self.assertContains(resp, "Sub-Líder")
         self.assertNotContains(resp, "secao-editar-perfil")
+
+    def test_profile_does_not_show_feed_posts_or_duplicate_cargo_card(self):
+        Publicacao.objects.create(usuario=self.membro, texto="Postagem exclusiva do feed")
+        self.client.post(reverse("login"), {"matricula": self.membro.matricula, "senha": self.senha})
+        resp = self.client.get(reverse("meu_perfil"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotContains(resp, "Publicações no Feed")
+        self.assertNotContains(resp, "Postagem exclusiva do feed")
+        self.assertNotContains(resp, "Cargo &amp; Matrícula")
+        self.assertNotContains(resp, "Cargo & Matrícula")
+        self.assertContains(resp, "Contribuição com Tampinhas")
+
+    def test_area_request_displays_member_name_in_admin_panel(self):
+        admin = Usuario.objects.create(
+            nome="Líder Geral",
+            matricula="admin",
+            senha=make_password(self.senha),
+            diretoria="Líder",
+            areas="",
+            aprovado=True,
+        )
+        SolicitacaoArea.objects.create(usuario=self.membro, area="Cenário")
+
+        # Sub-líder vê o nome do solicitante
+        self.client.post(reverse("login"), {"matricula": self.sublider.matricula, "senha": self.senha})
+        resp_sub = self.client.get(reverse("painel_administrativo"))
+        self.assertContains(resp_sub, "João Dias")
+        self.assertContains(resp_sub, "202450")
+
+        # Admin também vê o nome do solicitante na seção de solicitações de áreas
+        self.client.post(reverse("login"), {"matricula": admin.matricula, "senha": self.senha})
+        resp_adm = self.client.get(reverse("painel_administrativo"))
+        self.assertContains(resp_adm, "João Dias")
+        self.assertContains(resp_adm, "202450")
+
+    def test_sublider_can_delete_completed_task_but_not_active_task(self):
+        tarefa_ativa = Tarefa.objects.create(
+            titulo="Tarefa Ativa Cenário",
+            descricao="Em andamento",
+            limite_participantes=2,
+            criada_por=self.sublider,
+            area="Cenário",
+            encerrada=False,
+        )
+        tarefa_concluida = Tarefa.objects.create(
+            titulo="Tarefa Concluída Cenário",
+            descricao="Finalizada",
+            limite_participantes=2,
+            criada_por=self.sublider,
+            area="Cenário",
+            encerrada=True,
+            concluida=True,
+        )
+
+        self.client.post(reverse("login"), {"matricula": self.sublider.matricula, "senha": self.senha})
+
+        # Não deve excluir tarefa ativa
+        resp_ativa = self.client.post(reverse("excluir_tarefa_concluida", args=[tarefa_ativa.id]))
+        self.assertRedirects(resp_ativa, reverse("painel_administrativo"))
+        self.assertTrue(Tarefa.objects.filter(id=tarefa_ativa.id).exists())
+
+        # Deve excluir tarefa já encerrada/concluída
+        resp_concl = self.client.post(reverse("excluir_tarefa_concluida", args=[tarefa_concluida.id]))
+        self.assertRedirects(resp_concl, reverse("painel_administrativo"))
+        self.assertFalse(Tarefa.objects.filter(id=tarefa_concluida.id).exists())
+
 
 
 

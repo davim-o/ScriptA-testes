@@ -92,10 +92,16 @@
                 {% for sol in solicitacoes_area %}
                 <div class="item-linha">
                     <div class="info-principal">
-                        <div class="avatar avatar-roxo">{{ sol.usuario.matricula|first|upper }}</div>
+                        <a href="{% url 'ver_perfil' sol.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="avatar avatar-roxo" style="overflow:hidden;text-decoration:none;color:white;">
+                            {% if sol.usuario.foto and sol.usuario.foto.name %}
+                                <img src="{{ sol.usuario.foto.url }}" alt="{{ sol.usuario.nome_exibicao }}" class="avatar-foto-img">
+                            {% else %}
+                                {{ sol.usuario.inicial_perfil }}
+                            {% endif %}
+                        </a>
                         <div class="textos">
-                            <h3>{{ sol.usuario.matricula }}</h3>
-                            <p>{{ sol.usuario.diretoria }} — Área: {{ sol.area }}</p>
+                            <h3><a href="{% url 'ver_perfil' sol.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">{{ sol.usuario.nome_exibicao }}</a></h3>
+                            <p>{{ sol.usuario.diretoria }} • Matrícula: {{ sol.usuario.matricula }} — Área: {{ sol.area }}</p>
                         </div>
                     </div>
                     <div class="acoes">
@@ -231,7 +237,7 @@
                         </a>
                         <div class="textos">
                             <h3><a href="{% url 'ver_perfil' sol.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">{{ sol.usuario.nome_exibicao }}</a></h3>
-                            <p>{{ sol.usuario.diretoria }} • Matrícula: {{ sol.usuario.matricula }}</p>
+                            <p>{{ sol.usuario.diretoria }} • Matrícula: {{ sol.usuario.matricula }} — Área: {{ sol.area }}</p>
                         </div>
                     </div>
                     <div class="acoes">
@@ -467,10 +473,10 @@
                         {% for conc in tarefa.conclusoes.all %}
                             {% if conc.imagem and conc.imagem.name %}
                             <div class="conclusao-preview-card">
-                                <a href="{{ conc.imagem.url }}" target="_blank" title="Entrega de {{ conc.usuario.matricula }}">
-                                    <img src="{{ conc.imagem.url }}" alt="Entrega de {{ conc.usuario.matricula }}" class="img-conclusao-thumb">
+                                <a href="{{ conc.imagem.url }}" target="_blank" title="Entrega de {{ conc.usuario.nome_exibicao }}">
+                                    <img src="{{ conc.imagem.url }}" alt="Entrega de {{ conc.usuario.nome_exibicao }}" class="img-conclusao-thumb">
                                 </a>
-                                <span class="conclusao-autor">{{ conc.usuario.matricula }}</span>
+                                <span class="conclusao-autor">{{ conc.usuario.nome_exibicao }}</span>
                             </div>
                             {% endif %}
                         {% endfor %}
@@ -478,7 +484,13 @@
                     {% endif %}
                     <div class="tarefa-acoes">
                         <span class="badge-concluida contador-conclusoes" data-status-url="{% url 'status_tarefa' tarefa.id %}">✓ Concluída por {{ tarefa.total_concl|default:0 }}/{{ tarefa.limite_participantes }}</span>
-                        <a href="{% url 'ver_conclusao' tarefa.id %}?origem=painel{% if user_token %}&_user_token={{ user_token|urlencode }}{% endif %}" class="btn-ver-entrega">Ver entrega</a>
+                        <div style="display: flex; gap: 10px; margin-left: auto; align-items: center;">
+                            <a href="{% url 'ver_conclusao' tarefa.id %}?origem=painel{% if user_token %}&_user_token={{ user_token|urlencode }}{% endif %}" class="btn-ver-entrega">Ver entrega</a>
+                            <form action="{% url 'excluir_tarefa_concluida' tarefa.id %}" method="POST" class="form-inline" onsubmit="return confirm('Deseja realmente excluir esta tarefa concluída?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-excluir-tarefa-concluida">Excluir</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
                 {% empty %}

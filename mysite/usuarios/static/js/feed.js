@@ -23,10 +23,15 @@ document.addEventListener("DOMContentLoaded",()=>{
                 });
 
                 if(!resposta.ok){
-                    if(resposta.status===401){
-                        return;
+                    let msgErro="Não foi possível curtir a publicação.";
+                    try{
+                        const erroJson=await resposta.json();
+                        if(erroJson && erroJson.erro) msgErro=erroJson.erro;
+                    }catch(_){}
+                    if(typeof toast==="function"){
+                        toast(msgErro,"erro");
                     }
-                    throw new Error("Erro na requisição");
+                    return;
                 }
 
                 const dados=await resposta.json();
@@ -39,10 +44,10 @@ document.addEventListener("DOMContentLoaded",()=>{
                     ?"/static/imgs/coracao-vermelho.png"
                     :"/static/imgs/coracao-cinza.png";
 
-            }catch{
-
-                alert("Erro ao curtir a publicação.");
-
+            }catch(err){
+                if(typeof toast==="function"){
+                    toast("Falha de conexão ao curtir a publicação. Tente novamente.","erro");
+                }
             }finally{
 
                 processando=false;

@@ -20,10 +20,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
 
                 if (!resposta.ok) {
-                    if (resposta.status === 401) {
-                        return;
+                    var msgErro = "Não foi possível curtir a mensagem.";
+                    try {
+                        var erroJson = await resposta.json();
+                        if (erroJson && erroJson.erro) msgErro = erroJson.erro;
+                    } catch (_) {}
+                    if (typeof toast === "function") {
+                        toast(msgErro, "erro");
                     }
-                    throw new Error("Erro na requisição");
+                    return;
                 }
 
                 var dados = await resposta.json();
@@ -66,6 +71,7 @@ document.addEventListener("DOMContentLoaded", function () {
             var id = botao.dataset.id || "";
             var autor = botao.dataset.autor || "";
             var inicial = botao.dataset.inicial || "U";
+            var foto = botao.dataset.foto || "";
             var cor = botao.dataset.cor || "avatar-chat-roxo";
             var texto = botao.dataset.texto || "";
 
@@ -79,8 +85,17 @@ document.addEventListener("DOMContentLoaded", function () {
                 previewTexto.textContent = texto;
             }
             if (previewAvatar) {
-                previewAvatar.textContent = inicial;
                 previewAvatar.className = "chat-avatar chat-avatar-pequeno " + cor;
+                if (foto) {
+                    previewAvatar.innerHTML = "";
+                    var imgEl = document.createElement("img");
+                    imgEl.src = foto;
+                    imgEl.alt = autor;
+                    imgEl.className = "avatar-foto-img";
+                    previewAvatar.appendChild(imgEl);
+                } else {
+                    previewAvatar.textContent = inicial;
+                }
             }
             if (previewBox) {
                 previewBox.style.display = "flex";
