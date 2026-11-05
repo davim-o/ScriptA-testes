@@ -100,6 +100,7 @@
 
             <form action="{% url 'editar_perfil' %}" method="POST" enctype="multipart/form-data" class="form-editar-perfil">
                 {% csrf_token %}
+                {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
 
                 <div class="edicao-foto-linha">
                     <div class="edicao-avatar-preview {{ perfil_usuario.matricula|cor_avatar }}" id="preview-avatar-edicao">
@@ -116,7 +117,7 @@
                             <span>Escolher foto de perfil</span>
                         </label>
                         <input type="file" id="input-foto-perfil" name="foto" accept="image/*" class="input-hidden" onchange="previsualizarFotoPerfil(this)">
-                        <span class="edicao-foto-dica" id="nome-arquivo-foto">PNG ou JPG. Recomendado formato quadrado.</span>
+                        <span class="edicao-foto-dica" id="nome-arquivo-foto">PNG ou JPG. Formato quadrado recomendado.</span>
 
                         {% if perfil_usuario.foto and perfil_usuario.foto.name %}
                         <label class="checkbox-remover-foto">
@@ -170,7 +171,7 @@
                     <span class="stat-label">Contribuição com Tampinhas</span>
                     <div class="stat-valor-grande">{{ contribuicao_tampinhas_kg }}</div>
                     <span class="stat-subtexto">
-                        {{ contribuicao_tampinhas_gramas }}g acumulados ({{ total_doacoes_registradas }} doação{{ total_doacoes_registradas|pluralize:"ões" }})
+                        {{ contribuicao_tampinhas_gramas }}g acumulado{{ contribuicao_tampinhas_gramas|pluralize:"s" }} ({{ total_doacoes_registradas }} doaç{{ total_doacoes_registradas|pluralize:"ão,ões" }})
                     </span>
                 </div>
                 <a href="{% url 'tampinhas' %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-ver-ranking">
@@ -274,7 +275,7 @@ function alternarRemoverFoto(checkbox) {
             previewContainer.innerHTML = '<img src="' + fotoOriginalUrl + '" alt="Preview" class="perfil-foto-img">';
         }
         if (nomeArquivo) {
-            nomeArquivo.textContent = "PNG ou JPG. Recomendado formato quadrado.";
+            nomeArquivo.textContent = "PNG ou JPG. Formato quadrado recomendado.";
             nomeArquivo.style.color = "";
         }
     }

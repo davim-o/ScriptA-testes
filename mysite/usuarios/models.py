@@ -270,3 +270,19 @@ class CurtidaMensagemArea(models.Model):
     def __str__(self):
         return f"{self.usuario.matricula} curtiu msg {self.mensagem_id}"
 
+
+class MetaTampinhas(models.Model):
+    meta_kg = models.DecimalField(max_digits=10, decimal_places=3, default=40.0)
+    atualizado_por = models.ForeignKey(
+        Usuario,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="metas_tampinhas_definidas",
+    )
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Meta de Tampinhas: {self.meta_kg}Kg"
+
+

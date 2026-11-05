@@ -5,16 +5,53 @@
     margin: 0 auto;
 }
 
-/* ── Total Geral (Apenas o número, sem barra roxa) ── */
+/* ── Total Geral e Barra de Progresso da Meta ── */
 .secao-total-tampinhas {
     margin-bottom: 24px;
+}
+
+.cabecalho-meta-tampinhas {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
 }
 
 .total-geral-tampinhas {
     font-size: 34px;
     font-weight: 700;
-    color: #ffffff;
+    color: #c8bfff;
     letter-spacing: -0.5px;
+    line-height: 1.1;
+}
+
+.meta-estabelecida-tampinhas {
+    font-size: 14px;
+    font-weight: 500;
+    color: #9ca4c9;
+}
+
+.meta-estabelecida-tampinhas strong {
+    color: #e2e8f0;
+    font-weight: 700;
+}
+
+.barra-progresso-tampinhas {
+    width: 100%;
+    height: 24px;
+    background: #dcdce0;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+}
+
+.preenchimento-progresso-tampinhas {
+    height: 100%;
+    background: #a38fff;
+    border-radius: 12px;
+    transition: width 0.35s ease;
+    min-width: 0;
 }
 
 /* ── Card do Ranking ── */

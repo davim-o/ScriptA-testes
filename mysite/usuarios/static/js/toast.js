@@ -241,20 +241,56 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
+    // Verifica se a página foi aberta via botão Voltar/Avançar (back_forward) ou F5/Recarregar (reload).
+    // Nesses casos, nenhuma notificação de ação anterior deve ser reexibida.
+    var ehNavegacaoHistoricoOuReload = false;
+    try {
+        if (window.performance) {
+            if (typeof window.performance.getEntriesByType === "function") {
+                var navEntries = window.performance.getEntriesByType("navigation");
+                if (navEntries && navEntries.length > 0) {
+                    var navType = navEntries[0].type;
+                    if (navType === "back_forward" || navType === "reload") {
+                        ehNavegacaoHistoricoOuReload = true;
+                    }
+                }
+            } else if (window.performance.navigation) {
+                var legacyType = window.performance.navigation.type;
+                if (legacyType === 1 || legacyType === 2) {
+                    ehNavegacaoHistoricoOuReload = true;
+                }
+            }
+        }
+    } catch (e) {}
+
     // Converte elementos .msg vindos do Django no server-side em toasts sem duplicidades
     var mensagensProcessadas = new Set();
 
     document.querySelectorAll(".msg").forEach(function(el) {
+        if (ehNavegacaoHistoricoOuReload) {
+            el.remove();
+            return;
+        }
         var tipo = el.classList.contains("msg-success") ? "sucesso"
                  : el.classList.contains("msg-error") ? "erro"
                  : "aviso";
         var msg = (el.textContent || "").trim();
+        var msgId = (el.getAttribute("data-msg-id") || "").trim();
         if (msg && !mensagensProcessadas.has(msg)) {
             mensagensProcessadas.add(msg);
 
-            var chaveMsg = "toast_exibido_" + (tabUserId || "anon") + "_" + msg.replace(/\s+/g, "_").slice(0, 40);
             try {
                 if (window.sessionStorage) {
+                    if (msgId) {
+                        var chaveIdUnico = "scripta_toast_id_" + msgId;
+                        if (window.sessionStorage.getItem(chaveIdUnico)) {
+                            el.remove();
+                            return;
+                        }
+                        window.sessionStorage.setItem(chaveIdUnico, "1");
+                    }
+
+                    var chaveMsg = "toast_exibido_" + (tabUserId || "anon") + "_" + msg.replace(/\s+/g, "_").slice(0, 40);
                     var timestampAnterior = window.sessionStorage.getItem(chaveMsg);
                     if (timestampAnterior && (Date.now() - parseInt(timestampAnterior, 10) < 4000)) {
                         el.remove();

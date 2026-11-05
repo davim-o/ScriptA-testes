@@ -31,6 +31,7 @@
         <section class="chat-nova-mensagem" id="box-nova-mensagem">
             <form action="{% url 'publicar_chat_area' nome_area %}" method="POST" id="form-chat-area">
                 {% csrf_token %}
+                {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
                 <input type="hidden" name="resposta_a" id="input-resposta-a" value="">
 
                 <div class="chat-preview-resposta" id="preview-resposta-chat" style="display: none;">
@@ -55,7 +56,7 @@
                     <textarea
                         name="texto"
                         id="textarea-chat-area"
-                        placeholder="A {{ usuario.diretoria|lower|default:'equipe' }} vai ganhar!"
+                        placeholder="{% if usuario.eh_administrador or not usuario.diretoria %}A equipe vai ganhar!{% else %}A {{ usuario.diretoria }} vai ganhar!{% endif %}"
                         required></textarea>
                 </div>
 

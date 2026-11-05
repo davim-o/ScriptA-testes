@@ -66,9 +66,10 @@
 
         <form action="" method="POST" id="form-sair-area" onsubmit="return validarConfirmacaoSair(event)">
             {% csrf_token %}
+            {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
             <div class="modal-corpo">
                 <p class="modal-aviso">
-                    Tem certeza que deseja sair da área <span id="modal-nome-area" class="destaque-area"></span>?
+                    Tem certeza de que deseja sair da área <span id="modal-nome-area" class="destaque-area"></span>?
                 </p>
                 <p class="modal-instrucao">
                     Para confirmar a operação, digite a sua matrícula abaixo:

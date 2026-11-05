@@ -5,7 +5,7 @@ from django.urls import reverse
 
 from .models import (
     ParticipacaoTarefa, Tarefa, Usuario, DoacaoTampinhas,
-    MensagemArea, CurtidaMensagemArea, SolicitacaoArea, Publicacao
+    MensagemArea, CurtidaMensagemArea, SolicitacaoArea, Publicacao, MetaTampinhas
 )
 from .views import formatar_kg, META_TAMPINHAS_KG
 
@@ -635,6 +635,174 @@ class PerfilTests(TestCase):
         resp_concl = self.client.post(reverse("excluir_tarefa_concluida", args=[tarefa_concluida.id]))
         self.assertRedirects(resp_concl, reverse("painel_administrativo"))
         self.assertFalse(Tarefa.objects.filter(id=tarefa_concluida.id).exists())
+
+    def test_profile_pluralization_and_scoped_notifications(self):
+        self.client.post(reverse("login"), {"matricula": self.membro.matricula, "senha": self.senha})
+
+        # 1 doação registrada no setUp -> deve exibir "1 doação" (e não "1 doaçãoões")
+        resp_perfil = self.client.get(reverse("meu_perfil"))
+        self.assertContains(resp_perfil, "(1 doação)")
+        self.assertNotContains(resp_perfil, "doaçãoões")
+
+        # Ao atualizar o perfil, a notificação não deve vazar caso o usuário navegue para outra página (ex: /feed/)
+        self.client.post(reverse("editar_perfil"), {
+            "nome": "João Dias",
+            "bio": "Bio atualizada",
+        })
+        resp_feed = self.client.get(reverse("feed"))
+        self.assertNotContains(resp_feed, "Perfil atualizado com sucesso!")
+
+        # E ao atualizar o perfil seguindo diretamente para /perfil/, aparece apenas uma vez
+        resp_follow = self.client.post(reverse("editar_perfil"), {
+            "nome": "João Dias",
+            "bio": "Bio atualizada 2",
+        }, follow=True)
+        self.assertContains(resp_follow, "Perfil atualizado com sucesso!")
+
+        # Navegações subsequentes para /perfil/ ou /tampinhas/ não repetem a notificação
+        resp_perfil_depois = self.client.get(reverse("meu_perfil"))
+        self.assertNotContains(resp_perfil_depois, "Perfil atualizado com sucesso!")
+        resp_tampinhas = self.client.get(reverse("tampinhas"))
+        self.assertNotContains(resp_tampinhas, "Perfil atualizado com sucesso!")
+
+
+class SubliderPanelAndMetaTampinhasTests(TestCase):
+    def setUp(self):
+        self.senha = "Senha123"
+        self.admin = Usuario.objects.create(
+            nome="Líder Geral",
+            matricula="admin",
+            senha=make_password(self.senha),
+            diretoria="Líder",
+            areas="",
+            aprovado=True,
+        )
+        self.sub_cenario = Usuario.objects.create(
+            nome="Sub Cenário",
+            matricula="202460",
+            senha=make_password(self.senha),
+            diretoria="Diatinf",
+            areas="Cenário",
+            aprovado=True,
+            sub_lider=True,
+            sublider_de="Cenário",
+        )
+        self.sub_tampinhas = Usuario.objects.create(
+            nome="Sub Tampinhas",
+            matricula="202461",
+            senha=make_password(self.senha),
+            diretoria="Diaren",
+            areas="Tampinhas",
+            aprovado=True,
+            sub_lider=True,
+            sublider_de="Tampinhas",
+        )
+        self.membro_cenario_staff = Usuario.objects.create(
+            nome="Membro Cenário e Staff",
+            matricula="202462",
+            senha=make_password(self.senha),
+            diretoria="Diatinf",
+            areas="Cenário,Staff",
+            aprovado=True,
+        )
+        self.membro_tampinhas = Usuario.objects.create(
+            nome="Membro Tampinhas",
+            matricula="202463",
+            senha=make_password(self.senha),
+            diretoria="Diacon",
+            areas="Tampinhas",
+            aprovado=True,
+        )
+        self.membro_apenas_staff = Usuario.objects.create(
+            nome="Membro Exclusivo Staff",
+            matricula="202464",
+            senha=make_password(self.senha),
+            diretoria="Diacin",
+            areas="Staff",
+            aprovado=True,
+        )
+
+    def test_member_counter_and_list_isolated_per_area(self):
+        # Líder geral vê todos os 6 usuários aprovados
+        self.client.post(reverse("login"), {"matricula": "admin", "senha": self.senha})
+        resp_admin = self.client.get(reverse("painel_administrativo"))
+        self.assertEqual(resp_admin.context["total_membros"], 6)
+        self.assertContains(resp_admin, "Membro Cenário e Staff")
+        self.assertContains(resp_admin, "Membro Tampinhas")
+        self.assertContains(resp_admin, "Membro Exclusivo Staff")
+        stats_admin = self.client.get(reverse("stats_painel")).json()
+        self.assertEqual(stats_admin["membros"], 6)
+
+        # Sub-líder de Cenário vê apenas os 2 membros de Cenário (sub_cenario + membro_cenario_staff)
+        self.client.post(reverse("login"), {"matricula": "202460", "senha": self.senha})
+        resp_cenario = self.client.get(reverse("painel_administrativo"))
+        self.assertEqual(resp_cenario.context["total_membros"], 2)
+        self.assertContains(resp_cenario, "Sub Cenário")
+        self.assertContains(resp_cenario, "Membro Cenário e Staff")
+        self.assertNotContains(resp_cenario, "Membro Tampinhas")
+        self.assertNotContains(resp_cenario, "Membro Exclusivo Staff")
+        self.assertContains(resp_cenario, "202462 - Cenário")
+        stats_cenario = self.client.get(reverse("stats_painel")).json()
+        self.assertEqual(stats_cenario["membros"], 2)
+
+        # Sub-líder de Tampinhas vê apenas os 2 membros de Tampinhas na seção Membros
+        self.client.post(reverse("login"), {"matricula": "202461", "senha": self.senha})
+        resp_tamp = self.client.get(reverse("painel_administrativo"))
+        self.assertEqual(resp_tamp.context["total_membros"], 2)
+        stats_tamp = self.client.get(reverse("stats_painel")).json()
+        self.assertEqual(stats_tamp["membros"], 2)
+
+    def test_sublider_can_remove_member_from_own_area_without_deleting_user(self):
+        self.client.post(reverse("login"), {"matricula": "202460", "senha": self.senha})
+        # Tenta remover membro de outra área -> bloqueado
+        self.client.post(reverse("remover_membro", args=[self.membro_apenas_staff.id]))
+        self.membro_apenas_staff.refresh_from_db()
+        self.assertEqual(self.membro_apenas_staff.areas, "Staff")
+
+        # Remove membro_cenario_staff da área Cenário -> preserva Staff e mantém usuário no banco
+        self.client.post(reverse("remover_membro", args=[self.membro_cenario_staff.id]))
+        self.membro_cenario_staff.refresh_from_db()
+        self.assertEqual(self.membro_cenario_staff.areas, "Staff")
+        resp_cenario = self.client.get(reverse("painel_administrativo"))
+        self.assertEqual(resp_cenario.context["total_membros"], 1)
+
+    def test_tampinhas_goal_definition_replacement_and_progress_bar(self):
+        # Sub-líder de Cenário e Admin não podem alterar a meta de Tampinhas
+        self.client.post(reverse("login"), {"matricula": "202460", "senha": self.senha})
+        self.client.post(reverse("definir_meta_tampinhas"), {"meta_kg": "60"})
+        self.assertEqual(MetaTampinhas.objects.count(), 0)
+
+        self.client.post(reverse("login"), {"matricula": "admin", "senha": self.senha})
+        self.client.post(reverse("definir_meta_tampinhas"), {"meta_kg": "60"})
+        self.assertEqual(MetaTampinhas.objects.count(), 0)
+
+        # Sub-líder de Tampinhas define meta de 50Kg e depois substitui por 80Kg
+        self.client.post(reverse("login"), {"matricula": "202461", "senha": self.senha})
+        self.client.post(reverse("definir_meta_tampinhas"), {"meta_kg": "50"})
+        self.assertEqual(MetaTampinhas.objects.count(), 1)
+        self.assertEqual(MetaTampinhas.objects.first().meta_kg, Decimal("50.000"))
+
+        self.client.post(reverse("definir_meta_tampinhas"), {"meta_kg": "80"})
+        self.assertEqual(MetaTampinhas.objects.count(), 1)
+        self.assertEqual(MetaTampinhas.objects.first().meta_kg, Decimal("80.000"))
+
+        # Registra 20.000g (20Kg) de doação -> 25% da meta de 80Kg
+        self.client.post(reverse("registrar_doacao"), {
+            "membro_id": self.membro_tampinhas.id,
+            "quantidade": "20000",
+        })
+
+        resp_ranking = self.client.get(reverse("tampinhas"))
+        self.assertEqual(resp_ranking.status_code, 200)
+        self.assertEqual(resp_ranking.context["total_geral_kg"], "20Kg")
+        self.assertEqual(resp_ranking.context["meta_kg"], Decimal("80.000"))
+        self.assertEqual(resp_ranking.context["meta_kg_formatada"], "80Kg")
+        self.assertEqual(resp_ranking.context["progresso_porcentagem"], 25.0)
+        self.assertContains(resp_ranking, "20Kg")
+        self.assertContains(resp_ranking, "80Kg")
+        self.assertContains(resp_ranking, "width: 25.00%;")
+
+
 
 
 

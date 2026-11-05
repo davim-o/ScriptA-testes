@@ -21,10 +21,18 @@
 
 
 
-        <!-- Total Geral Arrecadado -->
+        <!-- Total Geral Arrecadado e Barra de Progresso da Meta -->
         <section class="secao-total-tampinhas">
-            <div class="total-geral-tampinhas" id="total-geral-tampinhas">
-                {{ total_geral_kg }}
+            <div class="cabecalho-meta-tampinhas">
+                <div class="total-geral-tampinhas" id="total-geral-tampinhas">
+                    {{ total_geral_kg }}
+                </div>
+                <div class="meta-estabelecida-tampinhas" id="meta-estabelecida-tampinhas">
+                    Meta: <strong>{{ meta_kg_formatada }}</strong>
+                </div>
+            </div>
+            <div class="barra-progresso-tampinhas" role="progressbar" aria-valuenow="{{ progresso_porcentagem_css }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progresso da meta de arrecadação">
+                <div class="preenchimento-progresso-tampinhas" id="barra-preenchimento-tampinhas" style="width: {{ progresso_porcentagem_css }}%;"></div>
             </div>
         </section>
 

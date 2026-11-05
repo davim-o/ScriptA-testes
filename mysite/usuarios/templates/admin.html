@@ -141,7 +141,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Áreas</label>
+                        <label>Área</label>
                         <div class="input-with-icon">
                             <img src="{% static 'imgs/icone-area.png' %}" alt="">
                             <select name="area" required>
@@ -161,59 +161,6 @@
                     <button type="submit" class="btn-roxo">Promover</button>
                 </div>
             </form>
-        </section>
-
-        <section class="painel-card">
-            <div class="card-header flex-between">
-                <div class="titulo-icone">
-                    <img src="{% static 'imgs/icone-equipe.png' %}" alt="">
-                    <h2>Membros</h2>
-                </div>
-                <div class="search-box">
-                    <img src="{% static 'imgs/icone-search.png' %}" alt="">
-                    <input type="text" id="search-membros" placeholder="Pesquisar membros">
-                </div>
-            </div>
-            <div class="lista-itens">
-                {% for membro in membros %}
-                <div class="item-linha">
-                    <div class="info-principal">
-                        <a href="{% url 'ver_perfil' membro.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="avatar avatar-verde" style="overflow:hidden;text-decoration:none;color:white;">
-                            {% if membro.foto and membro.foto.name %}
-                                <img src="{{ membro.foto.url }}" alt="{{ membro.nome_exibicao }}" class="avatar-foto-img">
-                            {% else %}
-                                {{ membro.inicial_perfil }}
-                            {% endif %}
-                        </a>
-                        <div class="textos">
-                            <div class="nome-badges">
-                                <h3><a href="{% url 'ver_perfil' membro.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">{{ membro.nome_exibicao }}</a></h3>
-                                {% if membro.sub_lider %}
-                                    <span class="badge-sublider">Sub-Líder</span>
-                                    <form action="{% url 'remover_sublider' membro.id %}" method="POST" class="form-inline">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn-lixeira">
-                                            <img src="{% static 'imgs/icone-lixeira.png' %}" alt="Remover cargo">
-                                        </button>
-                                    </form>
-                                {% endif %}
-                            </div>
-                            <p>{{ membro.matricula }} - {{ membro.areas }}</p>
-                        </div>
-                    </div>
-                    <div class="acoes">
-                        {% if not membro.eh_administrador %}
-                        <form action="{% url 'remover_membro' membro.id %}" method="POST" onsubmit="return confirm('Deseja realmente remover este membro?');">
-                            {% csrf_token %}
-                            <button type="submit" class="btn-remover">Remover</button>
-                        </form>
-                        {% endif %}
-                    </div>
-                </div>
-                {% empty %}
-                <p class="sem-itens">Nenhum membro aprovado ainda.</p>
-                {% endfor %}
-            </div>
         </section>
         {% endif %}
 
@@ -243,12 +190,14 @@
                     <div class="acoes">
                         <form action="{% url 'aprovar_solicitacao_area' sol.id %}" method="POST">
                             {% csrf_token %}
+                            {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
                             <button type="submit" class="btn-icon" title="Aprovar entrada">
                                 <img src="{% static 'imgs/icone-check-verde.png' %}" alt="Aprovar">
                             </button>
                         </form>
                         <form action="{% url 'recusar_solicitacao_area' sol.id %}" method="POST" onsubmit="return confirm('Deseja recusar esta solicitação?')">
                             {% csrf_token %}
+                            {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
                             <button type="submit" class="btn-icon" title="Recusar entrada">
                                 <img src="{% static 'imgs/icone-cross-vermelho.png' %}" alt="Recusar">
                             </button>
@@ -262,7 +211,75 @@
         </section>
         {% endif %}
 
-        <!-- ── Registrar Doação (Apenas Sub-Líder da área Tampinhas) ── -->
+        <!-- ── Visualização Padronizada de Membros (Líder Geral: todos / Sub-Líder: apenas sua área) ── -->
+        <section class="painel-card" id="card-membros-painel">
+            <div class="card-header flex-between">
+                <div class="titulo-icone">
+                    <img src="{% static 'imgs/icone-equipe.png' %}" alt="">
+                    <h2>Membros</h2>
+                </div>
+                <div class="search-box">
+                    <img src="{% static 'imgs/icone-search.png' %}" alt="">
+                    <input type="text" id="search-membros" placeholder="Pesquisar membros">
+                </div>
+            </div>
+            <div class="lista-itens">
+                {% for membro in membros %}
+                <div class="item-linha">
+                    <div class="info-principal">
+                        <a href="{% url 'ver_perfil' membro.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="avatar avatar-verde" style="overflow:hidden;text-decoration:none;color:white;">
+                            {% if membro.foto and membro.foto.name %}
+                                <img src="{{ membro.foto.url }}" alt="{{ membro.nome_exibicao }}" class="avatar-foto-img">
+                            {% else %}
+                                {{ membro.inicial_perfil }}
+                            {% endif %}
+                        </a>
+                        <div class="textos">
+                            <div class="nome-badges">
+                                <h3><a href="{% url 'ver_perfil' membro.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">{{ membro.nome_exibicao }}</a></h3>
+                                {% if membro.sub_lider %}
+                                    <span class="badge-sublider">Sub-Líder</span>
+                                    {% if usuario.eh_administrador %}
+                                    <form action="{% url 'remover_sublider' membro.id %}" method="POST" class="form-inline">
+                                        {% csrf_token %}
+                                        {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
+                                        <button type="submit" class="btn-lixeira">
+                                            <img src="{% static 'imgs/icone-lixeira.png' %}" alt="Remover cargo">
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                            {% if usuario.eh_administrador %}
+                            <p>{{ membro.matricula }}{% if membro.eh_administrador %} • Líder Geral{% elif membro.get_areas_list %} • {{ membro.get_areas_list|join:", " }}{% endif %}</p>
+                            {% else %}
+                            <p>{{ membro.matricula }} - {{ usuario.sublider_de }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="acoes">
+                        {% if usuario.eh_administrador and not membro.eh_administrador %}
+                        <form action="{% url 'remover_membro' membro.id %}" method="POST" onsubmit="return confirm('Deseja realmente remover este membro?');">
+                            {% csrf_token %}
+                            {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
+                            <button type="submit" class="btn-remover">Remover</button>
+                        </form>
+                        {% elif usuario.sub_lider and not membro.eh_administrador and membro.id != usuario.id %}
+                        <form action="{% url 'remover_membro' membro.id %}" method="POST" onsubmit="return confirm('Deseja realmente remover este membro da área {{ usuario.sublider_de }}?');">
+                            {% csrf_token %}
+                            {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
+                            <button type="submit" class="btn-remover">Remover</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <p class="sem-itens">{% if usuario.eh_administrador %}Nenhum membro aprovado ainda.{% else %}Nenhum membro vinculado a esta área ainda.{% endif %}</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- ── Registrar Doação e Meta de Arrecadação (Apenas Sub-Líder da área Tampinhas) ── -->
         {% if usuario.sub_lider and usuario.sublider_de == 'Tampinhas' %}
         <section class="painel-card" id="card-registrar-doacao">
             <div class="card-header">
@@ -291,6 +308,37 @@
 
                 <div class="form-actions-left" style="margin-top: 20px;">
                     <button type="submit" class="btn-roxo">Registrar</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="painel-card" id="card-meta-tampinhas">
+            <div class="card-header">
+                <img src="{% static 'imgs/icone-tampinhas.png' %}" alt="">
+                <h2>Meta de arrecadação (Kg)</h2>
+            </div>
+
+            <form class="form-doacao" action="{% url 'definir_meta_tampinhas' %}" method="POST" id="form-meta-tampinhas">
+                {% csrf_token %}
+                {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
+                <div class="form-group">
+                    <label for="input-meta-kg">Meta de arrecadação em quilogramas (Kg)</label>
+                    <input
+                        type="number"
+                        name="meta_kg"
+                        id="input-meta-kg"
+                        class="input-doacao"
+                        placeholder="Ex: 40"
+                        value="{{ meta_tampinhas_atual }}"
+                        min="0.1"
+                        max="100000"
+                        step="any"
+                        required>
+                    <span class="hint-doacao">Meta atual estabelecida: <strong>{{ meta_tampinhas_formatada }}</strong>. Ao cadastrar uma nova meta, ela substituirá automaticamente a anterior.</span>
+                </div>
+
+                <div class="form-actions-left" style="margin-top: 20px;">
+                    <button type="submit" class="btn-roxo">Salvar meta</button>
                 </div>
             </form>
         </section>
@@ -570,7 +618,6 @@ if (typeof flatpickr !== "undefined") {
     });
 }
 
-{% if usuario.eh_administrador %}
 (function() {
     var input = document.getElementById("search-membros");
     if (!input) return;
@@ -610,7 +657,6 @@ if (typeof flatpickr !== "undefined") {
         }
     });
 })();
-{% endif %}
 
 // Atualização de contadores de membros e doações em tempo real
 function atualizarStatsPainel() {

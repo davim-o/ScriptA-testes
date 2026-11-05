@@ -29,6 +29,7 @@
 
             <form class="form-tarefa" action="{% url 'editar_tarefa' tarefa.id %}" method="POST" id="form-editar-tarefa">
                 {% csrf_token %}
+                {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
 
                 <div class="form-tarefa-grid">
                     <div class="form-group">
@@ -41,7 +42,7 @@
                         <div class="select-wrapper">
                             <select name="tipo" id="tipo-tarefa" required>
                                 <option value="prolongada" {% if tarefa.tipo == "prolongada" %}selected{% endif %}>Prolongada</option>
-                                <option value="fixa" {% if tarefa.tipo == "fixa" %}selected{% endif %}>Fixa</option>
+                                <option value="fixa" {% if tarefa.tipo == "fixa" %}selected{% endif %}>Rápida</option>
                             </select>
                         </div>
                     </div>

@@ -44,10 +44,10 @@
                 <p class="erro-login">{{ erro }}</p>
                 {% endif %}
 
-                {% if messages %}
-                <div style="display:none;">
-                    {% for message in messages %}
-                        <div class="msg msg-{{ message.tags }}">{{ message }}</div>
+                {% if notificacoes_ativas %}
+                <div style="display:none;" aria-hidden="true">
+                    {% for notif in notificacoes_ativas %}
+                        <div class="msg msg-{{ notif.level_tag }}" data-msg-id="{{ notif.id }}">{{ notif.texto }}</div>
                     {% endfor %}
                 </div>
                 {% endif %}
