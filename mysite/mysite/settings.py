@@ -8,9 +8,15 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     'pdsweb.pythonanywhere.com',
+    '.pythonanywhere.com',
     'localhost',
     '127.0.0.1',
     '.app.github.dev',
+    '.onrender.com',
+    '.railway.app',
+    '.vercel.app',
+    '.fly.dev',
+    '*',
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -18,6 +24,10 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
     'http://127.0.0.1:8000',
     'https://*.app.github.dev',
+    'https://*.pythonanywhere.com',
+    'https://*.onrender.com',
+    'https://*.railway.app',
+    'https://*.fly.dev',
 ]
 
 INSTALLED_APPS = [
@@ -85,10 +95,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
 
-# Para PythonAnywhere (produção):
-# STATIC_ROOT = '/home/pdsweb/mysite/static'
-# MEDIA_ROOT = '/home/pdsweb/mysite/media'
-
+# Diretório para coleta de arquivos estáticos em nuvem/produção (collectstatic):
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Sessão resiliente e persistente baseada em cookies assinados

@@ -289,12 +289,15 @@
     }
 
     .podio-container {
-        gap: 14px;
+        gap: 10px;
         min-height: 175px;
     }
 
     .podio-coluna {
-        width: 90px;
+        flex: 1;
+        min-width: 0;
+        width: auto;
+        max-width: 95px;
     }
 
     .podio-matricula {
@@ -307,13 +310,15 @@
     }
 
     .degrau-ouro {
-        width: 88px;
+        width: 100%;
+        max-width: 88px;
         height: 22px;
     }
 
     .degrau-prata,
     .degrau-bronze {
-        width: 76px;
+        width: 100%;
+        max-width: 76px;
         height: 18px;
     }
 

@@ -609,3 +609,31 @@
     padding: 12px 0;
 }
 
+@media (max-width: 640px) {
+    .perfil-corpo {
+        padding: 0 18px 20px;
+    }
+
+    .perfil-edicao-card {
+        padding: 18px;
+    }
+
+    .perfil-stat-card {
+        flex-wrap: wrap;
+        padding: 16px;
+    }
+
+    .perfil-secao-card {
+        padding: 18px;
+    }
+
+    .edicao-acoes {
+        flex-wrap: wrap;
+    }
+
+    .btn-cancelar-edicao,
+    .btn-salvar-perfil {
+        flex: 1;
+        text-align: center;
+    }
+}

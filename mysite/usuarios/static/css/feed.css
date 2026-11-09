@@ -126,6 +126,7 @@
     font-size: 15px;
     color: #ededed;
     white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .rodape-card {
@@ -190,4 +191,20 @@
     padding: 35px;
     text-align: center;
     color: #9ca4c9;
+}
+
+@media (max-width: 600px) {
+    .nova-publicacao,
+    .card {
+        padding: 14px;
+    }
+
+    .corpo-card .avatar-espaco,
+    .rodape-card .avatar-espaco {
+        display: none;
+    }
+
+    .rodape-card {
+        margin-top: 10px;
+    }
 }

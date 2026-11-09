@@ -900,11 +900,13 @@
     .form-actions,
     .form-actions-editar {
         justify-content: stretch;
+        flex-wrap: wrap;
     }
 
     .btn-roxo,
     .btn-cancelar {
         width: 100%;
+        text-align: center;
     }
 }
 

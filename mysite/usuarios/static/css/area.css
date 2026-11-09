@@ -688,3 +688,27 @@
     font-size: 14px;
 }
 
+@media (max-width: 600px) {
+    .aba {
+        font-size: 13px;
+        padding: 10px 4px;
+    }
+
+    .tarefa-card-area {
+        padding: 16px;
+    }
+
+    .tarefa-topo {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .chat-nova-mensagem,
+    .chat-corpo-card {
+        padding: 14px 16px;
+    }
+
+    .chat-resposta-citacao {
+        padding: 10px 16px;
+    }
+}

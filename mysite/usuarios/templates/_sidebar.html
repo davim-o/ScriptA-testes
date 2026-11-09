@@ -1,7 +1,12 @@
 {% load static %}
-<aside class="sidebar">
+<div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+<aside class="sidebar" id="sidebar-principal">
 
-    <div>
+    <div class="sidebar-barra-arrastar" id="sidebar-barra-arrastar" role="button" tabindex="0" aria-label="Arrastar ou tocar para abrir e fechar o menu lateral" title="Arraste ou clique para abrir/fechar o menu">
+        <span class="sidebar-barra-grip"></span>
+    </div>
+
+    <div class="sidebar-topo-scroll">
         <a href="{% url 'meu_perfil' %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="usuario {% if pagina_ativa == 'perfil' %}usuario-ativo{% endif %}" title="Acessar meu perfil">
             <div class="avatar">
                 {% if usuario.foto and usuario.foto.name %}
@@ -79,3 +84,177 @@
     {% endif %}
 
 </aside>
+<script>
+(function () {
+    var sidebar = document.getElementById("sidebar-principal");
+    var handle = document.getElementById("sidebar-barra-arrastar");
+    var backdrop = document.getElementById("sidebar-backdrop");
+    if (!sidebar || !handle || !backdrop) return;
+
+    var MOBILE_BP = 680;
+    var dragging = false;
+    var startX = 0;
+    var startY = 0;
+    var startTranslate = 0;
+    var currentTranslate = 0;
+    var moved = false;
+    var lastX = 0;
+    var lastTime = 0;
+    var velocityX = 0;
+    var suppressClick = false;
+
+    function isMobile() {
+        return window.innerWidth <= MOBILE_BP;
+    }
+
+    function getSidebarWidth() {
+        return sidebar.offsetWidth || 230;
+    }
+
+    function isOpen() {
+        return sidebar.classList.contains("aberta");
+    }
+
+    function setOpenState(open) {
+        sidebar.classList.remove("arrastando");
+        sidebar.style.transform = "";
+        backdrop.style.opacity = "";
+        if (open) {
+            sidebar.classList.add("aberta");
+            backdrop.classList.add("ativo");
+        } else {
+            sidebar.classList.remove("aberta");
+            backdrop.classList.remove("ativo");
+        }
+    }
+
+    function onStart(clientX, clientY, fromSidebarBody) {
+        if (!isMobile()) return;
+        if (fromSidebarBody && !isOpen()) return;
+        var w = getSidebarWidth();
+        dragging = true;
+        moved = false;
+        startX = clientX;
+        startY = clientY;
+        lastX = clientX;
+        lastTime = Date.now();
+        velocityX = 0;
+        startTranslate = isOpen() ? 0 : -w;
+        currentTranslate = startTranslate;
+    }
+
+    function onMove(clientX, clientY, ev) {
+        if (!dragging || !isMobile()) return;
+        var dx = clientX - startX;
+        var dy = clientY - startY;
+
+        if (!moved) {
+            if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+            if (Math.abs(dy) > Math.abs(dx) * 1.4 && ev && ev.target !== handle && !handle.contains(ev.target)) {
+                dragging = false;
+                return;
+            }
+            moved = true;
+            sidebar.classList.add("arrastando");
+            backdrop.classList.add("ativo");
+        }
+
+        if (ev && ev.cancelable) ev.preventDefault();
+
+        var now = Date.now();
+        var dt = now - lastTime;
+        if (dt > 0) {
+            velocityX = (clientX - lastX) / dt;
+            lastX = clientX;
+            lastTime = now;
+        }
+
+        var w = getSidebarWidth();
+        currentTranslate = Math.max(-w, Math.min(0, startTranslate + dx));
+        sidebar.style.transform = "translateX(" + currentTranslate + "px)";
+        var progress = (currentTranslate + w) / w;
+        backdrop.style.opacity = String(Math.max(0, Math.min(1, progress)));
+    }
+
+    function onEnd() {
+        if (!dragging) return;
+        dragging = false;
+        if (!isMobile()) return;
+
+        if (!moved) {
+            return;
+        }
+
+        suppressClick = true;
+        setTimeout(function () { suppressClick = false; }, 80);
+
+        var w = getSidebarWidth();
+        var shouldOpen;
+        if (Math.abs(velocityX) > 0.35) {
+            shouldOpen = velocityX > 0;
+        } else {
+            shouldOpen = currentTranslate > -w * 0.5;
+        }
+        setOpenState(shouldOpen);
+    }
+
+    handle.addEventListener("touchstart", function (e) {
+        if (e.touches.length !== 1) return;
+        onStart(e.touches[0].clientX, e.touches[0].clientY, false);
+    }, { passive: true });
+
+    sidebar.addEventListener("touchstart", function (e) {
+        if (e.touches.length !== 1 || e.target === handle || handle.contains(e.target)) return;
+        onStart(e.touches[0].clientX, e.touches[0].clientY, true);
+    }, { passive: true });
+
+    window.addEventListener("touchmove", function (e) {
+        if (!dragging || !e.touches.length) return;
+        onMove(e.touches[0].clientX, e.touches[0].clientY, e);
+    }, { passive: false });
+
+    window.addEventListener("touchend", onEnd);
+    window.addEventListener("touchcancel", onEnd);
+
+    handle.addEventListener("mousedown", function (e) {
+        if (e.button !== 0) return;
+        onStart(e.clientX, e.clientY, false);
+    });
+
+    window.addEventListener("mousemove", function (e) {
+        if (!dragging) return;
+        onMove(e.clientX, e.clientY, e);
+    });
+
+    window.addEventListener("mouseup", onEnd);
+
+    handle.addEventListener("click", function (e) {
+        if (!isMobile()) return;
+        if (suppressClick) {
+            e.preventDefault();
+            return;
+        }
+        setOpenState(!isOpen());
+    });
+
+    handle.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setOpenState(!isOpen());
+        }
+    });
+
+    backdrop.addEventListener("click", function () {
+        setOpenState(false);
+    });
+
+    window.addEventListener("resize", function () {
+        if (!isMobile()) {
+            sidebar.classList.remove("aberta", "arrastando");
+            sidebar.style.transform = "";
+            backdrop.classList.remove("ativo");
+            backdrop.style.opacity = "";
+        }
+    });
+})();
+</script>

@@ -556,6 +556,22 @@
     .btn-cancelar-mt {
         min-width: 110px;
     }
+
+    .obs-input-row {
+        flex-wrap: wrap;
+    }
+
+    .btn-enviar-obs {
+        width: 100%;
+    }
+
+    .obs-aviso {
+        padding-left: 0;
+    }
+
+    .foto-conclusao {
+        max-width: 100%;
+    }
 }
 
 /* ── Botão Voltar Navegação ── */

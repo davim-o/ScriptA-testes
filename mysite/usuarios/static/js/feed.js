@@ -92,5 +92,3 @@ function getCookie(nome){
     return valor;
 
 }
-
-

@@ -15,12 +15,12 @@
 <main class="conteudo">
     <div class="container-pagina container-perfil">
 
+        {% if not eh_proprio_perfil %}
         <div class="titulo-pagina cabecalho-pagina-perfil">
-            <h1>{% if eh_proprio_perfil %}Meu Perfil{% else %}Perfil do Membro{% endif %}</h1>
-            {% if not eh_proprio_perfil %}
+            <h1>Perfil do Membro</h1>
             <a href="javascript:history.back()" class="btn-voltar-perfil">← Voltar</a>
-            {% endif %}
         </div>
+        {% endif %}
 
         <!-- Card Principal de Identidade do Perfil -->
         <section class="perfil-hero-card">

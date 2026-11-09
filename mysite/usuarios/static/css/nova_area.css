@@ -329,6 +329,10 @@
         margin-top: 10px;
     }
 
+    .card-area-acao form {
+        width: 100%;
+    }
+
     .card-area-acao button {
         width: 100%;
     }

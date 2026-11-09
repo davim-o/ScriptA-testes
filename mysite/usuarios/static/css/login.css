@@ -53,6 +53,7 @@ main {
 .imagens {
     display: flex;
     flex-direction: row;
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: center;
     gap: clamp(14px, 2vw, 24px);
@@ -60,19 +61,144 @@ main {
     width: 100%;
 }
 
-.imagens img {
+.mascote-item {
+    position: relative;
     width: clamp(75px, 7.5vw, 98px);
     height: clamp(75px, 7.5vw, 98px);
-    object-fit: contain;
-    display: block;
+    flex-shrink: 0;
     transition: transform 0.25s ease, filter 0.25s ease;
     filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45));
+    user-select: none;
 }
 
-.imagens img:hover {
+.mascote-item:hover {
     transform: scale(1.1);
     filter: drop-shadow(0 8px 20px rgba(139, 119, 252, 0.5));
 }
+
+.mascote-item > img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    pointer-events: none;
+}
+
+.olho-mascote {
+    position: absolute;
+    left: var(--ex);
+    top: var(--ey);
+    width: var(--ew);
+    height: var(--eh);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pupila-mascote {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--pw, 52%);
+    height: var(--ph, 52%);
+    border-radius: 50%;
+    background: #0b1020;
+    transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px)));
+    transition: transform 0.08s ease-out, opacity 0.18s ease;
+}
+
+.pupila-mascote::after {
+    content: "";
+    position: absolute;
+    top: 16%;
+    left: 18%;
+    width: 34%;
+    height: 34%;
+    border-radius: 50%;
+    background: #ffffff;
+}
+
+.palpebra-mascote {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 108%;
+    height: 108%;
+    border-radius: 50%;
+    background: var(--lid);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scaleY(0);
+    transform-origin: 50% 18%;
+    opacity: 0;
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.16s ease;
+}
+
+.palpebra-mascote svg {
+    width: 78%;
+    height: auto;
+    overflow: visible;
+}
+
+.palpebra-mascote path {
+    fill: none;
+    stroke: #0b1020;
+    stroke-width: 3.6;
+    stroke-linecap: round;
+}
+
+.imagens.olhos-fechados .palpebra-mascote {
+    transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scaleY(1);
+    opacity: 1;
+}
+
+.imagens.olhos-fechados .pupila-mascote {
+    opacity: 0;
+    transform: translate(-50%, 15%) scaleY(0.2);
+}
+
+.mascote-tigre {
+    --ew: 13.4%;
+    --eh: 11.4%;
+    --pw: 48%;
+    --ph: 56%;
+    --lid: #f17703;
+}
+.mascote-tigre .olho-esq { --ex: 32.06%; --ey: 32.13%; --rot: 18deg; }
+.mascote-tigre .olho-dir { --ex: 67.64%; --ey: 32.13%; --rot: -18deg; }
+
+.mascote-cobra {
+    --ew: 12.8%;
+    --eh: 13.2%;
+    --pw: 50%;
+    --ph: 49%;
+    --lid: #7c9841;
+}
+.mascote-cobra .olho-esq { --ex: 31.17%; --ey: 22.36%; --rot: 22deg; }
+.mascote-cobra .olho-dir { --ex: 68.54%; --ey: 22.42%; --rot: -22deg; }
+
+.mascote-dragao {
+    --ew: 11.8%;
+    --eh: 11.8%;
+    --pw: 52%;
+    --ph: 52%;
+    --lid: #8425cc;
+}
+.mascote-dragao .olho-esq { --ex: 33.31%; --ey: 42.52%; --rot: 20deg; }
+.mascote-dragao .olho-dir { --ex: 66.44%; --ey: 42.49%; --rot: -20deg; }
+
+.mascote-cavalo {
+    --ew: 8.0%;
+    --eh: 8.0%;
+    --pw: 58%;
+    --ph: 58%;
+    --lid: #b0afab;
+}
+.mascote-cavalo .olho-esq { --ex: 34.62%; --ey: 42.32%; --rot: 16deg; }
+.mascote-cavalo .olho-dir { --ex: 65.18%; --ey: 42.35%; --rot: -16deg; }
 
 form {
     width: 100%;
@@ -132,6 +258,34 @@ input:-webkit-autofill:focus {
     -webkit-box-shadow: 0 0 0 1000px #070a16 inset;
     -webkit-text-fill-color: white;
     caret-color: white;
+}
+
+.campo-senha {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.campo-senha input {
+    padding-right: 42px;
+}
+
+.btn-toggle-senha {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #7d84a5;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.btn-toggle-senha:hover {
+    color: #ffffff;
 }
 
 .erro-login {
@@ -201,59 +355,76 @@ footer {
 @media (max-width: 920px) {
     header {
         justify-content: center;
+        gap: 14px;
         padding-bottom: 10px;
+    }
+
+    h1 {
+        position: static;
+        transform: none;
     }
 
     main {
         grid-template-columns: 1fr;
         max-width: 480px;
-        margin-top: 10px;
+        gap: 20px;
+        margin-top: 6px;
         padding-bottom: 30px;
+        justify-items: center;
     }
 
     .imagens {
-        order: 2;
-        gap: 20px 24px;
-        margin-top: 24px;
+        order: 1;
+        flex-wrap: nowrap;
+        justify-content: center;
+        gap: clamp(10px, 3vw, 22px);
+        margin: 0 auto;
+        width: 100%;
     }
 
-    .imagens img {
-        width: 110px;
-        height: 110px;
+    .mascote-item {
+        width: clamp(60px, 18.5vw, 86px);
+        height: clamp(60px, 18.5vw, 86px);
     }
 
     form {
-        order: 1;
+        order: 2;
     }
 }
 
 @media (max-width: 480px) {
     header {
-        gap: 16px;
-        padding: 18px 16px;
+        gap: 12px;
+        padding: 16px 16px 8px;
     }
 
     header img {
-        width: 72px;
-        height: 72px;
+        width: 52px;
+        height: 52px;
     }
 
     h1 {
-        font-size: 1.75rem;
+        font-size: clamp(1.25rem, 5.5vw, 1.55rem);
+        white-space: normal;
     }
 
     main {
         width: calc(100% - 24px);
-        margin-bottom: 24px;
-        padding: 10px 0 24px;
+        gap: 16px;
+        margin-bottom: 20px;
+        padding: 6px 0 24px;
     }
 
     form {
         padding: 24px 18px;
     }
 
-    .imagens img {
-        width: 80px;
-        height: 80px;
+    .imagens {
+        gap: clamp(8px, 2.5vw, 14px);
+    }
+
+    .mascote-item {
+        width: clamp(56px, 19vw, 74px);
+        height: clamp(56px, 19vw, 74px);
     }
 }

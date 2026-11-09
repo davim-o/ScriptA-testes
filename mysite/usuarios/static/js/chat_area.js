@@ -145,4 +145,3 @@ function getCookieChat(nome) {
     });
     return valor;
 }
-

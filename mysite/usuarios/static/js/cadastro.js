@@ -46,3 +46,22 @@ document.addEventListener("click", (evento) => {
         setaAreas.src = SETA_BAIXO;
     }
 });
+
+const toggleSenhaCadastro = document.getElementById("toggle-senha-cadastro");
+const inputSenhaCadastro = document.getElementById("senha");
+if (toggleSenhaCadastro && inputSenhaCadastro) {
+    toggleSenhaCadastro.addEventListener("click", () => {
+        const mostrar = inputSenhaCadastro.type === "password";
+        inputSenhaCadastro.type = mostrar ? "text" : "password";
+        const aberto = toggleSenhaCadastro.querySelector(".icone-olho-aberto");
+        const fechado = toggleSenhaCadastro.querySelector(".icone-olho-fechado");
+        if (aberto && fechado) {
+            aberto.style.display = mostrar ? "none" : "block";
+            fechado.style.display = mostrar ? "block" : "none";
+        }
+        toggleSenhaCadastro.setAttribute("aria-label", mostrar ? "Ocultar senha" : "Mostrar senha");
+        if (window.definirOlhosMascotesFechados) {
+            window.definirOlhosMascotesFechados(mostrar);
+        }
+    });
+}

@@ -17,10 +17,50 @@
     <main>
 
         <section class="imagens">
-            <img src="{% static 'imgs/tigre.png' %}" alt="Tigre">
-            <img src="{% static 'imgs/cobra.png' %}" alt="Cobra">
-            <img src="{% static 'imgs/dragao.png' %}" alt="Dragão">
-            <img src="{% static 'imgs/cavalo.png' %}" alt="Cavalo">
+            <div class="mascote-item mascote-tigre">
+                <img src="{% static 'imgs/tigre.png' %}" alt="Tigre">
+                <span class="olho-mascote olho-esq">
+                    <span class="pupila-mascote"></span>
+                    <span class="palpebra-mascote"><svg viewBox="0 0 24 16"><path d="M 3 5 Q 12 13 21 5"/></svg></span>
+                </span>
+                <span class="olho-mascote olho-dir">
+                    <span class="pupila-mascote"></span>
+                    <span class="palpebra-mascote"><svg viewBox="0 0 24 16"><path d="M 3 5 Q 12 13 21 5"/></svg></span>
+                </span>
+            </div>
+            <div class="mascote-item mascote-cobra">
+                <img src="{% static 'imgs/cobra.png' %}" alt="Cobra">
+                <span class="olho-mascote olho-esq">
+                    <span class="pupila-mascote"></span>
+                    <span class="palpebra-mascote"><svg viewBox="0 0 24 16"><path d="M 3 5 Q 12 13 21 5"/></svg></span>
+                </span>
+                <span class="olho-mascote olho-dir">
+                    <span class="pupila-mascote"></span>
+                    <span class="palpebra-mascote"><svg viewBox="0 0 24 16"><path d="M 3 5 Q 12 13 21 5"/></svg></span>
+                </span>
+            </div>
+            <div class="mascote-item mascote-dragao">
+                <img src="{% static 'imgs/dragao.png' %}" alt="Dragão">
+                <span class="olho-mascote olho-esq">
+                    <span class="pupila-mascote"></span>
+                    <span class="palpebra-mascote"><svg viewBox="0 0 24 16"><path d="M 3 5 Q 12 13 21 5"/></svg></span>
+                </span>
+                <span class="olho-mascote olho-dir">
+                    <span class="pupila-mascote"></span>
+                    <span class="palpebra-mascote"><svg viewBox="0 0 24 16"><path d="M 3 5 Q 12 13 21 5"/></svg></span>
+                </span>
+            </div>
+            <div class="mascote-item mascote-cavalo">
+                <img src="{% static 'imgs/cavalo.png' %}" alt="Cavalo">
+                <span class="olho-mascote olho-esq">
+                    <span class="pupila-mascote"></span>
+                    <span class="palpebra-mascote"><svg viewBox="0 0 24 16"><path d="M 3 5 Q 12 13 21 5"/></svg></span>
+                </span>
+                <span class="olho-mascote olho-dir">
+                    <span class="pupila-mascote"></span>
+                    <span class="palpebra-mascote"><svg viewBox="0 0 24 16"><path d="M 3 5 Q 12 13 21 5"/></svg></span>
+                </span>
+            </div>
         </section>
 
         <form method="post" id="form-login" autocomplete="off">
@@ -37,7 +77,19 @@
 
                 <div class="senha">
                     <p>Senha</p>
-                    <input type="password" id="password" name="senha" placeholder="Digite sua senha" autocomplete="current-password">
+                    <div class="campo-senha">
+                        <input type="password" id="password" name="senha" placeholder="Digite sua senha" autocomplete="current-password">
+                        <button type="button" class="btn-toggle-senha" id="toggle-senha-login" aria-label="Mostrar senha" title="Mostrar/ocultar senha">
+                            <svg class="icone-olho-aberto" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <svg class="icone-olho-fechado" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 {% if erro %}
@@ -67,6 +119,29 @@
         <p>© 2026 ScriptA. Todos os direitos reservados.</p>
     </footer>
 
+<script src="{% static 'js/mascotes.js' %}"></script>
+<script>
+(function() {
+    var btn = document.getElementById("toggle-senha-login");
+    var input = document.getElementById("password");
+    if (btn && input) {
+        btn.addEventListener("click", function() {
+            var mostrar = input.type === "password";
+            input.type = mostrar ? "text" : "password";
+            var aberto = btn.querySelector(".icone-olho-aberto");
+            var fechado = btn.querySelector(".icone-olho-fechado");
+            if (aberto && fechado) {
+                aberto.style.display = mostrar ? "none" : "block";
+                fechado.style.display = mostrar ? "block" : "none";
+            }
+            btn.setAttribute("aria-label", mostrar ? "Ocultar senha" : "Mostrar senha");
+            if (window.definirOlhosMascotesFechados) {
+                window.definirOlhosMascotesFechados(mostrar);
+            }
+        });
+    }
+})();
+</script>
 <script src="{% static 'js/toast.js' %}"></script>
 </body>
 </html>

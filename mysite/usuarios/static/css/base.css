@@ -27,6 +27,7 @@ body {
     justify-content: space-between;
     background: #181c2f;
     border-right: 1px solid #2d3150;
+    overflow-y: auto;
 }
 
 .usuario {
@@ -268,6 +269,17 @@ body {
     text-align: center;
 }
 
+.sidebar-backdrop,
+.sidebar-barra-arrastar {
+    display: none;
+}
+
+.sidebar-topo-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
 @media (max-width: 900px) {
     .sidebar {
         width: 205px;
@@ -285,45 +297,114 @@ body {
 }
 
 @media (max-width: 680px) {
-    body {
-        overflow: auto;
+    .sidebar-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(8, 10, 20, 0.62);
+        backdrop-filter: blur(2px);
+        z-index: 1000;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease;
+    }
+
+    .sidebar-backdrop.ativo {
+        opacity: 1;
+        pointer-events: auto;
     }
 
     .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 230px;
+        height: 100vh;
+        height: 100dvh;
+        z-index: 1001;
+        overflow: visible;
+        transform: translateX(-100%);
+        transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s ease;
+        border-right: 1px solid #2d3150;
+    }
+
+    .sidebar.aberta {
+        transform: translateX(0);
+        box-shadow: 10px 0 34px rgba(0, 0, 0, 0.65);
+    }
+
+    .sidebar.arrastando {
+        transition: none !important;
+    }
+
+    .sidebar-barra-arrastar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        position: absolute;
+        top: 0;
+        right: -20px;
+        width: 20px;
+        height: 100%;
+        z-index: 1002;
+        cursor: grab;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    .sidebar-barra-arrastar:active {
+        cursor: grabbing;
+    }
+
+    .sidebar-barra-arrastar::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 5px;
+        background: rgba(24, 28, 47, 0.92);
+        border-right: 1px solid #2d3150;
+    }
+
+    .sidebar-barra-grip {
         position: relative;
-        width: 100%;
-        height: auto;
-        min-height: auto;
+        width: 16px;
+        height: 82px;
+        background: #181c2f;
+        border: 1px solid #3a4168;
+        border-left: none;
+        border-radius: 0 10px 10px 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 4px 0 14px rgba(0, 0, 0, 0.5);
+        transition: background 0.2s, border-color 0.2s;
+    }
+
+    .sidebar-barra-arrastar:hover .sidebar-barra-grip,
+    .sidebar.aberta .sidebar-barra-grip {
+        background: #1f2540;
+        border-color: #7a5cff;
+    }
+
+    .sidebar-barra-grip::after {
+        content: "";
+        width: 4px;
+        height: 36px;
+        border-radius: 4px;
+        background: #9c85f9;
+        box-shadow: 0 0 6px rgba(156, 133, 249, 0.5);
     }
 
     .conteudo {
         margin-left: 0;
         width: 100%;
-        height: auto;
-        min-height: calc(100vh - 160px);
-        padding: 20px 16px;
-    }
-
-    .usuario {
-        padding: 14px 16px;
-    }
-
-    .menu {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-    }
-
-    .menu a {
-        flex: 1 1 140px;
-    }
-
-    .menu-separador {
-        display: none;
-    }
-
-    .rodape-sidebar {
-        border-top: 1px solid #2d3150;
+        height: 100vh;
+        height: 100dvh;
+        padding: 20px 16px 24px 24px;
+        overflow-y: auto;
     }
 }
 
