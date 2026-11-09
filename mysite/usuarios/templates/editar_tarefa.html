@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Tarefa</title>
+    <link rel="icon" type="image/png" href="{% static 'imgs/favicon.png' %}">
+    <link rel="shortcut icon" href="{% static 'imgs/favicon.ico' %}">
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/admin.css' %}">
     <link rel="stylesheet" href="{% static 'vendor/flatpickr/flatpickr.min.css' %}">
@@ -87,7 +89,7 @@
                 <div class="form-tarefa-grid">
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label>Descrição</label>
-                        <textarea name="descricao" placeholder="Detalhes da tarefa..." rows="4" style="background: #111323; border: 1px solid #2d3150; border-radius: 8px; padding: 12px 16px; color: #9ca4c9; font-size: 14px; outline: none; width: 100%; resize: vertical;">{{ tarefa.descricao }}</textarea>
+                        <textarea name="descricao" data-rich-editor="1" maxlength="2000" placeholder="Detalhes da tarefa..." rows="4" style="background: #111323; border: 1px solid #2d3150; border-radius: 8px; padding: 12px 16px; color: #9ca4c9; font-size: 14px; outline: none; width: 100%; resize: vertical;">{{ tarefa.descricao }}</textarea>
                     </div>
                     <div class="form-group">
                         <label>Limite de participantes</label>
@@ -155,6 +157,7 @@ document.querySelectorAll("#form-editar-tarefa input[type='time']").forEach(func
 });
 </script>
 
+<script src="{% static 'js/editor_texto.js' %}"></script>
 <script src="{% static 'js/toast.js' %}"></script>
 </body>
 </html>

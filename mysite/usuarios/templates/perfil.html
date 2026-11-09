@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perfil — {{ perfil_usuario.nome_exibicao }}</title>
+    <link rel="icon" type="image/png" href="{% static 'imgs/favicon.png' %}">
+    <link rel="shortcut icon" href="{% static 'imgs/favicon.ico' %}">
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/perfil.css' %}">
 </head>
@@ -62,11 +64,13 @@
                     </div>
 
                     <div class="perfil-metadados">
+                        {% if eh_proprio_perfil or usuario.tem_acesso_painel %}
                         <span class="meta-item">
                             <img src="{% static 'imgs/icone-usuario.png' %}" alt="">
                             Matrícula: <strong>{{ perfil_usuario.matricula }}</strong>
                         </span>
                         <span class="meta-separador">•</span>
+                        {% endif %}
                         <span class="meta-item">
                             Diretoria: <strong>{{ perfil_usuario.diretoria }}</strong>
                         </span>
@@ -82,7 +86,7 @@
                 <div class="perfil-bio-bloco">
                     <span class="perfil-secao-label">Sobre / Bio</span>
                     {% if perfil_usuario.bio %}
-                        <p class="perfil-bio-texto">{{ perfil_usuario.bio }}</p>
+                        <div class="perfil-bio-texto">{{ perfil_usuario.bio|formatar_texto }}</div>
                     {% else %}
                         <p class="perfil-bio-vazia">
                             {% if eh_proprio_perfil %}
@@ -156,6 +160,8 @@
                         name="bio"
                         rows="3"
                         maxlength="500"
+                        data-rich-editor="1"
+                        data-hide-rt-counter="1"
                         placeholder="Conte um pouco sobre você, sua diretoria e sua área na gincana...">{{ perfil_usuario.bio }}</textarea>
                 </div>
 
@@ -299,6 +305,7 @@ function alternarRemoverFoto(checkbox) {
 })();
 </script>
 {% endif %}
+<script src="{% static 'js/editor_texto.js' %}"></script>
 <script src="{% static 'js/toast.js' %}"></script>
 </body>
 </html>

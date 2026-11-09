@@ -1,10 +1,12 @@
-{% load static %}
+{% load static usuarios_extras %}
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ tarefa_selecionada.area|default:"Minhas Tarefas" }}</title>
+    <link rel="icon" type="image/png" href="{% static 'imgs/favicon.png' %}">
+    <link rel="shortcut icon" href="{% static 'imgs/favicon.ico' %}">
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/area.css' %}">
     <link rel="stylesheet" href="{% static 'css/minhas_tarefas.css' %}">
@@ -146,7 +148,7 @@
                 <div class="aba-detalhes">
                     <div class="detalhe-secao">
                         <p class="detalhe-label">Descrição da tarefa</p>
-                        <div class="detalhe-texto">{{ tarefa_selecionada.descricao|linebreaksbr|default:"Nenhuma descrição informada." }}</div>
+                        <div class="detalhe-texto">{% if tarefa_selecionada.descricao %}{{ tarefa_selecionada.descricao|formatar_texto }}{% else %}Nenhuma descrição informada.{% endif %}</div>
                     </div>
                     {% if tarefa_selecionada.imagem and tarefa_selecionada.imagem.name %}
                     <div class="detalhe-secao">
@@ -170,7 +172,7 @@
                         </div>
                         {% endif %}
                         {% if conclusao.comentario %}
-                        <p class="conclusao-comentario" style="margin-top:8px;">{{ conclusao.comentario|linebreaksbr }}</p>
+                        <div class="conclusao-comentario" style="margin-top:8px;">{{ conclusao.comentario|formatar_texto }}</div>
                         {% endif %}
                     </div>
                     {% endif %}
@@ -203,12 +205,12 @@
                                 {% if c.imagem and c.imagem.name %}
                                 <div class="conclusao-imagem">
                                     <a href="{{ c.imagem.url }}" target="_blank" title="Clique para abrir imagem original">
-                                        <img src="{{ c.imagem.url }}" alt="Comprovação de {{ c.usuario.matricula }}" class="foto-conclusao">
+                                        <img src="{{ c.imagem.url }}" alt="Comprovação de {{ c.usuario.nome_exibicao }}" class="foto-conclusao">
                                     </a>
                                 </div>
                                 {% endif %}
                                 {% if c.comentario %}
-                                <p class="conclusao-comentario">{{ c.comentario|linebreaksbr }}</p>
+                                <div class="conclusao-comentario">{{ c.comentario|formatar_texto }}</div>
                                 {% endif %}
                             </div>
                             {% endfor %}
@@ -229,12 +231,28 @@
                                     {{ obs.usuario.inicial_perfil }}
                                 {% endif %}
                             </a>
-                            <div class="obs-corpo">
-                                <div class="obs-header">
+                            <div class="obs-corpo" style="flex:1;min-width:0;">
+                                <div class="obs-header" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                                     <a href="{% url 'ver_perfil' obs.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="obs-nome link-perfil-usuario">{{ obs.usuario.nome_exibicao }}</a>
                                     <span class="obs-data">{{ obs.criada_em|date:"d/m/Y H:i" }}</span>
+                                    {% if obs.usuario_id == usuario.id %}
+                                    <button type="button" class="btn-editar-inline" data-toggle-edit="form-editar-obs-{{ obs.id }}" style="margin-left:auto;">
+                                        ✎ Editar
+                                    </button>
+                                    {% endif %}
                                 </div>
-                                <p class="obs-texto">{{ obs.texto|linebreaksbr }}</p>
+                                <div class="obs-texto">{{ obs.texto|formatar_texto }}</div>
+                                {% if obs.usuario_id == usuario.id %}
+                                <form action="{% url 'editar_observacao' area_ativa tarefa_selecionada.id obs.id %}" method="POST" class="form-edicao-inline" id="form-editar-obs-{{ obs.id }}" style="display: none;">
+                                    {% csrf_token %}
+                                    {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
+                                    <textarea name="texto" maxlength="2000" required>{{ obs.texto }}</textarea>
+                                    <div class="acoes-edicao-inline">
+                                        <button type="button" class="btn-cancelar-edicao" data-cancel-edit="form-editar-obs-{{ obs.id }}">Cancelar</button>
+                                        <button type="submit" class="btn-salvar-edicao">Salvar</button>
+                                    </div>
+                                </form>
+                                {% endif %}
                             </div>
                         </div>
                         {% endfor %}
@@ -249,7 +267,7 @@
                                     {{ usuario.inicial_perfil }}
                                 {% endif %}
                             </div>
-                            <input type="text" name="texto" placeholder="Escreva uma observação..." class="obs-input" required>
+                            <input type="text" name="texto" maxlength="2000" placeholder="Escreva uma observação (suporta **negrito**, *itálico*, __sublinhado__)..." class="obs-input" required>
                             <button type="submit" class="btn-enviar-obs">Enviar Observação</button>
                         </div>
                         <p class="obs-aviso">⚠ Sua observação será enviada para a tarefa e ficará visível para os responsáveis.</p>
@@ -268,7 +286,7 @@
                                 {% else %}
                                     <img src="{% static 'imgs/icone-upload.png' %}" alt="Upload" class="icone-upload-concluir">
                                     <span class="upload-texto">+ Adicionar imagem</span>
-                                    <span class="upload-subtexto">PNG, JPG até 10MB</span>
+                                    <span class="upload-subtexto">PNG, JPG, WEBP ou GIF até 5MB</span>
                                 {% endif %}
                             </div>
                             <input type="file" id="img-concluir" name="imagem" accept="image/*" class="input-hidden" onchange="previewImagem(this)">
@@ -278,7 +296,7 @@
                                 <img src="{% static 'imgs/icone-add-imagem.png' %}" alt="" style="width:16px;opacity:.7;">
                                 Adicionar comentário
                             </label>
-                            <textarea id="comentario-concluir" name="comentario" class="comentario-input" placeholder="Escreva o comentário...">{{ conclusao.comentario|default:"" }}</textarea>
+                            <textarea id="comentario-concluir" name="comentario" data-rich-editor="1" maxlength="1000" class="comentario-input" placeholder="Escreva o comentário...">{{ conclusao.comentario|default:"" }}</textarea>
                         </div>
                         <button type="submit" class="btn-concluir-tarefa">Concluir Tarefa</button>
                     </form>
@@ -321,6 +339,7 @@ function previewImagem(input) {
 }
 </script>
 
+<script src="{% static 'js/editor_texto.js' %}"></script>
 <script src="{% static 'js/toast.js' %}"></script>
 </body>
 </html>

@@ -1,10 +1,12 @@
-{% load static %}
+{% load static usuarios_extras %}
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feed</title>
+    <link rel="icon" type="image/png" href="{% static 'imgs/favicon.png' %}">
+    <link rel="shortcut icon" href="{% static 'imgs/favicon.ico' %}">
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/feed.css' %}">
 </head>
@@ -40,6 +42,8 @@
 
                     <textarea
                         name="texto"
+                        maxlength="3000"
+                        data-rich-editor="1"
                         placeholder="Compartilhe algo com a torcida..."
                         required></textarea>
 
@@ -78,9 +82,9 @@
                             </a>
                         </h3>
 
-                        <p>{{ publicacao.usuario.diretoria }}{% if publicacao.usuario.nome and publicacao.usuario.nome != publicacao.usuario.matricula %} • {{ publicacao.usuario.matricula }}{% endif %}</p>
+                        <p>{{ publicacao.usuario.diretoria }}</p>
 
-                        <small>{{ publicacao.data|date:"d/m/Y • H:i" }}</small>
+                        <small>{{ publicacao.data|date:"d/m/Y • H:i" }}{% if publicacao.editado %}<span class="badge-editado">(editado)</span>{% endif %}</small>
 
                     </div>
 
@@ -88,7 +92,21 @@
 
                 <div class="corpo-card">
                     <div class="avatar-espaco"></div>
-                    <div class="texto">{{ publicacao.texto }}</div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div class="texto">{{ publicacao.texto|formatar_texto }}</div>
+
+                        {% if publicacao.usuario.id == usuario.id %}
+                        <form action="{% url 'editar_publicacao' publicacao.id %}" method="POST" class="form-edicao-inline" id="form-editar-pub-{{ publicacao.id }}" style="display: none;">
+                            {% csrf_token %}
+                            {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
+                            <textarea name="texto" maxlength="3000" required>{{ publicacao.texto }}</textarea>
+                            <div class="acoes-edicao-inline">
+                                <button type="button" class="btn-cancelar-edicao" data-cancel-edit="form-editar-pub-{{ publicacao.id }}">Cancelar</button>
+                                <button type="submit" class="btn-salvar-edicao">Salvar alterações</button>
+                            </div>
+                        </form>
+                        {% endif %}
+                    </div>
                 </div>
 
                 <div class="rodape-card">
@@ -105,14 +123,22 @@
                             <span>{{ publicacao.total_curtidas }}</span>
                         </button>
 
-                        {% if publicacao.usuario.id == usuario.id %}
-                        <form action="{% url 'excluir_publicacao' publicacao.id %}" method="POST" class="form-excluir">
-                            {% csrf_token %}
-                            <button type="submit" class="excluir">
-                                <img src="{% static 'imgs/lixeira.png' %}" alt="Excluir">
+                        <div class="acoes-direita-card">
+                            {% if publicacao.usuario.id == usuario.id %}
+                            <button type="button" class="btn-editar-inline" data-toggle-edit="form-editar-pub-{{ publicacao.id }}" title="Editar publicação">
+                                ✎ Editar
                             </button>
-                        </form>
-                        {% endif %}
+                            {% endif %}
+
+                            {% if publicacao.usuario.id == usuario.id or usuario.eh_administrador %}
+                            <form action="{% url 'excluir_publicacao' publicacao.id %}" method="POST" class="form-excluir">
+                                {% csrf_token %}
+                                <button type="submit" class="excluir" title="Excluir publicação">
+                                    <img src="{% static 'imgs/lixeira.png' %}" alt="Excluir">
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
 
                     </div>
 
@@ -134,6 +160,7 @@
 
 </main>
 
+<script src="{% static 'js/editor_texto.js' %}"></script>
 <script src="{% static 'js/feed.js' %}"></script>
 
 <script src="{% static 'js/toast.js' %}"></script>

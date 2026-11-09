@@ -39,14 +39,21 @@ MATRICULAS_ADM_FIXAS = {"admin"} | set(CONTAS_ADM_DIRETORIAS.keys())
 def garantir_lideres_diretorias():
     """
     Garante que as 4 contas de líderes das diretorias (Diatinf/diatinf, Diaren/diaren,
-    Diacon/diacon, Diacin/diacin) existam e estejam aprovadas no banco de dados.
+    Diacon/diacon, Diacin/diacin) existam e estejam aprovadas no banco de dados,
+    e remove contas inseguras legadas (como superusuário 'admin'/'admin' do Django).
     """
     import sys
     if "test" in sys.argv:
         return
     try:
+        from django.contrib.auth.models import User as DjangoAdminUser
+        DjangoAdminUser.objects.filter(username__iexact="admin").delete()
+    except Exception:
+        pass
+    try:
         from django.contrib.auth.hashers import make_password, check_password
         from .models import Usuario
+        Usuario.objects.filter(matricula__iexact="admin").delete()
         for chave, cfg in CONTAS_ADM_DIRETORIAS.items():
             lider = Usuario.objects.filter(matricula__iexact=cfg["matricula"]).first()
             if not lider:

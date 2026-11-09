@@ -1,0 +1,12 @@
+# Chaves secretas e variáveis de ambiente (nunca enviar ao GitHub)
+.secret_key
+.env
+*.env
+
+# Bytecode e caches do Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+*.zip
+

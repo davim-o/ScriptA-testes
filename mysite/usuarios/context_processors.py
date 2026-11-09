@@ -20,11 +20,7 @@ def decodificar_token_usuario(token, max_age=1209600):
     if not token or not isinstance(token, str):
         return None
     try:
-        # Tenta com o salt específico da aba e faz fallback para sem salt (compatibilidade)
-        try:
-            data = signing.loads(token, salt=TOKEN_SALT, max_age=max_age)
-        except Exception:
-            data = signing.loads(token, max_age=max_age)
+        data = signing.loads(token, salt=TOKEN_SALT, max_age=max_age)
         if isinstance(data, dict) and "usuario" in data:
             return int(data["usuario"])
     except Exception:

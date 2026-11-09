@@ -1,0 +1,742 @@
+/* ── Abas ── */
+
+.abas {
+    display: flex;
+    border: 1px solid #2d3150;
+    border-radius: 10px;
+    background: #14172b;
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.aba {
+    background: transparent;
+    border: none;
+    color: #9ca4c9;
+    font-size: 14.5px;
+    font-weight: 500;
+    padding: 12px 0;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s, background 0.2s;
+    text-decoration: none;
+    flex: 1;
+    text-align: center;
+    border-bottom: 2px solid transparent;
+}
+
+.aba + .aba {
+    border-left: 1px solid #2d3150;
+}
+
+.aba.ativa {
+    color: #fff;
+    font-weight: 600;
+    background: #1c203b;
+    border-bottom-color: #7a5cff;
+}
+
+.aba:hover {
+    color: #c8cdec;
+}
+
+
+/* ── Cards de tarefa da área ── */
+
+.lista-tarefas-area {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.tarefa-card-area {
+    background: #1a1e34;
+    border: 1px solid #2d3150;
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: border-color 0.2s;
+}
+
+.tarefa-card-area.card-participando {
+    border-color: #7a5cff;
+}
+
+.tarefa-topo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tarefa-titulo {
+    font-size: 17px;
+    font-weight: 600;
+    color: #fff;
+    margin: 0;
+}
+
+.tarefa-vagas {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #9ca4c9;
+}
+
+.tarefa-vagas img {
+    width: 16px;
+    opacity: 0.6;
+}
+
+.tarefa-detalhes {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.detalhe-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    line-height: 1;
+    color: #9ca4c9;
+    white-space: nowrap;
+}
+
+.texto-descricao-tarefa {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.detalhe-item img {
+    width: 15px;
+    height: 15px;
+    object-fit: contain;
+    opacity: 0.6;
+    flex-shrink: 0;
+    display: block;
+}
+
+.tarefa-acao {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Participar */
+.btn-participar {
+    background: #7a5cff;
+    color: white;
+    border: none;
+    padding: 9px 24px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-participar:hover {
+    background: #6a4de8;
+}
+
+/* Participando */
+.btn-participando {
+    background: rgba(156, 133, 249, 0.14);
+    color: #9c85f9;
+    border: 1px solid rgba(156, 133, 249, 0.35);
+    padding: 9px 24px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 112px;
+    cursor: default;
+}
+
+.btn-participando::before {
+    content: "✓";
+    margin-right: 7px;
+    font-size: 12px;
+}
+
+/* Sem vaga */
+.btn-sem-vaga {
+    background: #2d3150;
+    color: #5a6080;
+    border: none;
+    padding: 9px 24px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: not-allowed;
+}
+
+/* Ver tarefa */
+.btn-ver-tarefa {
+    background: #9c85f9;
+    color: #fff !important;
+    border: 1px solid #9c85f9;
+    padding: 9px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 102px;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-ver-tarefa:hover {
+    background: #886ef1;
+    border-color: #886ef1;
+    color: #fff !important;
+}
+
+.sem-itens {
+    color: #4a5175;
+    font-size: 14px;
+    padding: 20px 0;
+    text-align: center;
+}
+
+/* Badge contador de fotos */
+.fotos-count {
+    background: #7a5cff;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+
+/* ── Estado concluído na listagem de área ── */
+
+.txt-concluida {
+    font-size: 13px;
+    font-weight: 600;
+    color: #a89bff;
+}
+
+.btn-ver-conclusao {
+    background: #9c85f9;
+    color: #fff !important;
+    border: 1px solid #9c85f9;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-ver-conclusao:hover {
+    background: #886ef1;
+    border-color: #886ef1;
+    color: #fff !important;
+}
+
+
+/* ── Card tarefa concluída (cinza) ── */
+
+.tarefa-card-area.card-concluida {
+    border-color: #2d3150;
+    background: #13162a;
+    opacity: 0.7;
+}
+
+.tarefa-card-area.card-concluida .tarefa-titulo {
+    color: #7a82a8;
+}
+
+/* ── Botão Voltar Navegação ── */
+.topo-navegacao-voltar {
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+}
+
+.btn-voltar-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #13172e;
+    color: #cbd5e1;
+    border: 1px solid #273059;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13.5px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-voltar-link:hover {
+    background: #1c2347;
+    color: #ffffff;
+    border-color: #8b77fc;
+    transform: translateX(-2px);
+}
+
+.btn-voltar-link .seta-voltar {
+    font-size: 15px;
+    transition: transform 0.2s ease;
+}
+
+.btn-voltar-link:hover .seta-voltar {
+    transform: translateX(-3px);
+}
+
+/* ── Toggle acordeão para Entregas dos Participantes ── */
+.detalhe-header-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    padding: 6px 0;
+    margin-bottom: 4px;
+}
+
+.btn-toggle-entregas {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #141830;
+    color: #a4b0dc;
+    border: 1px solid #2a335e;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-toggle-entregas:hover {
+    background: #1d2345;
+    color: #ffffff;
+    border-color: #8b77fc;
+}
+
+.toggle-seta {
+    display: inline-block;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 10px;
+}
+
+.toggle-seta.girada {
+    transform: rotate(180deg);
+}
+
+.lista-conclusoes-colapsavel {
+    overflow: hidden;
+    transition: max-height 0.4s ease, opacity 0.3s ease, margin 0.3s ease;
+    max-height: 3500px;
+    opacity: 1;
+}
+
+.lista-conclusoes-colapsavel.recolhida {
+    max-height: 0 !important;
+    opacity: 0 !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    pointer-events: none;
+}
+
+/* ── Chat da Área ── */
+
+.chat-nova-mensagem {
+    background: #171a2e;
+    border: 1px solid #2d3150;
+    border-radius: 12px;
+    padding: 20px 24px 16px;
+    margin-bottom: 18px;
+}
+
+.chat-topo-publicacao {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.chat-topo-publicacao textarea {
+    flex: 1;
+    min-height: 76px;
+    padding: 14px 16px;
+    resize: none;
+    outline: none;
+    border: 1px solid #353b60;
+    border-radius: 10px;
+    background: #20243b;
+    color: #ffffff;
+    font-size: 14px;
+    line-height: 1.5;
+    transition: border-color 0.2s;
+}
+
+.chat-topo-publicacao textarea::placeholder {
+    color: #7e86aa;
+}
+
+.chat-topo-publicacao textarea:focus {
+    border-color: #7a5cff;
+}
+
+.chat-acoes-publicacao {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+}
+
+.btn-publicar-chat {
+    border: none;
+    border-radius: 8px;
+    background: #8a7cff;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 24px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.btn-publicar-chat:hover {
+    background: #7a68f8;
+}
+
+/* Preview de resposta no formulário */
+.chat-preview-resposta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #221f48;
+    border: 1px solid #3d367a;
+    border-radius: 10px;
+    padding: 10px 16px;
+    margin-bottom: 14px;
+}
+
+.chat-preview-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+}
+
+.btn-cancelar-resposta {
+    background: transparent;
+    border: none;
+    color: #a4acd4;
+    font-size: 15px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    line-height: 1;
+    transition: background 0.2s, color 0.2s;
+}
+
+.btn-cancelar-resposta:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+/* Avatares do Chat */
+.chat-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 19px;
+    font-weight: 700;
+    color: #ffffff !important;
+    flex-shrink: 0;
+    user-select: none;
+    overflow: hidden;
+    text-decoration: none;
+}
+
+.chat-avatar-pequeno {
+    width: 34px;
+    height: 34px;
+    font-size: 15px;
+}
+
+.avatar-chat-roxo {
+    background: #8c6dfd;
+}
+
+.avatar-chat-verde {
+    background: #52b755;
+}
+
+.avatar-chat-escuro {
+    background: #2b2e3b;
+}
+
+.avatar-chat-azul {
+    background: #4a78e0;
+}
+
+/* Lista e Cards de Mensagens */
+.lista-mensagens-chat {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.chat-card {
+    background: #171a2e;
+    border: 1px solid #2d3150;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+}
+
+.chat-card:hover {
+    border-color: #464d7a;
+}
+
+/* Bloco superior de citação (quando a mensagem é resposta a outra) */
+.chat-resposta-citacao {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #231f49;
+    border-bottom: 1px solid #38326e;
+    padding: 12px 24px;
+}
+
+.chat-citacao-textos {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+.chat-citacao-autor {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.chat-citacao-mensagem {
+    font-size: 12.5px;
+    color: #cfd4ec;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Corpo principal da mensagem */
+.chat-corpo-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 18px 24px;
+}
+
+.chat-conteudo-principal {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-cabecalho-linha {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.chat-autor {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0;
+}
+
+.chat-texto {
+    font-size: 14px;
+    color: #d6daec;
+    line-height: 1.5;
+    margin: 0 0 12px 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.chat-rodape-acoes {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+}
+
+.btn-curtir-chat {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: #9ca4c9;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s;
+}
+
+.btn-curtir-chat:hover {
+    color: #ffffff;
+}
+
+.btn-curtir-chat.curtido {
+    color: #ff6b81;
+}
+
+.btn-curtir-chat img {
+    width: 16px;
+    height: 16px;
+    opacity: 0.85;
+    transition: transform 0.2s, opacity 0.2s;
+}
+
+.btn-curtir-chat:hover img {
+    transform: scale(1.12);
+    opacity: 1;
+}
+
+.btn-responder-chat {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: #6b63ff;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s;
+}
+
+.btn-responder-chat:hover {
+    color: #8f88ff;
+}
+
+.icone-responder-svg {
+    flex-shrink: 0;
+}
+
+.form-excluir-chat {
+    margin: 0 0 0 auto;
+    display: flex;
+}
+
+.btn-excluir-chat {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.6;
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.btn-excluir-chat:hover {
+    opacity: 1;
+    transform: scale(1.08);
+}
+
+.btn-excluir-chat img {
+    width: 15px;
+    height: 15px;
+}
+
+.sem-mensagens-chat {
+    background: #171a2e;
+    border: 1px solid #2d3150;
+    border-radius: 12px;
+    padding: 36px 24px;
+    text-align: center;
+    color: #9ca4c9;
+    font-size: 14px;
+}
+
+@media (max-width: 620px) {
+    .aba {
+        font-size: 13px;
+        padding: 10px 4px;
+    }
+
+    .tarefa-card-area {
+        padding: 16px;
+    }
+
+    .tarefa-topo {
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .tarefa-titulo {
+        min-width: 0;
+        word-break: break-word;
+    }
+
+    .tarefa-vagas {
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    .tarefa-detalhes {
+        gap: 12px 16px;
+        align-items: center;
+    }
+
+    .tarefa-acao {
+        width: 100%;
+        margin-left: 0;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .chat-nova-mensagem,
+    .chat-corpo-card {
+        padding: 14px 16px;
+    }
+
+    .chat-resposta-citacao {
+        padding: 10px 16px;
+    }
+}

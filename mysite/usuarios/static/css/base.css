@@ -470,3 +470,222 @@ body {
     from { opacity: 1; transform: translateY(0)     scale(1);   }
     to   { opacity: 0; transform: translateY(-10px) scale(.95); }
 }
+
+/* ── Barra de ferramentas de edição de texto (Rich Text) e formatação ── */
+
+.rt-editor-wrap {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.rt-editor-wrap textarea {
+    width: 100%;
+}
+
+.rt-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: #181c32;
+    border: 1px solid #353b60;
+    border-radius: 8px;
+    padding: 6px 10px;
+    margin-bottom: 8px;
+}
+
+.rt-toolbar-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.rt-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 27px;
+    padding: 0 9px;
+    border: 1px solid #383f66;
+    border-radius: 6px;
+    background: #232846;
+    color: #e2e6f8;
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.16s ease;
+    user-select: none;
+}
+
+.rt-btn-bold {
+    font-weight: 800;
+}
+
+.rt-btn-italic {
+    font-style: italic;
+}
+
+.rt-btn-underline {
+    text-decoration: underline;
+}
+
+.rt-btn-strike {
+    text-decoration: line-through;
+}
+
+.rt-btn:hover {
+    background: #7766ef;
+    color: #ffffff;
+    border-color: #8a7cff;
+}
+
+.rt-btn-clear {
+    font-size: 11.5px;
+    color: #a8b0d8;
+    background: #1d213a;
+}
+
+.rt-char-counter {
+    font-size: 12px;
+    font-weight: 600;
+    color: #9ca4c9;
+    margin-left: auto;
+    padding: 2px 6px;
+}
+
+.rt-char-counter.rt-counter-limit {
+    color: #ffb74d;
+}
+
+.rt-quote {
+    margin: 6px 0;
+    padding: 7px 12px;
+    border-left: 3px solid #8a7cff;
+    background: rgba(138, 124, 255, 0.1);
+    border-radius: 0 8px 8px 0;
+    color: #dce0f5;
+    font-style: italic;
+}
+
+.rt-list-item {
+    padding-left: 8px;
+    margin: 3px 0;
+}
+
+.rt-code {
+    background: rgba(138, 124, 255, 0.16);
+    color: #c7bfff;
+    padding: 1px 6px;
+    border-radius: 5px;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 0.9em;
+}
+
+.badge-editado {
+    font-size: 11.5px;
+    color: #8a93ba;
+    font-style: italic;
+    margin-left: 6px;
+}
+
+.acoes-direita-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.btn-editar-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(138, 124, 255, 0.12);
+    border: 1px solid rgba(138, 124, 255, 0.3);
+    color: #b5abff;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+}
+
+.btn-editar-inline:hover {
+    background: #7766ef;
+    color: #ffffff;
+    border-color: #8a7cff;
+}
+
+.form-edicao-inline {
+    margin-top: 10px;
+    padding: 12px;
+    background: #15192d;
+    border: 1px solid #343b63;
+    border-radius: 10px;
+    width: 100%;
+}
+
+.form-edicao-inline textarea {
+    width: 100%;
+    min-height: 84px;
+    padding: 10px 12px;
+    border: 1px solid #3d446b;
+    border-radius: 8px;
+    background: #232741;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+}
+
+.form-edicao-inline textarea:focus {
+    border-color: #8a7cff;
+}
+
+.acoes-edicao-inline {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.btn-salvar-edicao {
+    background: #7766ef;
+    color: #ffffff;
+    border: none;
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-salvar-edicao:hover {
+    background: #8a7cff;
+}
+
+.btn-cancelar-edicao {
+    background: #272c48;
+    color: #cbd2f0;
+    border: 1px solid #3c436b;
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-cancelar-edicao:hover {
+    background: #32385a;
+}

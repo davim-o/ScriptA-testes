@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ nome_area }} — Chat</title>
+    <link rel="icon" type="image/png" href="{% static 'imgs/favicon.png' %}">
+    <link rel="shortcut icon" href="{% static 'imgs/favicon.ico' %}">
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/area.css' %}">
 </head>
@@ -56,6 +58,8 @@
                     <textarea
                         name="texto"
                         id="textarea-chat-area"
+                        maxlength="300"
+                        data-rich-editor="1"
                         placeholder="{% if usuario.eh_administrador or not usuario.diretoria %}A equipe vai ganhar!{% else %}A {{ usuario.diretoria }} vai ganhar!{% endif %}"
                         required></textarea>
                 </div>
@@ -103,7 +107,19 @@
                             </a>
                         </div>
 
-                        <p class="chat-texto">{{ msg.texto }}</p>
+                        <div class="chat-texto">{{ msg.texto|formatar_texto }}</div>
+
+                        {% if msg.usuario_id == usuario.id %}
+                        <form action="{% url 'editar_mensagem_area' msg.id %}" method="POST" class="form-edicao-inline" id="form-editar-msg-{{ msg.id }}" style="display: none; margin-bottom: 12px;">
+                            {% csrf_token %}
+                            {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
+                            <textarea name="texto" maxlength="300" required>{{ msg.texto }}</textarea>
+                            <div class="acoes-edicao-inline">
+                                <button type="button" class="btn-cancelar-edicao" data-cancel-edit="form-editar-msg-{{ msg.id }}">Cancelar</button>
+                                <button type="submit" class="btn-salvar-edicao">Salvar</button>
+                            </div>
+                        </form>
+                        {% endif %}
 
                         <div class="chat-rodape-acoes">
                             <button type="button" class="btn-curtir-chat {% if msg.id in curtidas %}curtido{% endif %}" data-id="{{ msg.id }}">
@@ -130,6 +146,12 @@
                                 <span>Responder</span>
                             </button>
 
+                            {% if msg.usuario_id == usuario.id %}
+                            <button type="button" class="btn-editar-inline" data-toggle-edit="form-editar-msg-{{ msg.id }}" title="Editar mensagem">
+                                ✎ Editar
+                            </button>
+                            {% endif %}
+
                             {% if msg.usuario_id == usuario.id or usuario.eh_administrador or usuario.sub_lider and usuario.sublider_de == nome_area %}
                             <form action="{% url 'excluir_mensagem_area' msg.id %}" method="POST" class="form-excluir-chat">
                                 {% csrf_token %}
@@ -153,6 +175,7 @@
     </div>
 </main>
 
+<script src="{% static 'js/editor_texto.js' %}"></script>
 <script src="{% static 'js/chat_area.js' %}"></script>
 <script src="{% static 'js/toast.js' %}"></script>
 </body>
