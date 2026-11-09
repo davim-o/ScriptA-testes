@@ -19,6 +19,13 @@ from .models import (
     SolicitacaoArea, ObservacaoTarefa, ConclusaoTarefa, DoacaoTampinhas,
     MensagemArea, CurtidaMensagemArea, MetaTampinhas
 )
+from .suap import (
+    CONTAS_ADM_DIRETORIAS,
+    MATRICULAS_ADM_FIXAS,
+    garantir_lideres_diretorias,
+    identificar_diretoria_e_curso,
+    consultar_api_suap,
+)
 
 AREAS_INFO = {
     "Cenário":     "Planejamento e montagem do ambiente visual do evento.",
@@ -263,6 +270,38 @@ def usuario_logado(request):
 
 
 
+def verificar_suap_matricula(request):
+    """
+    Endpoint AJAX para identificar a diretoria, curso e nome do aluno a partir da matrícula
+    (e opcionalmente senha) do SUAP durante o preenchimento do cadastro.
+    """
+    matricula = (request.POST.get("matricula") or request.GET.get("matricula") or "").strip()
+    senha = request.POST.get("senha") or request.GET.get("senha") or ""
+    if not matricula:
+        return JsonResponse({"diretoria": None, "curso": "", "nome": ""})
+
+    diretoria_mat, curso_mat = identificar_diretoria_e_curso(matricula)
+    if senha:
+        dados_suap = consultar_api_suap(matricula, senha, timeout=3.5)
+        return JsonResponse({
+            "autenticado_suap": bool(dados_suap.get("autenticado_suap")),
+            "credenciais_invalidas": bool(dados_suap.get("credenciais_invalidas")),
+            "erro": dados_suap.get("erro") or "",
+            "nome": dados_suap.get("nome") or "",
+            "diretoria": dados_suap.get("diretoria") or diretoria_mat,
+            "curso": dados_suap.get("curso") or curso_mat,
+        })
+
+    return JsonResponse({
+        "autenticado_suap": False,
+        "credenciais_invalidas": False,
+        "erro": "",
+        "nome": "",
+        "diretoria": diretoria_mat,
+        "curso": curso_mat,
+    })
+
+
 def cadastro(request):
     limpar_mensagens(request)
     contexto = {"erro": None, "form": {}}
@@ -272,35 +311,65 @@ def cadastro(request):
         senha = request.POST.get("senha", "")
         diretoria = request.POST.get("diretoria", "").strip()
         areas_selecionadas = [a for a in request.POST.getlist("areas") if a in TODAS_AREAS]
+
+        erro = None
+        dados_suap = {}
+        diretoria_suap, curso_suap = identificar_diretoria_e_curso(matricula)
+
+        if len(nome) > 100:
+            erro = "O nome deve ter no máximo 100 caracteres."
+        elif not matricula:
+            erro = "Informe a sua matrícula do SUAP."
+        elif len(matricula) > 20:
+            erro = "A matrícula deve ter no máximo 20 caracteres."
+        elif matricula.lower() in MATRICULAS_ADM_FIXAS:
+            erro = "Essa matrícula é reservada para a administração."
+        elif not senha:
+            erro = "Informe a sua senha do SUAP."
+        elif Usuario.objects.filter(matricula__iexact=matricula).exists():
+            erro = "Essa matrícula já está cadastrada."
+        elif diretoria_suap and diretoria and diretoria != diretoria_suap:
+            detalhe_curso = f" ({curso_suap})" if curso_suap else ""
+            erro = (
+                f"A matrícula {matricula} pertence à diretoria {diretoria_suap}{detalhe_curso}, "
+                f"e não à diretoria {diretoria} selecionada."
+            )
+            diretoria = diretoria_suap
+        else:
+            dados_suap = consultar_api_suap(matricula, senha)
+            if dados_suap.get("credenciais_invalidas"):
+                erro = dados_suap.get("erro") or "Matrícula ou senha do SUAP inválida."
+            else:
+                if dados_suap.get("diretoria"):
+                    diretoria_suap = dados_suap["diretoria"]
+                if dados_suap.get("curso"):
+                    curso_suap = dados_suap["curso"]
+
+                if diretoria_suap:
+                    if diretoria and diretoria != diretoria_suap:
+                        detalhe_curso = f" ({curso_suap})" if curso_suap else ""
+                        erro = (
+                            f"A matrícula {matricula} pertence à diretoria {diretoria_suap}{detalhe_curso}, "
+                            f"e não à diretoria {diretoria} selecionada."
+                        )
+                        diretoria = diretoria_suap
+                    else:
+                        diretoria = diretoria_suap
+                elif diretoria not in DIRETORIAS:
+                    erro = "Não foi possível identificar a diretoria pela matrícula informada. Verifique sua matrícula do SUAP."
+
+        nome_final = nome or (dados_suap.get("nome") or "").strip() or matricula
         contexto["form"] = {
-            "nome": nome,
+            "nome": nome or (dados_suap.get("nome") or "").strip(),
             "matricula": matricula,
             "diretoria": diretoria,
             "areas": areas_selecionadas,
         }
 
-        erro = None
-        if "nome" in request.POST and not nome:
-            erro = "Informe seu nome para o cadastro."
-        elif len(nome) > 100:
-            erro = "O nome deve ter no máximo 100 caracteres."
-        elif not matricula:
-            erro = "Informe a sua matrícula."
-        elif len(matricula) > 20:
-            erro = "A matrícula deve ter no máximo 20 caracteres."
-        elif not senha:
-            erro = "Informe uma senha."
-        elif diretoria not in DIRETORIAS:
-            erro = "Selecione uma diretoria válida (Diaren, Diatinf, Diacon ou Diacin)."
-        elif not areas_selecionadas:
-            erro = "Selecione pelo menos uma área para participar."
-        elif Usuario.objects.filter(matricula__iexact=matricula).exists():
-            erro = "Essa matrícula já está cadastrada."
-
         if erro is None:
             try:
                 Usuario.objects.create(
-                    nome=nome or matricula,
+                    nome=nome_final[:100],
                     matricula=matricula,
                     senha=make_password(senha),
                     diretoria=diretoria,
@@ -319,6 +388,7 @@ def cadastro(request):
 
 def login_usuario(request):
     limpar_mensagens(request)
+    garantir_lideres_diretorias()
     if request.method == "GET" and (request.GET.get("trocar") or request.GET.get("sair")):
         request.session.flush()
         if hasattr(request, "_cached_usuario"):
@@ -333,23 +403,48 @@ def login_usuario(request):
         elif not senha:
             erro = "Informe a senha."
         else:
+            mat_lower = matricula.lower()
+            if mat_lower in CONTAS_ADM_DIRETORIAS:
+                cfg_adm = CONTAS_ADM_DIRETORIAS[mat_lower]
+                usuario_adm = Usuario.objects.filter(matricula__iexact=cfg_adm["matricula"]).first()
+                if not usuario_adm and senha == cfg_adm["senha_padrao"]:
+                    usuario_adm = Usuario.objects.create(
+                        nome=cfg_adm["nome"],
+                        matricula=cfg_adm["matricula"],
+                        senha=make_password(cfg_adm["senha_padrao"]),
+                        diretoria=cfg_adm["diretoria"],
+                        areas="",
+                        aprovado=True,
+                    )
+
             usuario = Usuario.objects.filter(matricula__iexact=matricula).first()
             if not usuario:
                 erro = "Matrícula ou senha inválida."
-            elif not check_password(senha, usuario.senha):
-                erro = "Matrícula ou senha inválida."
-            elif not usuario.aprovado and not usuario.eh_administrador():
-                erro = "Seu cadastro ainda está aguardando aprovação da diretoria."
             else:
-                limpar_mensagens(request)
-                request.session.flush()
-                request.session["usuario"] = usuario.id
-                request.session.modified = True
-                request._cached_usuario = usuario
-                request._resolved_usuario_id = usuario.id
-                if request.POST.get("_from_browser") == "1":
-                    request._explicit_user_token = gerar_token_usuario(usuario.id)
-                return redirect_autenticado(request, "feed")
+                senha_valida = check_password(senha, usuario.senha)
+                if not senha_valida and not usuario.eh_administrador():
+                    dados_suap = consultar_api_suap(matricula, senha)
+                    if dados_suap.get("autenticado_suap"):
+                        usuario.senha = make_password(senha)
+                        if dados_suap.get("nome") and (not usuario.nome or usuario.nome == usuario.matricula):
+                            usuario.nome = dados_suap["nome"][:100]
+                        usuario.save(update_fields=["senha", "nome"])
+                        senha_valida = True
+
+                if not senha_valida:
+                    erro = "Matrícula ou senha inválida."
+                elif not usuario.aprovado and not usuario.eh_administrador():
+                    erro = "Seu cadastro ainda está aguardando aprovação da diretoria."
+                else:
+                    limpar_mensagens(request)
+                    request.session.flush()
+                    request.session["usuario"] = usuario.id
+                    request.session.modified = True
+                    request._cached_usuario = usuario
+                    request._resolved_usuario_id = usuario.id
+                    if request.POST.get("_from_browser") == "1":
+                        request._explicit_user_token = gerar_token_usuario(usuario.id)
+                    return redirect_autenticado(request, "feed")
     return render(request, "login.html", {"erro": erro, "matricula": matricula if request.method == "POST" else ""})
 
 
@@ -443,8 +538,12 @@ def painel_administrativo(request):
         total_membros = len(membros)
         total_pendentes = solicitacoes_area.count()
     else:
-        membros = todos_aprovados
-        pendentes = Usuario.objects.filter(aprovado=False).order_by("matricula")
+        if usuario.diretoria in DIRETORIAS:
+            membros = todos_aprovados.filter(diretoria__iexact=usuario.diretoria)
+            pendentes = Usuario.objects.filter(aprovado=False, diretoria__iexact=usuario.diretoria).order_by("matricula")
+        else:
+            membros = todos_aprovados
+            pendentes = Usuario.objects.filter(aprovado=False).order_by("matricula")
         tarefas = Tarefa.objects.filter(encerrada=False).order_by("-criada_em")
         tarefas_concluidas = Tarefa.objects.none()
         solicitacoes_area = SolicitacaoArea.objects.select_related("usuario").order_by("area", "solicitado_em")
@@ -474,6 +573,9 @@ def stats_painel(request):
     if usuario.sub_lider and not usuario.eh_administrador():
         total_membros = len(obter_membros_da_area(usuario.sublider_de))
         total_pendentes = SolicitacaoArea.objects.filter(area=usuario.sublider_de).count()
+    elif usuario.diretoria in DIRETORIAS:
+        total_membros = Usuario.objects.filter(aprovado=True, diretoria__iexact=usuario.diretoria).count()
+        total_pendentes = Usuario.objects.filter(aprovado=False, diretoria__iexact=usuario.diretoria).count()
     else:
         total_membros = Usuario.objects.filter(aprovado=True).count()
         total_pendentes = Usuario.objects.filter(aprovado=False).count()

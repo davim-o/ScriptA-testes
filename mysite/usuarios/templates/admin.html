@@ -453,7 +453,7 @@
                         <div class="tarefa-info">
                             <h3 class="tarefa-titulo">{{ tarefa.titulo }}</h3>
                             {% if tarefa.tipo == "fixa" and tarefa.horario %}
-                            <p class="tarefa-local">{{ tarefa.horario|time:"H:i" }}</p>
+                            <p class="tarefa-local"><img src="{% static 'imgs/icone-relogio.png' %}" alt="">{{ tarefa.horario|time:"H:i" }}</p>
                             {% endif %}
                         </div>
                         <div class="tarefa-data">
@@ -500,7 +500,7 @@
                         <div class="tarefa-info">
                             <h3 class="tarefa-titulo">{{ tarefa.titulo }}</h3>
                             {% if tarefa.tipo == "fixa" and tarefa.horario %}
-                            <p class="tarefa-local">{{ tarefa.horario|time:"H:i" }}</p>
+                            <p class="tarefa-local"><img src="{% static 'imgs/icone-relogio.png' %}" alt="">{{ tarefa.horario|time:"H:i" }}</p>
                             {% endif %}
                         </div>
                         <div class="tarefa-data">
@@ -598,9 +598,9 @@ function atualizarUpload(input) {
 
 // Flatpickr — date/time pickers
 if (typeof flatpickr !== "undefined") {
-    var fpOpts = {locale: "pt", dateFormat: "Y-m-d", allowInput: true, clickOpens: true};
+    var fpOpts = {locale: "pt", dateFormat: "Y-m-d", allowInput: true, clickOpens: true, disableMobile: true};
     var tpOpts = {enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true,
-                  locale: "pt", allowInput: true, clickOpens: true};
+                  locale: "pt", allowInput: true, clickOpens: true, disableMobile: true};
 
     document.querySelectorAll("#form-criar-tarefa input[type='date']").forEach(function(el) {
         var fp = flatpickr(el, fpOpts);

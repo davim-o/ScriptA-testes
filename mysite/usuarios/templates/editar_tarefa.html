@@ -135,9 +135,9 @@ function alterarContador(delta) {
     input.value = novoValor;
 }
 
-var fpOpts = {locale: "pt", dateFormat: "Y-m-d", allowInput: true, clickOpens: true};
+var fpOpts = {locale: "pt", dateFormat: "Y-m-d", allowInput: true, clickOpens: true, disableMobile: true};
 var tpOpts = {enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true,
-              locale: "pt", allowInput: true, clickOpens: true};
+              locale: "pt", allowInput: true, clickOpens: true, disableMobile: true};
 
 document.querySelectorAll("#form-editar-tarefa input[type='date']").forEach(function(el) {
     var fp = flatpickr(el, fpOpts);

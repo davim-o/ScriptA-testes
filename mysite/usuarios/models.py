@@ -63,9 +63,17 @@ class Usuario(models.Model):
         return f"{s}Kg"
 
     def eh_administrador(self):
+        from .suap import MATRICULAS_ADM_FIXAS
         mat = (self.matricula or "").strip().lower()
         diret = (self.diretoria or "").strip().lower()
-        return mat == "admin" or diret in ["líder", "lider", "líder geral", "lider geral"]
+        return mat in MATRICULAS_ADM_FIXAS or diret in ["líder", "lider", "líder geral", "lider geral"]
+
+    def curso_exibicao(self):
+        if self.eh_administrador():
+            return ""
+        from .suap import identificar_diretoria_e_curso
+        _, curso = identificar_diretoria_e_curso(self.matricula)
+        return curso or ""
 
     def tem_acesso_painel(self):
         return self.eh_administrador() or self.sub_lider

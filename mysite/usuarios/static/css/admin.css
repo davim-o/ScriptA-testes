@@ -388,22 +388,37 @@
     align-items: center;
 }
 
-.input-calendario input {
+.input-calendario input,
+.form-tarefa .form-group .input-calendario input[type="date"],
+.form-tarefa .form-group .input-calendario input[type="time"],
+.form-tarefa .form-group .input-calendario input[type="text"] {
     width: 100%;
+    height: 44px;
     background: #111323;
     border: 1px solid #2d3150;
     color: #9ca4c9;
-    padding: 12px 44px 12px 16px;
+    padding: 0 44px 0 16px;
     border-radius: 8px;
     outline: none;
     font-size: 14px;
+    line-height: 44px;
+    box-sizing: border-box;
     color-scheme: dark;
+}
+
+.input-calendario input::-webkit-calendar-picker-indicator {
+    display: none;
+    -webkit-appearance: none;
 }
 
 .icone-input {
     position: absolute;
     right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
     width: 18px;
+    height: 18px;
+    object-fit: contain;
     opacity: 0.5;
     pointer-events: none;
 }
@@ -471,35 +486,61 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    gap: 12px;
+}
+
+.tarefa-info {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .tarefa-titulo {
     font-size: 16px;
     font-weight: 600;
     color: #fff;
-    margin: 0 0 4px;
+    margin: 0;
 }
 
 .tarefa-local {
-    font-size: 13px;
-    color: #9ca4c9;
-    margin: 0;
-    white-space: pre-wrap;
-    word-break: break-word;
-}
-
-.tarefa-data {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
     font-size: 13px;
+    line-height: 1;
     color: #9ca4c9;
+    margin: 0;
     white-space: nowrap;
 }
 
-.tarefa-data img {
-    width: 16px;
+.tarefa-local img {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
     opacity: 0.6;
+    flex-shrink: 0;
+    display: block;
+}
+
+.tarefa-data {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    line-height: 1;
+    color: #9ca4c9;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.tarefa-data img {
+    width: 15px;
+    height: 15px;
+    object-fit: contain;
+    opacity: 0.6;
+    flex-shrink: 0;
+    display: block;
 }
 
 .tarefa-acoes {
@@ -870,9 +911,13 @@
 
     .card-header,
     .card-header.flex-between,
-    .item-linha,
-    .tarefa-header {
+    .item-linha {
         flex-wrap: wrap;
+    }
+
+    .tarefa-header {
+        flex-wrap: nowrap;
+        align-items: center;
     }
 
     .card-header.flex-between {
@@ -894,7 +939,7 @@
     }
 
     .tarefa-data {
-        width: 100%;
+        width: auto;
     }
 
     .form-actions,

@@ -47,10 +47,22 @@ class CadastroTests(TestCase):
         "diretoria": "Diaren",
     }
 
-    def test_area_is_required(self):
+    def test_area_and_nome_are_optional(self):
         response = self.client.post(reverse("cadastro"), self.dados)
-        self.assertContains(response, "Selecione pelo menos uma área")
-        self.assertFalse(Usuario.objects.filter(matricula="202499").exists())
+        self.assertRedirects(response, reverse("login"))
+        self.assertTrue(Usuario.objects.filter(matricula="202499").exists())
+
+    def test_wrong_diretoria_for_suap_matricula_notifies_user(self):
+        response = self.client.post(
+            reverse("cadastro"),
+            {
+                "matricula": "20241011110029",
+                "senha": "Senha123",
+                "diretoria": "Diaren",
+            },
+        )
+        self.assertContains(response, "pertence à diretoria Diatinf")
+        self.assertFalse(Usuario.objects.filter(matricula="20241011110029").exists())
 
     def test_duplicate_matricula_is_rejected(self):
         dados = {**self.dados, "areas": ["Cenário"]}

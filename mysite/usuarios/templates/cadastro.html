@@ -69,22 +69,16 @@
 
         <section class="formula">
 
-            <div class="nome-cadastro">
-                <p>Nome</p>
-                <input type="text" name="nome" placeholder="Digite seu nome"
-                       value="{{ form.nome }}" maxlength="100" required>
-            </div>
-
             <div class="mat">
                 <p>Matrícula</p>
-                <input type="text" name="matricula" placeholder="Digite sua matrícula"
-                       value="{{ form.matricula }}" maxlength="20">
+                <input type="text" id="matricula-cadastro" name="matricula" placeholder="Matrícula do SUAP"
+                       value="{{ form.matricula }}" maxlength="20" required>
             </div>
 
             <div class="senha">
                 <p>Senha</p>
                 <div class="campo-senha">
-                    <input type="password" id="senha" name="senha" placeholder="Digite sua senha">
+                    <input type="password" id="senha" name="senha" placeholder="Senha do SUAP" required>
                     <button type="button" class="btn-toggle-senha" id="toggle-senha-cadastro" aria-label="Mostrar senha" title="Mostrar/ocultar senha">
                         <svg class="icone-olho-aberto" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -100,27 +94,17 @@
 
             <div class="diretoria">
                 <p>Diretoria</p>
-                <div class="dropdown">
-                    <button type="button" class="dropdown-btn" id="abrirDiretoria">
-                        <span id="textoDiretoria">{% if form.diretoria %}{{ form.diretoria }}{% else %}Selecione uma diretoria{% endif %}</span>
-                        <img class="seta" id="setaDiretoria" src="{% static 'imgs/seta-baixo.png' %}" alt="">
-                    </button>
-                    <div class="lista" id="listaDiretoria">
-                        <div class="opcao-diretoria">Diaren</div>
-                        <div class="opcao-diretoria">Diatinf</div>
-                        <div class="opcao-diretoria">Diacon</div>
-                        <div class="opcao-diretoria">Diacin</div>
-                    </div>
-                </div>
+                <input type="text" name="diretoria" id="diretoriaSelecionada"
+                       value="{{ form.diretoria }}"
+                       placeholder="Preenchida pela matrícula"
+                       readonly tabindex="-1" class="input-diretoria-auto">
             </div>
-
-            <input type="hidden" name="diretoria" id="diretoriaSelecionada" value="{{ form.diretoria }}">
 
             <div class="areas">
                 <p>Áreas</p>
                 <div class="dropdown">
                     <button type="button" class="dropdown-btn" id="abrirAreas">
-                        <span>Selecione as áreas</span>
+                        <span id="textoAreasSelecionadas" class="placeholder-ghost">Selecione as áreas (opcional)</span>
                         <img class="seta" id="setaAreas" src="{% static 'imgs/seta-baixo.png' %}" alt="">
                     </button>
                     <div class="lista" id="listaAreas">

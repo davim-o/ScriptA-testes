@@ -288,6 +288,13 @@ input:-webkit-autofill:focus {
     color: #ffffff;
 }
 
+.dica-suap {
+    display: block;
+    margin: 6px 0 0 4px;
+    font-size: 11.8px;
+    color: #7d84a5;
+}
+
 .erro-login {
     width: 100%;
     margin: -2px 0 16px;

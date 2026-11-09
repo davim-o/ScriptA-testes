@@ -70,6 +70,12 @@
                         <span class="meta-item">
                             Diretoria: <strong>{{ perfil_usuario.diretoria }}</strong>
                         </span>
+                        {% if perfil_usuario.curso_exibicao %}
+                        <span class="meta-separador">•</span>
+                        <span class="meta-item">
+                            Curso: <strong>{{ perfil_usuario.curso_exibicao }}</strong>
+                        </span>
+                        {% endif %}
                     </div>
                 </div>
 

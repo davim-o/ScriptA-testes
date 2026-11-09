@@ -292,6 +292,21 @@ input:-webkit-autofill:focus {
     color: #ffffff;
 }
 
+.input-diretoria-auto {
+    cursor: default;
+    pointer-events: none;
+    user-select: none;
+}
+
+.input-diretoria-auto:focus {
+    border-color: #20284d;
+    box-shadow: none;
+}
+
+.placeholder-ghost {
+    color: #6f7699;
+}
+
 .dropdown {
     position: relative;
 }

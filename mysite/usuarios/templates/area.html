@@ -41,23 +41,14 @@
                     <div class="tarefa-detalhes">
                         {% if tarefa.tipo == "fixa" %}
                             {% if tarefa.horario %}
-                            <span class="detalhe-item">
-                                <img src="{% static 'imgs/icone-relogio.png' %}" alt="">
-                                {{ tarefa.horario|time:"H:i" }}
-                            </span>
+                            <span class="detalhe-item"><img src="{% static 'imgs/icone-relogio.png' %}" alt="">{{ tarefa.horario|time:"H:i" }}</span>
                             {% endif %}
                             {% if tarefa.data %}
-                            <span class="detalhe-item">
-                                <img src="{% static 'imgs/icone-calendario.png' %}" alt="">
-                                {{ tarefa.data|date:"j/n" }}
-                            </span>
+                            <span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa.data|date:"j/n" }}</span>
                             {% endif %}
                         {% else %}
                             {% if tarefa.data_inicio %}
-                            <span class="detalhe-item">
-                                <img src="{% static 'imgs/icone-calendario.png' %}" alt="">
-                                {{ tarefa.data_inicio|date:"j/n" }}{% if tarefa.data_fim %} - {{ tarefa.data_fim|date:"j/n" }}{% endif %}
-                            </span>
+                            <span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa.data_inicio|date:"j/n" }}{% if tarefa.data_fim %} - {{ tarefa.data_fim|date:"j/n" }}{% endif %}</span>
                             {% endif %}
                         {% endif %}
 
