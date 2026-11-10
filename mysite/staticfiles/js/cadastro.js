@@ -46,6 +46,20 @@ function definirDiretoriaNoFormulario(diretoria) {
     inputDiretoria.value = diretoria || "";
 }
 
+// Inicializa diretoria caso venha por parâmetro na URL (?diretoria=...)
+(function() {
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const dirParam = urlParams.get("diretoria");
+        if (dirParam && (!inputDiretoria || !inputDiretoria.value)) {
+            const dirFormatada = dirParam.charAt(0).toUpperCase() + dirParam.slice(1).toLowerCase();
+            if (["Diatinf", "Diaren", "Diacon", "Diacin"].includes(dirFormatada)) {
+                definirDiretoriaNoFormulario(dirFormatada);
+            }
+        }
+    } catch (e) {}
+})();
+
 function consultarSuapAutomatico(incluirSenha) {
     if (!inputMatriculaCadastro) return;
     const mat = (inputMatriculaCadastro.value || "").trim();

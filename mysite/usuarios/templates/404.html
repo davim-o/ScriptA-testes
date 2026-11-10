@@ -1,0 +1,90 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página não encontrada — ScriptA</title>
+    <link rel="icon" type="image/png" href="{% static 'imgs/favicon.png' %}">
+    <link rel="shortcut icon" href="{% static 'imgs/favicon.ico' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <style>
+        .erro-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            text-align: center;
+            background: #0B1020;
+            color: #ffffff;
+        }
+        .erro-card {
+            background: rgba(24, 28, 47, 0.85);
+            border: 1px solid rgba(139, 119, 252, 0.25);
+            border-radius: 20px;
+            padding: 36px clamp(20px, 4vw, 48px);
+            max-width: 480px;
+            width: 100%;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+        }
+        .erro-logo {
+            height: 56px;
+            margin-bottom: 20px;
+            object-fit: contain;
+        }
+        .erro-codigo {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: #8b77fc;
+            line-height: 1;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+        .erro-titulo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #f8fafc;
+        }
+        .erro-desc {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+        .erro-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: #8b77fc;
+            color: #ffffff;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.95rem;
+            transition: background 0.2s, transform 0.2s;
+        }
+        .erro-btn:hover {
+            background: #7560ea;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="erro-container">
+        <div class="erro-card">
+            <img src="{% static 'imgs/logo.png' %}" alt="Logo ScriptA" class="erro-logo">
+            <div class="erro-codigo">404</div>
+            <h1 class="erro-titulo">Página não encontrada</h1>
+            <p class="erro-desc">O endereço que você tentou acessar não existe ou foi alterado. Clique abaixo para retornar à página inicial.</p>
+            <a href="/" class="erro-btn">Ir para a Página Inicial</a>
+        </div>
+    </div>
+</body>
+</html>
+

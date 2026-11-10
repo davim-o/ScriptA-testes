@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns=[
     path("", views.login_usuario, name="login"),
+    path("login/", views.login_usuario, name="login_direto"),
     path("cadastro/", views.cadastro, name="cadastro"),
     path("api/suap/verificar/", views.verificar_suap_matricula, name="verificar_suap_matricula"),
     path("feed/", views.feed, name="feed"),

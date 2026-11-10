@@ -1,0 +1,221 @@
+/* ==========================================================================
+   ESTILOS DO CARD DO MASCOTE (ScriptA)
+   Apenas adiciona o cursor de clique no mascote, preservando 100% da
+   movimentação e posicionamento original dos olhos.
+   ========================================================================== */
+
+.mascote-item {
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   MODAL BACKDROP E CONTAINER
+   ========================================================================== */
+.mascote-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(11, 16, 32, 0.8);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+    visibility: hidden;
+}
+
+.mascote-modal-backdrop.aberto {
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
+}
+
+.mascote-card {
+    --cor-diretoria: #f17703;
+    position: relative;
+    width: 100%;
+    max-width: 460px;
+    max-height: 88vh;
+    background: #181c2f;
+    border: 2px solid var(--cor-diretoria);
+    border-radius: 18px;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    transform: scale(0.95);
+    transition: transform 0.25s ease;
+}
+
+.mascote-modal-backdrop.aberto .mascote-card {
+    transform: scale(1);
+}
+
+/* Cores por Diretoria */
+.mascote-card.tema-diatinf {
+    --cor-diretoria: #f17703; /* Tigre */
+}
+.mascote-card.tema-diacin {
+    --cor-diretoria: #7c9841; /* Cobra */
+}
+.mascote-card.tema-diacon {
+    --cor-diretoria: #8425cc; /* Dragão */
+}
+.mascote-card.tema-diaren {
+    --cor-diretoria: #b0afab; /* Cavalo */
+}
+
+/* Topo do Card */
+.mascote-card-topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px 10px;
+    border-bottom: 1px solid #2d3150;
+}
+
+.mascote-card-logo-scripta {
+    height: 38px;
+    width: auto;
+    object-fit: contain;
+}
+
+.mascote-card-fechar {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: color 0.15s;
+}
+
+.mascote-card-fechar:hover {
+    color: #ffffff;
+}
+
+/* Destaque do Mascote */
+.mascote-card-destaque {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 16px 20px 10px;
+}
+
+.mascote-card-img-wrap {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mascote-card-img-wrap img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.mascote-card-destaque h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--cor-diretoria);
+    letter-spacing: 0.5px;
+}
+
+.mascote-card-subtitulo {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin: 4px 0 0;
+}
+
+/* Conteúdo */
+.mascote-card-conteudo {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 22px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+
+.mascote-card-bloco h3 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #cbd5e1;
+    margin-bottom: 6px;
+}
+
+.mascote-card-bloco p {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 0.84rem;
+}
+
+.mascote-card-lista-cursos {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mascote-card-lista-cursos li {
+    padding: 6px 12px;
+    background: #111323;
+    border-left: 3px solid var(--cor-diretoria);
+    border-radius: 4px;
+    font-size: 0.82rem;
+    color: #f1f5f9;
+}
+
+/* Rodapé / Botão de Ação */
+.mascote-card-rodape {
+    padding: 14px 22px 18px;
+    border-top: 1px solid #2d3150;
+    background: #151829;
+}
+
+.btn-acao-diretoria {
+    width: 100%;
+    padding: 12px;
+    background: var(--cor-diretoria);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+}
+
+.btn-acao-diretoria:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn-acao-diretoria:active {
+    transform: translateY(0);
+}
+
+@media (max-width: 520px) {
+    .mascote-card {
+        max-width: 95%;
+        max-height: 85vh;
+    }
+}

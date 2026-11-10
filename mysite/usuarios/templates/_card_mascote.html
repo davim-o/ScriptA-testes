@@ -1,0 +1,40 @@
+{% load static %}
+<!-- Modal / Card da Diretoria (Aberto ao clicar no mascote correspondente) -->
+<div class="mascote-modal-backdrop" id="mascoteModalBackdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="mascoteNomeDiretoria">
+    <div class="mascote-card" id="mascoteCard">
+        <!-- Topo: Logo ScriptA e Botão Fechar -->
+        <div class="mascote-card-topo">
+            <img src="{% static 'imgs/logo.png' %}" alt="Logo ScriptA" class="mascote-card-logo-scripta">
+            <button type="button" class="mascote-card-fechar" id="btnFecharMascoteCard" aria-label="Fechar">&times;</button>
+        </div>
+
+        <!-- Mascote em Destaque -->
+        <div class="mascote-card-destaque">
+            <div class="mascote-card-img-wrap" id="mascoteImgWrap">
+                <img id="mascoteHeroImg" src="" alt="Mascote">
+            </div>
+            <h2 id="mascoteNomeDiretoria"></h2>
+            <p class="mascote-card-subtitulo" id="mascoteSubtitulo"></p>
+        </div>
+
+        <!-- Detalhamento e Cursos -->
+        <div class="mascote-card-conteudo">
+            <div class="mascote-card-bloco">
+                <h3>Sobre a Diretoria</h3>
+                <p id="mascoteDescricao"></p>
+            </div>
+
+            <div class="mascote-card-bloco">
+                <h3>Cursos Técnicos Integrados</h3>
+                <ul class="mascote-card-lista-cursos" id="mascoteListaCursos"></ul>
+            </div>
+        </div>
+
+        <!-- Ação de Redirecionamento -->
+        <div class="mascote-card-rodape">
+            <button type="button" class="btn-acao-diretoria" id="btnAcaoDiretoria">
+                <span id="textoBtnAcao">Ir para a Diretoria</span>
+            </button>
+        </div>
+    </div>
+</div>

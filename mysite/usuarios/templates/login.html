@@ -8,6 +8,7 @@
     <link rel="icon" type="image/png" href="{% static 'imgs/favicon.png' %}">
     <link rel="shortcut icon" href="{% static 'imgs/favicon.ico' %}">
     <link rel="stylesheet" href="{% static 'css/login.css' %}">
+    <link rel="stylesheet" href="{% static 'css/mascotes_card.css' %}">
 </head>
 <body>
 
@@ -116,6 +117,8 @@
         </form>
 
     </main>
+
+    {% include '_card_mascote.html' %}
 
     <footer>
         <p>© 2026 ScriptA. Todos os direitos reservados.</p>

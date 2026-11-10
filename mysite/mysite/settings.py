@@ -33,39 +33,35 @@ def _obter_secret_key():
 
 SECRET_KEY = _obter_secret_key()
 
-IS_PRODUCTION = bool(
+IS_CODESPACES = bool(
+    os.environ.get('CODESPACES')
+    or os.environ.get('GITHUB_CODESPACE_TOKEN')
+    or os.environ.get('CODESPACE_NAME')
+)
+
+IS_PRODUCTION = not IS_CODESPACES and bool(
     os.environ.get('PYTHONANYWHERE_DOMAIN')
     or os.environ.get('PYTHONANYWHERE_SITE')
     or os.environ.get('RENDER')
     or os.environ.get('RAILWAY_ENVIRONMENT')
-    # Servidor Linux de hospedagem (ex.: /home/Scripta/mysite no PythonAnywhere)
-    or str(BASE_DIR).startswith('/home/')
+    # Servidor de produção do PythonAnywhere
+    or str(BASE_DIR).startswith('/home/Scripta')
 )
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False' if IS_PRODUCTION else 'True').lower() in ('true', '1', 'yes')
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-ALLOWED_HOSTS = [
-    'scripta.pythonanywhere.com',
-    'pdsweb.pythonanywhere.com',
-    '.pythonanywhere.com',
-    'localhost',
-    '127.0.0.1',
-    'testserver',
-    '.app.github.dev',
-    '.onrender.com',
-    '.railway.app',
-    '.vercel.app',
-    '.fly.dev',
-]
+ALLOWED_HOSTS = ['*']
 
 CSRF_TRUSTED_ORIGINS = [
+    'https://*.app.github.dev',
+    'https://*.preview.app.github.dev',
+    'https://*.github.dev',
+    'https://*.pythonanywhere.com',
     'https://localhost:8000',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
-    'https://*.app.github.dev',
-    'https://*.pythonanywhere.com',
     'https://*.onrender.com',
     'https://*.railway.app',
     'https://*.fly.dev',

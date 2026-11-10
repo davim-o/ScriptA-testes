@@ -149,7 +149,7 @@ class TampinhasAccessAndPermissionTests(TestCase):
         self.membro = Usuario.objects.create(
             matricula="202412",
             senha=make_password(self.senha),
-            diretoria="Diaren",
+            diretoria="Diatinf",
             areas="Staff",
             aprovado=True,
         )
@@ -245,7 +245,7 @@ class TampinhasValidationAndAccountingTests(TestCase):
         self.membro = Usuario.objects.create(
             matricula="202420",
             senha=make_password(self.senha),
-            diretoria="Diaren",
+            diretoria="Diatinf",
             areas="Staff",
             aprovado=True,
         )
@@ -340,10 +340,10 @@ class TampinhasRankingAndPresentationTests(TestCase):
     def setUp(self):
         self.senha = "Senha123"
         self.membro1 = Usuario.objects.create(matricula="202401", senha=make_password(self.senha), diretoria="Diatinf", areas="Tampinhas", aprovado=True)
-        self.membro2 = Usuario.objects.create(matricula="202402", senha=make_password(self.senha), diretoria="Diaren", areas="Tampinhas", aprovado=True)
-        self.membro3 = Usuario.objects.create(matricula="202403", senha=make_password(self.senha), diretoria="Diacon", areas="Tampinhas", aprovado=True)
-        self.membro4 = Usuario.objects.create(matricula="202404", senha=make_password(self.senha), diretoria="Diacin", areas="Tampinhas", aprovado=True)
-        self.membro_zero = Usuario.objects.create(matricula="202405", senha=make_password(self.senha), diretoria="Diaren", areas="Tampinhas", aprovado=True)
+        self.membro2 = Usuario.objects.create(matricula="202402", senha=make_password(self.senha), diretoria="Diatinf", areas="Tampinhas", aprovado=True)
+        self.membro3 = Usuario.objects.create(matricula="202403", senha=make_password(self.senha), diretoria="Diatinf", areas="Tampinhas", aprovado=True)
+        self.membro4 = Usuario.objects.create(matricula="202404", senha=make_password(self.senha), diretoria="Diatinf", areas="Tampinhas", aprovado=True)
+        self.membro_zero = Usuario.objects.create(matricula="202405", senha=make_password(self.senha), diretoria="Diatinf", areas="Tampinhas", aprovado=True)
         self.admin = Usuario.objects.create(matricula="admin", senha=make_password(self.senha), diretoria="Líder", areas="", aprovado=True)
         self.client.post(reverse("login"), {"matricula": self.membro1.matricula, "senha": self.senha})
 
@@ -721,7 +721,7 @@ class SubliderPanelAndMetaTampinhasTests(TestCase):
             nome="Membro Tampinhas",
             matricula="202463",
             senha=make_password(self.senha),
-            diretoria="Diacon",
+            diretoria="Diaren",
             areas="Tampinhas",
             aprovado=True,
         )

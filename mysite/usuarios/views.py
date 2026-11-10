@@ -67,13 +67,25 @@ def _obter_ip_cliente(request):
     return (request.META.get("REMOTE_ADDR") or "local").strip()[:64]
 
 
+def _sanitizar_chave_cache(identificador):
+    if not identificador:
+        return ""
+    import re
+    import hashlib
+    limpo = re.sub(r'[^a-zA-Z0-9_\-]', '_', str(identificador).strip())
+    if len(limpo) > 40:
+        limpo = hashlib.md5(limpo.encode('utf-8')).hexdigest()
+    return limpo
+
+
 def _verificar_bloqueio_tentativas(request, escopo, identificador="", limite=8):
     """Verifica se o IP ou identificador atingiu o limite de tentativas malsucedidas."""
     try:
-        ip = _obter_ip_cliente(request)
-        chave_id = f"rl:{escopo}:{ip}:{(identificador or '').lower()}"
+        ip = _sanitizar_chave_cache(_obter_ip_cliente(request))
+        id_limpo = _sanitizar_chave_cache(identificador)
+        chave_id = f"rl:{escopo}:{ip}:{id_limpo.lower()}"
         chave_ip = f"rl:{escopo}:ip:{ip}"
-        tentativas_id = cache.get(chave_id, 0) if identificador else 0
+        tentativas_id = cache.get(chave_id, 0) if id_limpo else 0
         tentativas_ip = cache.get(chave_ip, 0)
         return tentativas_id >= limite or tentativas_ip >= (limite * 4)
     except Exception:
@@ -83,9 +95,10 @@ def _verificar_bloqueio_tentativas(request, escopo, identificador="", limite=8):
 def _registrar_tentativa_falha(request, escopo, identificador="", janela_segundos=300):
     """Registra uma tentativa malsucedida para proteção contra força bruta."""
     try:
-        ip = _obter_ip_cliente(request)
-        if identificador:
-            chave_id = f"rl:{escopo}:{ip}:{identificador.lower()}"
+        ip = _sanitizar_chave_cache(_obter_ip_cliente(request))
+        id_limpo = _sanitizar_chave_cache(identificador)
+        if id_limpo:
+            chave_id = f"rl:{escopo}:{ip}:{id_limpo.lower()}"
             cache.set(chave_id, cache.get(chave_id, 0) + 1, timeout=janela_segundos)
         chave_ip = f"rl:{escopo}:ip:{ip}"
         cache.set(chave_ip, cache.get(chave_ip, 0) + 1, timeout=janela_segundos)
@@ -96,9 +109,10 @@ def _registrar_tentativa_falha(request, escopo, identificador="", janela_segundo
 def _limpar_tentativas_falhas(request, escopo, identificador=""):
     """Limpa o contador de falhas após autenticação bem-sucedida."""
     try:
-        ip = _obter_ip_cliente(request)
-        if identificador:
-            cache.delete(f"rl:{escopo}:{ip}:{identificador.lower()}")
+        ip = _sanitizar_chave_cache(_obter_ip_cliente(request))
+        id_limpo = _sanitizar_chave_cache(identificador)
+        if id_limpo:
+            cache.delete(f"rl:{escopo}:{ip}:{id_limpo.lower()}")
     except Exception:
         pass
 
@@ -455,6 +469,9 @@ def verificar_suap_matricula(request):
 def cadastro(request):
     limpar_mensagens(request)
     contexto = {"erro": None, "form": {}}
+    diretoria_param = request.GET.get("diretoria", "").strip().capitalize()
+    if diretoria_param in DIRETORIAS:
+        contexto["form"]["diretoria"] = diretoria_param
     if request.method == "POST":
         nome = request.POST.get("nome", "").strip()
         matricula = request.POST.get("matricula", "").strip()
@@ -478,6 +495,8 @@ def cadastro(request):
             erro = "Essa matrícula é reservada para a administração."
         elif not senha:
             erro = "Informe a sua senha do SUAP."
+        elif len(senha) < 6:
+            erro = "A senha deve conter no mínimo 6 caracteres."
         elif len(senha) > 128:
             erro = "A senha informada excede o limite permitido."
         elif Usuario.objects.filter(matricula__iexact=matricula).exists():
@@ -610,6 +629,7 @@ def login_usuario(request):
                     limpar_mensagens(request)
                     request.session.flush()
                     request.session["usuario"] = usuario.id
+                    request.session.cycle_key()
                     request.session.modified = True
                     request._cached_usuario = usuario
                     request._resolved_usuario_id = usuario.id
@@ -654,7 +674,10 @@ def publicar(request):
                 messages.error,
                 f"A publicação excede o limite de {LIMITE_CARACTERES_FEED} caracteres ({len(texto)}/{LIMITE_CARACTERES_FEED}).",
             )
+        elif _verificar_bloqueio_tentativas(request, "feed_post", str(usuario.id), limite=12):
+            definir_mensagem(request, messages.error, "Você está publicando muito rápido. Aguarde um minuto antes de postar novamente.")
         else:
+            _registrar_tentativa_falha(request, "feed_post", str(usuario.id), janela_segundos=60)
             Publicacao.objects.create(usuario=usuario, texto=texto)
     return redirect_autenticado(request, "feed")
 
@@ -691,6 +714,9 @@ def curtir(request, id_publicacao):
     usuario = usuario_logado(request)
     if usuario is None:
         return JsonResponse({"erro": "Sua sessão expirou. Faça login novamente."}, status=401)
+    if _verificar_bloqueio_tentativas(request, "curtir", str(usuario.id), limite=60):
+        return JsonResponse({"erro": "Muitas ações em sequência. Aguarde um instante."}, status=429)
+    _registrar_tentativa_falha(request, "curtir", str(usuario.id), janela_segundos=30)
     publicacao = get_object_or_404(Publicacao.objects.select_related("usuario"), id=id_publicacao)
     if (
         usuario.diretoria in DIRETORIAS
@@ -1324,7 +1350,10 @@ def publicar_chat_area(request, nome_area):
             definir_mensagem(request, messages.error, "Digite uma mensagem antes de publicar no chat da área.")
         elif len(texto) > 300:
             definir_mensagem(request, messages.error, f"A mensagem excede o limite de 300 caracteres ({len(texto)}/300).")
+        elif _verificar_bloqueio_tentativas(request, "chat_msg", str(usuario.id), limite=20):
+            definir_mensagem(request, messages.error, "Você está enviando mensagens muito rapidamente. Aguarde alguns segundos.")
         else:
+            _registrar_tentativa_falha(request, "chat_msg", str(usuario.id), janela_segundos=60)
             MensagemArea.objects.create(
                 usuario=usuario,
                 area=nome_area,
@@ -1340,6 +1369,9 @@ def curtir_mensagem_area(request, id_mensagem):
     usuario = usuario_logado(request)
     if usuario is None:
         return JsonResponse({"erro": "Sua sessão expirou. Faça login novamente."}, status=401)
+    if _verificar_bloqueio_tentativas(request, "curtir_msg", str(usuario.id), limite=60):
+        return JsonResponse({"erro": "Muitas ações em sequência. Aguarde um instante."}, status=429)
+    _registrar_tentativa_falha(request, "curtir_msg", str(usuario.id), janela_segundos=30)
     mensagem = get_object_or_404(MensagemArea, id=id_mensagem)
     if not usuario.tem_acesso_area(mensagem.area) or not mesma_diretoria_usuarios(usuario, mensagem.usuario):
         return JsonResponse({"erro": f"Você não pertence à área {mensagem.area} desta diretoria."}, status=403)
@@ -2083,4 +2115,15 @@ def sair(request):
     response.delete_cookie(django_settings.SESSION_COOKIE_NAME)
     response.delete_cookie("messages")
     return response
+
+
+def pagina_nao_encontrada(request, exception=None):
+    """Página segura de erro 404 personalizada (sem vazar rotas, caminhos de arquivo ou versão do Django)."""
+    return render(request, "404.html", status=404)
+
+
+def erro_servidor(request):
+    """Página segura de erro 500 personalizada (sem vazar tracebacks ou variáveis do banco de dados)."""
+    return render(request, "500.html", status=500)
+
 

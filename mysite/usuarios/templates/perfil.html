@@ -64,13 +64,11 @@
                     </div>
 
                     <div class="perfil-metadados">
-                        {% if eh_proprio_perfil or usuario.tem_acesso_painel %}
                         <span class="meta-item">
                             <img src="{% static 'imgs/icone-usuario.png' %}" alt="">
                             Matrícula: <strong>{{ perfil_usuario.matricula }}</strong>
                         </span>
                         <span class="meta-separador">•</span>
-                        {% endif %}
                         <span class="meta-item">
                             Diretoria: <strong>{{ perfil_usuario.diretoria }}</strong>
                         </span>

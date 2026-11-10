@@ -5,10 +5,15 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.views.static import serve
 from django.views.generic.base import RedirectView
+from usuarios.views import pagina_nao_encontrada, erro_servidor
 
 urlpatterns = [
-    path('favicon.ico', RedirectView.as_view(url='/static/imgs/favicon.ico', permanent=True)),
     path('', include('usuarios.urls')),
+    path('admin/', pagina_nao_encontrada),
+    path('admin', pagina_nao_encontrada),
+    # Bloqueio seguro contra varreduras automatizadas e scanners maliciosos (impede vazamento de rotas mesmo com DEBUG=True)
+    re_path(r'^(?:\.env|\.git|\.aws|wp-login\.php|wp-admin|xmlrpc\.php|phpmyadmin|pma|eval-stdin\.php).*$', pagina_nao_encontrada),
+    path('favicon.ico', RedirectView.as_view(url='/static/imgs/favicon.ico', permanent=True)),
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
     re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
@@ -18,4 +23,8 @@ urlpatterns = [
 _admin_secret_path = os.environ.get('DJANGO_ADMIN_SECRET_PATH', '').strip().strip('/')
 if _admin_secret_path and _admin_secret_path != 'admin':
     urlpatterns.append(path(f'{_admin_secret_path}/', admin.site.urls))
+
+handler404 = 'usuarios.views.pagina_nao_encontrada'
+handler500 = 'usuarios.views.erro_servidor'
+
 

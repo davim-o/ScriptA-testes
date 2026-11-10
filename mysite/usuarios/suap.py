@@ -86,7 +86,11 @@ def garantir_lideres_diretorias():
 
 # Mapeamento de códigos de curso na matrícula do SUAP/IFRN -> (Diretoria, Nome do Curso)
 CODIGOS_CURSO_MATRICULA = {
-    # Diatinf
+    # Diatinf (Gestão e Tecnologia da Informação)
+    "01301": ("Diatinf", "Técnico em Administração"),
+    "1301":  ("Diatinf", "Técnico em Administração"),
+    "01131": ("Diatinf", "Técnico em Administração"),
+    "0301":  ("Diatinf", "Técnico em Administração"),
     "01111": ("Diatinf", "Técnico em Informática para Internet"),
     "1111":  ("Diatinf", "Técnico em Informática para Internet"),
     "01140": ("Diatinf", "Técnico em Informática para Internet"),
@@ -124,11 +128,7 @@ CODIGOS_CURSO_MATRICULA = {
     "0202":  ("Diacon", "Técnico em Estradas"),
     "01152": ("Diacon", "Engenharia Civil"),
     "0152":  ("Diacon", "Engenharia Civil"),
-    # Diacin
-    "01301": ("Diacin", "Técnico em Administração"),
-    "1301":  ("Diacin", "Técnico em Administração"),
-    "01131": ("Diacin", "Técnico em Administração"),
-    "0301":  ("Diacin", "Técnico em Administração"),
+    # Diacin (Indústria)
     "01302": ("Diacin", "Técnico em Eletrotécnica"),
     "1302":  ("Diacin", "Técnico em Eletrotécnica"),
     "01132": ("Diacin", "Técnico em Eletrotécnica"),
