@@ -32,34 +32,42 @@ def cor_avatar(identificador):
     return CORES_AVATAR[idx]
 
 
+def _aplicar_formatacao_inline(linha_escapada):
+    linha_escapada = re.sub(r"`([^`\n]+)`", r'<code class="rt-code">\1</code>', linha_escapada)
+    linha_escapada = re.sub(r"\*\*([^*\n]+)\*\*", r"<strong>\1</strong>", linha_escapada)
+    linha_escapada = re.sub(r"__([^_\n]+)__", r"<u>\1</u>", linha_escapada)
+    linha_escapada = re.sub(r"~~([^~\n]+)~~", r"<s>\1</s>", linha_escapada)
+    linha_escapada = re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"<em>\1</em>", linha_escapada)
+    return linha_escapada
+
+
 @register.filter(name="formatar_texto")
 def formatar_texto(valor):
     """
-    Renderiza formatação rica de texto (negrito, itálico, sublinhado, tachado,
-    código, citações e listas) com proteção total contra XSS (escapa todo HTML bruto antes).
+    Renderiza formatação rica de texto preservando fielmente quebras de linha,
+    linhas em branco, recuos e formatação inline com proteção total contra XSS.
     """
     if not valor:
         return ""
-    texto = escape(str(valor))
+    texto_norm = str(valor).replace("\r\n", "\n").replace("\r", "\n").replace("\t", "    ")
+    texto_esc = escape(texto_norm)
 
-    # Inline formatting (operando sobre texto já escapado contra XSS)
-    texto = re.sub(r"`([^`\n]+)`", r'<code class="rt-code">\1</code>', texto)
-    texto = re.sub(r"\*\*([^*\n]+)\*\*", r"<strong>\1</strong>", texto)
-    texto = re.sub(r"__([^_\n]+)__", r"<u>\1</u>", texto)
-    texto = re.sub(r"~~([^~\n]+)~~", r"<s>\1</s>", texto)
-    texto = re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"<em>\1</em>", texto)
-
-    linhas = texto.splitlines()
+    linhas = texto_esc.split("\n")
     linhas_formatadas = []
     for linha in linhas:
-        l_strip = linha.lstrip()
-        if l_strip.startswith("&gt; "):
-            conteudo = l_strip[5:]
-            linhas_formatadas.append(f'<span class="rt-quote">{conteudo}</span>')
+        recuo_len = len(linha) - len(linha.lstrip(" "))
+        recuo_html = linha[:recuo_len]
+        l_strip = linha[recuo_len:]
+
+        if l_strip.startswith("&gt; ") or l_strip == "&gt;":
+            conteudo = _aplicar_formatacao_inline(l_strip[5:] if l_strip.startswith("&gt; ") else "")
+            linhas_formatadas.append(f'{recuo_html}<span class="rt-quote">{conteudo}</span>')
         elif l_strip.startswith("• ") or l_strip.startswith("- "):
-            conteudo = l_strip[2:]
-            linhas_formatadas.append(f'<span class="rt-list-item"><span class="rt-bullet">•</span><span>{conteudo}</span></span>')
+            conteudo = _aplicar_formatacao_inline(l_strip[2:])
+            linhas_formatadas.append(
+                f'{recuo_html}<span class="rt-list-item"><span class="rt-bullet">•</span><span>{conteudo}</span></span>'
+            )
         else:
-            linhas_formatadas.append(linha)
+            linhas_formatadas.append(_aplicar_formatacao_inline(linha))
 
     return mark_safe("<br>".join(linhas_formatadas))

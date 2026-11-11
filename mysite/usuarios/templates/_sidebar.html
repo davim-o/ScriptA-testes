@@ -7,7 +7,7 @@
     </div>
 
     <div class="sidebar-topo-scroll">
-        <a href="{% url 'meu_perfil' %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="usuario {% if pagina_ativa == 'perfil' %}usuario-ativo{% endif %}" title="Acessar meu perfil">
+        <a href="{% url 'meu_perfil' %}" class="usuario {% if pagina_ativa == 'perfil' %}usuario-ativo{% endif %}" title="Acessar meu perfil">
             <div class="avatar">
                 {% if usuario.foto and usuario.foto.name %}
                     <img src="{{ usuario.foto.url }}" alt="{{ usuario.nome_exibicao }}" class="avatar-foto-img">
@@ -22,23 +22,23 @@
         </a>
 
         <nav class="menu">
-            <a href="{% url 'meu_perfil' %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="{% if pagina_ativa == 'perfil' %}ativo{% endif %}">
+            <a href="{% url 'meu_perfil' %}" class="{% if pagina_ativa == 'perfil' %}ativo{% endif %}">
                 <img src="{% static 'imgs/icone-usuario.png' %}" alt="Perfil">
                 <span>Meu perfil</span>
             </a>
 
-            <a href="{% url 'feed' %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="{% if pagina_ativa == 'feed' %}ativo{% endif %}">
+            <a href="{% url 'feed' %}" class="{% if pagina_ativa == 'feed' %}ativo{% endif %}">
                 <img src="{% static 'imgs/icone-feed.png' %}" alt="Feed">
                 <span>Feed</span>
             </a>
 
-            <a href="{% url 'tampinhas' %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="{% if pagina_ativa == 'tampinhas' %}ativo{% endif %}">
+            <a href="{% url 'tampinhas' %}" class="{% if pagina_ativa == 'tampinhas' %}ativo{% endif %}">
                 <img src="{% static 'imgs/icone-tampinhas.png' %}" alt="Tampinhas">
                 <span>Tampinhas</span>
             </a>
 
             {% if usuario.tem_acesso_painel %}
-                <a href="{% url 'painel_administrativo' %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="{% if pagina_ativa == 'painel' %}ativo{% endif %}">
+                <a href="{% url 'painel_administrativo' %}" class="{% if pagina_ativa == 'painel' %}ativo{% endif %}">
                     <img src="{% static 'imgs/icone-painel.png' %}" alt="Painel">
                     <span class="texto-painel">Painel administrativo</span>
                 </a>
@@ -47,13 +47,13 @@
             <div class="menu-separador"></div>
 
             {% for area in usuario.get_areas_sidebar %}
-                <a href="{% url 'chat_area' area %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="{% if area_ativa == area %}ativo{% endif %}">
+                <a href="{% url 'chat_area' area %}" class="{% if area_ativa == area %}ativo{% endif %}">
                     <img src="{% static 'imgs/icone-area.png' %}" alt=""><span>{{ area }}</span>
                     {% if usuario.sub_lider and area == usuario.sublider_de %}<span class="ponto-sublider"></span>{% endif %}
                 </a>
             {% endfor %}
 
-            <a href="{% url 'nova_area' %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="{% if pagina_ativa == 'nova_area' %}ativo{% endif %}">
+            <a href="{% url 'nova_area' %}" class="{% if pagina_ativa == 'nova_area' %}ativo{% endif %}">
                 <img src="{% static 'imgs/icone-editar-area.png' %}" alt="Editar área">
                 <span>Editar área</span>
             </a>
@@ -75,9 +75,6 @@
     </div>
     {% endif %}
 
-    {% if user_token %}
-    <meta name="user-token" content="{{ user_token }}">
-    {% endif %}
     {% if usuario and usuario.id %}
     <meta name="user-id" content="{{ usuario.id }}">
     <meta name="user-matricula" content="{{ usuario.matricula }}">

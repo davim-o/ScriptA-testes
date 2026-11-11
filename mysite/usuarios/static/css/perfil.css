@@ -40,9 +40,24 @@
 }
 
 .perfil-banner {
-    height: 92px;
+    height: 155px;
+    position: relative;
+    overflow: hidden;
     background: linear-gradient(135deg, #2b2260 0%, #1c254a 55%, #161b33 100%);
     border-bottom: 1px solid #2d3150;
+}
+
+.perfil-banner-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    cursor: zoom-in;
+    transition: filter 0.2s;
+}
+
+.perfil-banner-img:hover {
+    filter: brightness(1.06);
 }
 
 .perfil-corpo {
@@ -50,10 +65,12 @@
 }
 
 .perfil-topo-linha {
+    position: relative;
+    z-index: 2;
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    margin-top: -46px;
+    margin-top: -50px;
     margin-bottom: 16px;
     gap: 16px;
     flex-wrap: wrap;
@@ -61,6 +78,8 @@
 
 .perfil-avatar-wrapper {
     display: inline-flex;
+    position: relative;
+    z-index: 5;
 }
 
 .perfil-avatar-grande {
@@ -85,11 +104,28 @@
 .avatar-chat-escuro { background: #2b2e3b; }
 .avatar-chat-azul { background: #4a78e0; }
 
+.avatar-clicavel {
+    position: relative;
+    z-index: 5;
+    cursor: zoom-in;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.avatar-clicavel:hover {
+    transform: scale(1.03);
+    box-shadow: 0 0 0 3px #8b77fc;
+}
+
 .perfil-foto-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+}
+
+.avatar-clicavel .perfil-foto-img {
+    cursor: zoom-in;
+    pointer-events: auto;
 }
 
 .perfil-acoes-topo {
@@ -609,7 +645,277 @@
     padding: 12px 0;
 }
 
+.edicao-botoes-grupo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-enquadrar-midia {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(122, 92, 255, 0.16);
+    border: 1px solid #6b58e8;
+    color: #d6ccff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.btn-enquadrar-midia:hover {
+    background: #6b58e8;
+    border-color: #8c7bff;
+    color: #ffffff;
+}
+
+.edicao-banner-linha {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    padding-top: 10px;
+    border-top: 1px solid rgba(45, 49, 80, 0.7);
+}
+
+.edicao-banner-preview {
+    width: 150px;
+    height: 54px;
+    border-radius: 8px;
+    border: 2px solid #495285;
+    background: linear-gradient(135deg, #2b2260 0%, #1c254a 55%, #161b33 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.edicao-banner-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.edicao-banner-placeholder {
+    font-size: 11px;
+    font-weight: 600;
+    color: #9ca4c9;
+}
+
+.avatar-clicavel {
+    cursor: zoom-in;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.avatar-clicavel:hover {
+    transform: scale(1.04);
+    box-shadow: 0 0 0 3px #9a84ff, 0 8px 20px rgba(122, 92, 255, 0.35);
+}
+
+/* ── Modal Enquadrador (Cropper Canvas) ── */
+.cropper-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100010;
+    background: rgba(6, 9, 20, 0.85);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.cropper-backdrop.aberto {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.cropper-modal {
+    width: 100%;
+    max-width: 560px;
+    background: #181c32;
+    border: 1px solid #353b63;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.cropper-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.cropper-header h4 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.cropper-btn-fechar {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid #3a4069;
+    color: #cbd5e1;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cropper-btn-fechar:hover {
+    background: #7a5cff;
+    color: #ffffff;
+    border-color: #7a5cff;
+}
+
+.cropper-dica {
+    font-size: 12.5px;
+    color: #9ca4c9;
+    margin: -4px 0 0;
+}
+
+.cropper-palco {
+    position: relative;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 10px;
+    border: 1px solid #3d446b;
+    background: #0d1020;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+}
+
+.cropper-palco:active {
+    cursor: grabbing;
+}
+
+.cropper-palco.modo-foto {
+    width: min(310px, 78vw);
+    aspect-ratio: 1 / 1;
+}
+
+.cropper-palco.modo-banner {
+    width: 100%;
+    aspect-ratio: 3 / 1;
+}
+
+.cropper-palco canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.cropper-guia {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.cropper-guia.guia-circular::before {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    border-radius: 50%;
+    border: 2px dashed rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0 0 9999px rgba(8, 10, 22, 0.58);
+}
+
+.cropper-guia.guia-banner::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 2px dashed rgba(255, 255, 255, 0.72);
+}
+
+.cropper-controles {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.cropper-zoom-linha {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #d4d8ea;
+    font-size: 13px;
+}
+
+.cropper-zoom-linha input[type="range"] {
+    flex: 1;
+    accent-color: #7a5cff;
+    cursor: pointer;
+}
+
+.cropper-zoom-val {
+    min-width: 38px;
+    text-align: right;
+    font-weight: 700;
+    color: #b7a9ff;
+}
+
+.cropper-tools-linha {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.cropper-tool-btn {
+    background: #232846;
+    border: 1px solid #3f4672;
+    color: #e2e8f0;
+    padding: 6px 12px;
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.cropper-tool-btn:hover {
+    border-color: #7a5cff;
+    background: #2b3155;
+}
+
+.cropper-acoes {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 6px;
+    border-top: 1px solid #2d3150;
+}
+
+.text-muted-empty {
+    color: #7e86aa;
+}
+
 @media (max-width: 640px) {
+    .perfil-banner {
+        height: 118px;
+    }
+
     .perfil-corpo {
         padding: 0 18px 20px;
     }

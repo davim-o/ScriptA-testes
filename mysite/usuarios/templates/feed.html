@@ -7,8 +7,8 @@
     <title>Feed</title>
     <link rel="icon" type="image/png" href="{% static 'imgs/favicon.png' %}">
     <link rel="shortcut icon" href="{% static 'imgs/favicon.ico' %}">
-    <link rel="stylesheet" href="{% static 'css/base.css' %}">
-    <link rel="stylesheet" href="{% static 'css/feed.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261111">
+    <link rel="stylesheet" href="{% static 'css/feed.css' %}?v=20261111">
 </head>
 
 <body>
@@ -24,15 +24,27 @@
         </div>
 
         <!-- Bloco para criar publicação -->
-        <section class="nova-publicacao">
+        <section class="nova-publicacao" id="box-nova-publicacao-feed">
 
-            <form action="{% url 'publicar' %}" method="POST">
+            <form action="{% url 'publicar' %}" method="POST" enctype="multipart/form-data" id="form-publicar-feed">
 
                 {% csrf_token %}
+                <input type="hidden" name="resposta_a" id="input-resposta-feed" value="">
+
+                <div class="feed-preview-resposta" id="preview-resposta-feed" style="display: none;">
+                    <div class="feed-preview-info">
+                        <div class="avatar avatar-pequeno-feed" id="preview-resposta-feed-avatar">U</div>
+                        <div class="feed-citacao-textos">
+                            <span class="feed-citacao-autor" id="preview-resposta-feed-autor"></span>
+                            <p class="feed-citacao-mensagem" id="preview-resposta-feed-texto"></p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-cancelar-resposta-feed" id="btn-cancelar-resposta-feed" title="Cancelar resposta">✕</button>
+                </div>
 
                 <div class="topo-publicacao">
 
-                    <a href="{% url 'meu_perfil' %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="avatar" title="Meu perfil">
+                    <a href="{% url 'meu_perfil' %}" class="avatar" title="Meu perfil">
                         {% if usuario.foto and usuario.foto.name %}
                             <img src="{{ usuario.foto.url }}" alt="{{ usuario.nome_exibicao }}" class="avatar-foto-img">
                         {% else %}
@@ -42,31 +54,70 @@
 
                     <textarea
                         name="texto"
+                        id="textarea-feed"
                         maxlength="3000"
                         data-rich-editor="1"
-                        placeholder="Compartilhe algo com a torcida..."
-                        required></textarea>
+                        placeholder="Compartilhe algo com a torcida..."></textarea>
 
                 </div>
 
+                <div class="preview-anexo-box" id="preview-anexo-feed">
+                    <img id="img-preview-feed" src="" alt="Pré-visualização do anexo">
+                    <span class="preview-anexo-nome" id="nome-preview-feed"></span>
+                    <button type="button" class="btn-remover-anexo" id="btn-remover-anexo-feed">✕ Remover</button>
+                </div>
+
                 <div class="acoes-publicacao">
-                    <button type="submit">Publicar</button>
+                    <label for="input-img-feed" class="btn-icone-anexar" title="Adicionar imagem" aria-label="Adicionar imagem">
+                        <img src="{% static 'imgs/icone-add-imagem.png' %}" alt="Adicionar imagem">
+                    </label>
+                    <input type="file" id="input-img-feed" name="imagem" accept="image/*" style="display: none;">
+                    <button type="submit" class="btn-publicar-feed">Publicar</button>
                 </div>
 
             </form>
 
         </section>
 
+        {% if respostas_para_mim %}
+        <div class="barra-respostas-recentes" id="barra-respostas-feed">
+            <strong>↳ Responderam a você ({{ respostas_para_mim|length }}):</strong>
+            {% for resp in respostas_para_mim %}
+                <button type="button" class="pill-ir-resposta" data-scroll-to="pub-{{ resp.id }}">
+                    {{ resp.usuario.nome_exibicao }}
+                </button>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <!-- Lista de publicações -->
         <section class="feed">
 
             {% for publicacao in publicacoes %}
 
-            <article class="card">
+            <article class="card {% if publicacao.resposta_a_id and publicacao.resposta_a.usuario_id == usuario.id and publicacao.usuario_id != usuario.id %}resposta-para-mim{% endif %}" id="pub-{{ publicacao.id }}">
+
+                {% if publicacao.resposta_a %}
+                <div class="feed-resposta-citacao" data-scroll-to="pub-{{ publicacao.resposta_a.id }}" title="Clique para ver a publicação respondida">
+                    <a href="{% url 'ver_perfil' publicacao.resposta_a.usuario.id %}" class="avatar avatar-pequeno-feed" title="Ver perfil de {{ publicacao.resposta_a.usuario.nome_exibicao }}">
+                        {% if publicacao.resposta_a.usuario.foto and publicacao.resposta_a.usuario.foto.name %}
+                            <img src="{{ publicacao.resposta_a.usuario.foto.url }}" alt="{{ publicacao.resposta_a.usuario.nome_exibicao }}" class="avatar-foto-img">
+                        {% else %}
+                            {{ publicacao.resposta_a.usuario.inicial_perfil }}
+                        {% endif %}
+                    </a>
+                    <div class="feed-citacao-textos">
+                        <a href="{% url 'ver_perfil' publicacao.resposta_a.usuario.id %}" class="feed-citacao-autor link-perfil-usuario">{{ publicacao.resposta_a.usuario.nome_exibicao }}</a>
+                        <p class="feed-citacao-mensagem">
+                            {% if publicacao.resposta_a.texto %}{{ publicacao.resposta_a.texto|truncatechars:140 }}{% else %}[Imagem anexada]{% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
 
                 <div class="cabecalho">
 
-                    <a href="{% url 'ver_perfil' publicacao.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="avatar" title="Ver perfil de {{ publicacao.usuario.nome_exibicao }}">
+                    <a href="{% url 'ver_perfil' publicacao.usuario.id %}" class="avatar" title="Ver perfil de {{ publicacao.usuario.nome_exibicao }}">
                         {% if publicacao.usuario.foto and publicacao.usuario.foto.name %}
                             <img src="{{ publicacao.usuario.foto.url }}" alt="{{ publicacao.usuario.nome_exibicao }}" class="avatar-foto-img">
                         {% else %}
@@ -77,9 +128,12 @@
                     <div class="info">
 
                         <h3>
-                            <a href="{% url 'ver_perfil' publicacao.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">
+                            <a href="{% url 'ver_perfil' publicacao.usuario.id %}" class="link-perfil-usuario">
                                 {{ publicacao.usuario.nome_exibicao }}
                             </a>
+                            {% if publicacao.resposta_a_id and publicacao.resposta_a.usuario_id == usuario.id and publicacao.usuario_id != usuario.id %}
+                            <span class="badge-respondeu-voce">↳ Respondeu a você</span>
+                            {% endif %}
                         </h3>
 
                         <p>{{ publicacao.usuario.diretoria }}</p>
@@ -93,13 +147,20 @@
                 <div class="corpo-card">
                     <div class="avatar-espaco"></div>
                     <div style="flex: 1; min-width: 0;">
+                        {% if publicacao.texto %}
                         <div class="texto">{{ publicacao.texto|formatar_texto }}</div>
+                        {% endif %}
+
+                        {% if publicacao.imagem and publicacao.imagem.name %}
+                        <div class="midia-anexada-wrap">
+                            <img src="{{ publicacao.imagem.url }}" alt="Imagem enviada por {{ publicacao.usuario.nome_exibicao }}" class="img-midia-anexada img-ampliavel" data-lightbox-src="{{ publicacao.imagem.url }}" data-lightbox-alt="Publicação de {{ publicacao.usuario.nome_exibicao }}">
+                        </div>
+                        {% endif %}
 
                         {% if publicacao.usuario.id == usuario.id %}
                         <form action="{% url 'editar_publicacao' publicacao.id %}" method="POST" class="form-edicao-inline" id="form-editar-pub-{{ publicacao.id }}" style="display: none;">
                             {% csrf_token %}
-                            {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
-                            <textarea name="texto" maxlength="3000" required>{{ publicacao.texto }}</textarea>
+                            <textarea name="texto" maxlength="3000" {% if not publicacao.imagem %}required{% endif %}>{{ publicacao.texto }}</textarea>
                             <div class="acoes-edicao-inline">
                                 <button type="button" class="btn-cancelar-edicao" data-cancel-edit="form-editar-pub-{{ publicacao.id }}">Cancelar</button>
                                 <button type="submit" class="btn-salvar-edicao">Salvar alterações</button>
@@ -115,13 +176,30 @@
 
                     <div class="rodape-acoes">
 
-                        <button class="curtir" data-id="{{ publicacao.id }}">
-                            <img
-                                class="icone-curtir"
-                                src="{% if publicacao.id in curtidas %}{% static 'imgs/coracao-vermelho.png' %}{% else %}{% static 'imgs/coracao-cinza.png' %}{% endif %}"
-                                alt="Curtir">
-                            <span>{{ publicacao.total_curtidas }}</span>
-                        </button>
+                        <div class="acoes-esquerda-card">
+                            <button class="curtir" data-id="{{ publicacao.id }}">
+                                <img
+                                    class="icone-curtir"
+                                    src="{% if publicacao.id in curtidas %}{% static 'imgs/coracao-vermelho.png' %}{% else %}{% static 'imgs/coracao-cinza.png' %}{% endif %}"
+                                    alt="Curtir">
+                                <span>{{ publicacao.total_curtidas }}</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                class="btn-responder-feed"
+                                data-id="{{ publicacao.id }}"
+                                data-autor="{{ publicacao.usuario.nome_exibicao }}"
+                                data-inicial="{{ publicacao.usuario.inicial_perfil }}"
+                                data-foto="{% if publicacao.usuario.foto and publicacao.usuario.foto.name %}{{ publicacao.usuario.foto.url }}{% endif %}"
+                                data-texto="{% if publicacao.texto %}{{ publicacao.texto|truncatechars:140 }}{% else %}[Imagem anexada]{% endif %}">
+                                <svg class="icone-responder-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 17 4 12 9 7"></polyline>
+                                    <path d="M20 18v-2a4 4 0 0 0-4-4H4"></path>
+                                </svg>
+                                <span>Responder</span>
+                            </button>
+                        </div>
 
                         <div class="acoes-direita-card">
                             {% if publicacao.usuario.id == usuario.id %}
@@ -160,9 +238,9 @@
 
 </main>
 
-<script src="{% static 'js/editor_texto.js' %}"></script>
-<script src="{% static 'js/feed.js' %}"></script>
+<script src="{% static 'js/editor_texto.js' %}?v=20261111"></script>
+<script src="{% static 'js/feed.js' %}?v=20261111"></script>
 
-<script src="{% static 'js/toast.js' %}"></script>
+<script src="{% static 'js/toast.js' %}?v=20261111"></script>
 </body>
 </html>

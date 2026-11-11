@@ -1,31 +1,77 @@
 import time
+import uuid
 from urllib.parse import unquote
 from django.contrib import messages
 from django.core import signing
+from django.core.cache import cache
 
-TOKEN_SALT = "scripta.user.tab"
+TOKEN_SALT = "scripta.user.session.v2"
 JANELA_MAXIMA_NOTIFICACAO_SEGUNDOS = 10.0
 
 
-def gerar_token_usuario(usuario_id):
+def gerar_token_usuario(usuario_id, session_version=None, jti=None):
+    """
+    Gera um token criptografado vinculado à versão da sessão do usuário no banco (`session_version`)
+    e a um identificador único (`jti`), permitindo revogação imediata no logout.
+    """
     if not usuario_id:
         return ""
     try:
-        return signing.dumps({"usuario": int(usuario_id)}, salt=TOKEN_SALT)
+        uid = int(usuario_id)
+        if session_version is None:
+            from .models import Usuario
+            u = Usuario.objects.filter(id=uid).values("session_version").first()
+            session_version = u["session_version"] if u else 1
+        jti_final = jti or uuid.uuid4().hex
+        return signing.dumps(
+            {"usuario": uid, "sv": int(session_version), "jti": jti_final},
+            salt=TOKEN_SALT,
+        )
     except Exception:
         return ""
 
 
 def decodificar_token_usuario(token, max_age=1209600):
+    """
+    Decodifica e valida o token verificando assinatura, expiração, lista de revogação (`jti`)
+    e correspondência exata com `session_version` atual do usuário no banco.
+    """
     if not token or not isinstance(token, str):
         return None
     try:
         data = signing.loads(token, salt=TOKEN_SALT, max_age=max_age)
-        if isinstance(data, dict) and "usuario" in data:
-            return int(data["usuario"])
+        if not isinstance(data, dict) or "usuario" not in data:
+            return None
+        uid = int(data["usuario"])
+        sv = data.get("sv")
+        jti = data.get("jti")
+        if not sv or not jti:
+            return None
+        if cache.get(f"revoked_jti:{jti}"):
+            return None
+        from .models import Usuario
+        u = Usuario.objects.filter(id=uid).values("session_version", "aprovado").first()
+        if not u or int(u["session_version"]) != int(sv):
+            return None
+        return uid
     except Exception:
-        pass
-    return None
+        return None
+
+
+def revogar_token_usuario(token=None, jti=None, max_age=1209600):
+    """Invalida explicitamente um `jti` / token específico para impedir reuso após logout."""
+    if jti:
+        try:
+            cache.set(f"revoked_jti:{jti}", True, timeout=max_age)
+        except Exception:
+            pass
+    if token and isinstance(token, str):
+        try:
+            data = signing.loads(token, salt=TOKEN_SALT, max_age=max_age)
+            if isinstance(data, dict) and data.get("jti"):
+                cache.set(f"revoked_jti:{data['jti']}", True, timeout=max_age)
+        except Exception:
+            pass
 
 
 def _extrair_metadados_tags(extra_tags):
@@ -70,14 +116,12 @@ def consumir_notificacoes_validas(request, usuario_id):
             nid = meta.get("nid")
             ts_str = meta.get("ts")
             if not nid or not ts_str:
-                # Descarta mensagens legadas sem carimbo de ação
                 continue
             try:
                 ts = float(ts_str)
             except (ValueError, TypeError):
                 continue
             if (agora - ts) > JANELA_MAXIMA_NOTIFICACAO_SEGUNDOS or (ts - agora) > 5.0:
-                # Descarta mensagens atrasadas/acumuladas
                 continue
 
             uid_msg = meta.get("uid", "")
@@ -102,27 +146,23 @@ def consumir_notificacoes_validas(request, usuario_id):
 
 def user_token_processor(request):
     """
-    Injeta o token criptografado, o ID do usuário autenticado e apenas as notificações
-    estritamente válidas para a ação recém-executada na requisição/aba atual.
+    Injeta o ID do usuário autenticado e apenas as notificações estritamente válidas
+    para a ação recém-executada. Nunca expõe token de sessão em URLs ou no HTML.
     """
     usuario_id = None
-    token = ""
     try:
         usuario = getattr(request, "_cached_usuario", None)
         if usuario is not None and getattr(usuario, "id", None):
             usuario_id = usuario.id
         else:
             usuario_id = getattr(request, "_resolved_usuario_id", None) or request.session.get("usuario")
-        if usuario_id:
-            token = gerar_token_usuario(usuario_id)
     except Exception:
         usuario_id = None
-        token = ""
 
     notificacoes_ativas = consumir_notificacoes_validas(request, usuario_id)
 
     return {
-        "user_token": token,
+        "user_token": "",
         "user_id_atual": int(usuario_id) if usuario_id else "",
         "notificacoes_ativas": notificacoes_ativas,
     }

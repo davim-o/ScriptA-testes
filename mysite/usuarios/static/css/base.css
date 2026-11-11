@@ -565,8 +565,10 @@ body {
 }
 
 .rt-quote {
-    margin: 6px 0;
-    padding: 7px 12px;
+    display: inline-block;
+    max-width: 100%;
+    margin: 2px 0;
+    padding: 5px 12px;
     border-left: 3px solid #8a7cff;
     background: rgba(138, 124, 255, 0.1);
     border-radius: 0 8px 8px 0;
@@ -575,8 +577,17 @@ body {
 }
 
 .rt-list-item {
-    padding-left: 8px;
-    margin: 3px 0;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    padding-left: 6px;
+    margin: 1px 0;
+}
+
+.rt-bullet {
+    color: #a89bff;
+    font-weight: 700;
+    flex-shrink: 0;
 }
 
 .rt-code {
@@ -688,4 +699,291 @@ body {
 
 .btn-cancelar-edicao:hover {
     background: #32385a;
+}
+
+/* ── Anexo e preview de imagem em postagens, chat e observações ── */
+.btn-anexar-img {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: #232846;
+    border: 1px solid #3c436b;
+    color: #d8dcf2 !important;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+    user-select: none;
+}
+
+.btn-anexar-img:hover {
+    background: #2c3258;
+    border-color: #8a7cff;
+    color: #ffffff !important;
+}
+
+.btn-anexar-img img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    opacity: 0.85;
+}
+
+.btn-icone-anexar {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #232846;
+    border: 1px solid #3c436b;
+    border-radius: 8px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    user-select: none;
+}
+
+.btn-icone-anexar img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    opacity: 0.9;
+}
+
+.btn-icone-anexar:hover {
+    background: #2c3258;
+    border-color: #8a7cff;
+}
+
+.btn-icone-anexar:active {
+    transform: scale(0.96);
+}
+
+.preview-anexo-box {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #14182d;
+    border: 1px solid #353d68;
+    border-radius: 10px;
+    width: fit-content;
+    max-width: 100%;
+}
+
+.preview-anexo-box.ativo {
+    display: inline-flex;
+}
+
+.preview-anexo-box img {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 7px;
+    border: 1px solid #495285;
+}
+
+.preview-anexo-nome {
+    font-size: 12.5px;
+    color: #cbd5e1;
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.btn-remover-anexo {
+    background: rgba(211, 47, 47, 0.16);
+    border: 1px solid rgba(232, 144, 144, 0.35);
+    color: #f3a4a4;
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.btn-remover-anexo:hover {
+    background: #c62828;
+    color: #ffffff;
+}
+
+.midia-anexada-wrap {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    display: flex;
+}
+
+.img-midia-anexada {
+    max-width: 100%;
+    max-height: 360px;
+    width: auto;
+    height: auto;
+    border-radius: 10px;
+    border: 1px solid #2f365c;
+    object-fit: contain;
+    background: #0d1020;
+    cursor: zoom-in;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.img-midia-anexada:hover {
+    border-color: #8b77fc;
+    transform: scale(1.01);
+}
+
+/* ── Destaque visual quando alguém responde a sua mensagem/publicação ── */
+.card.resposta-para-mim,
+.chat-card.resposta-para-mim {
+    border-color: #9c85f9 !important;
+    border-left: 4px solid #a88bfa !important;
+    background: linear-gradient(135deg, rgba(139, 119, 252, 0.14) 0%, rgba(23, 26, 46, 0.98) 55%) !important;
+    box-shadow: 0 6px 22px rgba(122, 92, 255, 0.18);
+}
+
+.badge-respondeu-voce {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(156, 133, 249, 0.24);
+    border: 1px solid rgba(168, 139, 250, 0.55);
+    color: #e0d4ff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    letter-spacing: 0.2px;
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+.barra-respostas-recentes {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: rgba(122, 92, 255, 0.14);
+    border: 1px solid rgba(156, 133, 249, 0.45);
+    border-left: 4px solid #a88bfa;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    color: #e6e0ff;
+    font-size: 13.5px;
+}
+
+.barra-respostas-recentes strong {
+    color: #ffffff;
+}
+
+.links-respostas-recentes {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.pill-ir-resposta {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #7a5cff;
+    color: #ffffff !important;
+    text-decoration: none;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: background 0.2s, transform 0.15s;
+}
+
+.pill-ir-resposta:hover {
+    background: #6748f0;
+    transform: translateY(-1px);
+}
+
+.card-flash-destaque,
+.chat-card-flash-destaque {
+    animation: flash-card-destino 1.6s ease;
+}
+
+@keyframes flash-card-destino {
+    0% { box-shadow: 0 0 0 3px #a88bfa, 0 0 28px rgba(168, 139, 250, 0.65); }
+    100% { box-shadow: none; }
+}
+
+/* ── Lightbox Global (Foto de Perfil e Imagens Ampliáveis) ── */
+.lightbox-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    background: rgba(6, 9, 20, 0.88);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.22s ease, visibility 0.22s ease;
+}
+
+.lightbox-backdrop.aberto {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.lightbox-fechar {
+    position: fixed;
+    top: 18px;
+    right: 22px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(20, 24, 44, 0.85);
+    color: #ffffff;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, transform 0.15s;
+    z-index: 100002;
+}
+
+.lightbox-fechar:hover {
+    background: #7a5cff;
+    transform: scale(1.06);
+}
+
+.lightbox-img {
+    max-width: min(92vw, 900px);
+    max-height: 86vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    transform: scale(0.95);
+    transition: transform 0.22s ease;
+}
+
+.lightbox-backdrop.aberto .lightbox-img {
+    transform: scale(1);
+}
+
+.lightbox-img.lightbox-avatar-circular {
+    border-radius: 14px;
 }

@@ -23,10 +23,10 @@
         </div>
 
         <div class="abas">
-            <a href="{% url 'chat_area' area_ativa %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba">Chat</a>
-            <a href="{% url 'pagina_area' area_ativa %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba {% if aba_ativa_conclusao == 'tarefas' %}ativa{% endif %}">Tarefas</a>
+            <a href="{% url 'chat_area' area_ativa %}" class="aba">Chat</a>
+            <a href="{% url 'pagina_area' area_ativa %}" class="aba {% if aba_ativa_conclusao == 'tarefas' %}ativa{% endif %}">Tarefas</a>
             {% if not usuario.eh_administrador %}
-            <a href="{% url 'minhas_tarefas' area_ativa %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba {% if aba_ativa_conclusao == 'minhas_tarefas' %}ativa{% endif %}">Minhas Tarefas</a>
+            <a href="{% url 'minhas_tarefas' area_ativa %}" class="aba {% if aba_ativa_conclusao == 'minhas_tarefas' %}ativa{% endif %}">Minhas Tarefas</a>
             {% endif %}
         </div>
 
@@ -67,13 +67,18 @@
                 <span class="badge-concluida-header">✓ Concluída</span>
             </div>
 
+            {% if tarefa.descricao %}
+            <div class="detalhe-secao" style="padding: 16px 24px 0;">
+                <p class="detalhe-label">Descrição / Detalhamento</p>
+                <div class="texto-descricao-tarefa" style="font-size: 14px; color: #cfd6f0; line-height: 1.6; white-space: normal; word-break: break-word; background: rgba(15, 18, 34, 0.55); border: 1px solid #2d3150; border-radius: 10px; padding: 12px 14px;">{{ tarefa.descricao|formatar_texto }}</div>
+            </div>
+            {% endif %}
+
             {% if tarefa.imagem and tarefa.imagem.name %}
             <div class="detalhe-secao" style="padding: 16px 24px 0;">
                 <p class="detalhe-label">Foto de apoio <span class="fotos-count">1</span></p>
                 <div class="fotos-apoio">
-                    <a href="{{ tarefa.imagem.url }}" target="_blank" title="Clique para ver foto de apoio">
-                        <img src="{{ tarefa.imagem.url }}" alt="Foto de apoio" class="foto-apoio">
-                    </a>
+                    <img src="{{ tarefa.imagem.url }}" alt="Foto de apoio" class="foto-apoio img-ampliavel" data-lightbox-src="{{ tarefa.imagem.url }}" data-lightbox-alt="Foto de apoio" title="Clique para ampliar" style="cursor: zoom-in;">
                 </div>
             </div>
             {% endif %}
@@ -91,7 +96,7 @@
                     {% for c in conclusoes %}
                     <div class="conclusao-item">
                         <div class="conclusao-topo">
-                            <a href="{% url 'ver_perfil' c.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="obs-avatar" style="overflow:hidden;text-decoration:none;">
+                            <a href="{% url 'ver_perfil' c.usuario.id %}" class="obs-avatar" style="overflow:hidden;text-decoration:none;">
                                 {% if c.usuario.foto and c.usuario.foto.name %}
                                     <img src="{{ c.usuario.foto.url }}" alt="{{ c.usuario.nome_exibicao }}" class="avatar-foto-img">
                                 {% else %}
@@ -99,16 +104,16 @@
                                 {% endif %}
                             </a>
                             <div class="conclusao-info">
-                                <a href="{% url 'ver_perfil' c.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="obs-nome link-perfil-usuario">{{ c.usuario.nome_exibicao }}</a>
+                                <a href="{% url 'ver_perfil' c.usuario.id %}" class="obs-nome link-perfil-usuario">{{ c.usuario.nome_exibicao }}</a>
                                 <span class="obs-data">{{ c.criada_em|date:"d/m/Y H:i" }}</span>
                             </div>
                         </div>
                         {% if c.imagem and c.imagem.name %}
                         <div class="conclusao-imagem">
-                            <a href="{{ c.imagem.url }}" target="_blank" title="Clique para abrir a imagem em tamanho original">
-                                <img src="{{ c.imagem.url }}" alt="Comprovação enviada por {{ c.usuario.matricula }}" class="foto-conclusao">
-                            </a>
+                            <img src="{{ c.imagem.url }}" alt="Comprovação enviada por {{ c.usuario.matricula }}" class="foto-conclusao img-ampliavel" data-lightbox-src="{{ c.imagem.url }}" data-lightbox-alt="Comprovação de {{ c.usuario.nome_exibicao }}" title="Clique para ampliar a imagem" style="cursor: zoom-in;">
                         </div>
+                        {% else %}
+                        <p class="sem-imagem-conclusao" style="font-size:12px;color:#7e86aa;font-style:italic;margin-top:6px;">Nenhuma imagem anexada nesta entrega.</p>
                         {% endif %}
                         {% if c.comentario %}
                         <div class="conclusao-comentario">{{ c.comentario|formatar_texto }}</div>

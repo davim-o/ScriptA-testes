@@ -7,9 +7,9 @@
     <title>{{ tarefa_selecionada.area|default:"Minhas Tarefas" }}</title>
     <link rel="icon" type="image/png" href="{% static 'imgs/favicon.png' %}">
     <link rel="shortcut icon" href="{% static 'imgs/favicon.ico' %}">
-    <link rel="stylesheet" href="{% static 'css/base.css' %}">
-    <link rel="stylesheet" href="{% static 'css/area.css' %}">
-    <link rel="stylesheet" href="{% static 'css/minhas_tarefas.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261111">
+    <link rel="stylesheet" href="{% static 'css/area.css' %}?v=20261111">
+    <link rel="stylesheet" href="{% static 'css/minhas_tarefas.css' %}?v=20261111">
 </head>
 <body>
 
@@ -24,10 +24,10 @@
 
         <!-- Abas superiores — sempre visíveis -->
         <div class="abas">
-            <a href="{% url 'chat_area' area_ativa %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba">Chat</a>
-            <a href="{% url 'pagina_area' area_ativa %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba">Tarefas</a>
+            <a href="{% url 'chat_area' area_ativa %}" class="aba">Chat</a>
+            <a href="{% url 'pagina_area' area_ativa %}" class="aba">Tarefas</a>
             {% if not usuario.eh_administrador %}
-            <a href="{% url 'minhas_tarefas' area_ativa %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba ativa">Minhas Tarefas</a>
+            <a href="{% url 'minhas_tarefas' area_ativa %}" class="aba ativa">Minhas Tarefas</a>
             {% endif %}
         </div>
 
@@ -51,7 +51,7 @@
                         {% if tarefa.data_inicio %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa.data_inicio|date:"j/n" }}{% if tarefa.data_fim %} - {{ tarefa.data_fim|date:"j/n" }}{% endif %}</span>{% endif %}
                     {% endif %}
                     <div class="tarefa-acao">
-                        <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="btn-ver-tarefa">Ver tarefa</a>
+                        <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa.id %}" class="btn-ver-tarefa">Ver tarefa</a>
                         {% if tarefa.criada_por != usuario %}
                         <form action="{% url 'cancelar_participacao' tarefa.id %}" method="POST">
                             {% csrf_token %}
@@ -75,6 +75,18 @@
                     <h3 class="tarefa-titulo">{{ tarefa.titulo }}</h3>
                     <span class="badge-encerrada">{% if tarefa.concluida %}✓ Concluída{% else %}Encerrada{% endif %}</span>
                 </div>
+                {% if tarefa.conclusoes.all %}
+                <div class="lista-conclusoes-imagens">
+                    {% for conc in tarefa.conclusoes.all %}
+                        {% if conc.imagem and conc.imagem.name %}
+                        <div class="conclusao-preview-card">
+                            <img src="{{ conc.imagem.url }}" alt="Entrega de {{ conc.usuario.nome_exibicao }}" class="img-conclusao-thumb img-ampliavel" data-lightbox-src="{{ conc.imagem.url }}" data-lightbox-alt="Entrega de {{ conc.usuario.nome_exibicao }}" title="Clique para ampliar entrega de {{ conc.usuario.nome_exibicao }}" style="cursor: zoom-in;">
+                            <span class="conclusao-autor">{{ conc.usuario.nome_exibicao }}</span>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
                 <div class="tarefa-detalhes">
                     {% if tarefa.tipo == "fixa" %}
                         {% if tarefa.horario %}<span class="detalhe-item"><img src="{% static 'imgs/icone-relogio.png' %}" alt="">{{ tarefa.horario|time:"H:i" }}</span>{% endif %}
@@ -83,7 +95,7 @@
                         {% if tarefa.data_inicio %}<span class="detalhe-item"><img src="{% static 'imgs/icone-calendario.png' %}" alt="">{{ tarefa.data_inicio|date:"j/n" }}{% if tarefa.data_fim %} - {{ tarefa.data_fim|date:"j/n" }}{% endif %}</span>{% endif %}
                     {% endif %}
                     <div class="tarefa-acao">
-                        <a href="{% url 'ver_conclusao' tarefa.id %}?origem=minhas_tarefas{% if user_token %}&_user_token={{ user_token|urlencode }}{% endif %}" class="btn-ver-conclusao">Ver entrega</a>
+                        <a href="{% url 'ver_conclusao' tarefa.id %}?origem=minhas_tarefas" class="btn-ver-conclusao">Ver entrega</a>
                         {% if tarefa.criada_por == usuario or usuario.eh_administrador or usuario.sub_lider and usuario.sublider_de == area_ativa %}
                         <form action="{% url 'excluir_tarefa_concluida' tarefa.id %}" method="POST" onsubmit="return confirm('Deseja realmente excluir esta tarefa concluída?');">
                             {% csrf_token %}
@@ -101,7 +113,7 @@
         {% else %}
         <!-- ── Detalhe da tarefa ── -->
         <div class="topo-navegacao-voltar">
-            <a href="{% url 'minhas_tarefas' area_ativa %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="btn-voltar-link">
+            <a href="{% url 'minhas_tarefas' area_ativa %}" class="btn-voltar-link">
                 <span class="seta-voltar">←</span> Voltar para Minhas Tarefas
             </a>
         </div>
@@ -132,12 +144,12 @@
             </div>
 
             <div class="sub-abas">
-                <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa_selecionada.id %}?aba=detalhes{% if user_token %}&_user_token={{ user_token|urlencode }}{% endif %}"
+                <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa_selecionada.id %}?aba=detalhes"
                    class="sub-aba {% if aba_ativa == 'detalhes' %}ativa{% endif %}">Detalhes</a>
-                <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa_selecionada.id %}?aba=observacao{% if user_token %}&_user_token={{ user_token|urlencode }}{% endif %}"
+                <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa_selecionada.id %}?aba=observacao"
                    class="sub-aba {% if aba_ativa == 'observacao' %}ativa{% endif %}">Adicionar Observação</a>
                 {% if not eh_criador %}
-                <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa_selecionada.id %}?aba=concluir{% if user_token %}&_user_token={{ user_token|urlencode }}{% endif %}"
+                <a href="{% url 'minhas_tarefas_detalhe' area_ativa tarefa_selecionada.id %}?aba=concluir"
                    class="sub-aba {% if aba_ativa == 'concluir' %}ativa{% endif %}">Concluir</a>
                 {% endif %}
             </div>
@@ -154,9 +166,7 @@
                     <div class="detalhe-secao">
                         <p class="detalhe-label">Foto de apoio <span class="fotos-count">1</span></p>
                         <div class="fotos-apoio">
-                            <a href="{{ tarefa_selecionada.imagem.url }}" target="_blank" title="Clique para ver foto de apoio">
-                                <img src="{{ tarefa_selecionada.imagem.url }}" alt="Foto de apoio" class="foto-apoio">
-                            </a>
+                            <img src="{{ tarefa_selecionada.imagem.url }}" alt="Foto de apoio" class="foto-apoio img-ampliavel" data-lightbox-src="{{ tarefa_selecionada.imagem.url }}" data-lightbox-alt="Foto de apoio" title="Clique para ampliar" style="cursor: zoom-in;">
                         </div>
                     </div>
                     {% endif %}
@@ -166,9 +176,7 @@
                         <p class="detalhe-label">Sua comprovação de conclusão <span class="badge-concluida" style="margin-left:8px;font-size:11px;">✓ Entregue</span></p>
                         {% if conclusao.imagem and conclusao.imagem.name %}
                         <div class="conclusao-imagem">
-                            <a href="{{ conclusao.imagem.url }}" target="_blank" title="Clique para ver em tamanho real">
-                                <img src="{{ conclusao.imagem.url }}" alt="Comprovação enviada" class="foto-conclusao">
-                            </a>
+                            <img src="{{ conclusao.imagem.url }}" alt="Comprovação enviada" class="foto-conclusao img-ampliavel" data-lightbox-src="{{ conclusao.imagem.url }}" data-lightbox-alt="Sua comprovação" title="Clique para ampliar" style="cursor: zoom-in;">
                         </div>
                         {% endif %}
                         {% if conclusao.comentario %}
@@ -190,7 +198,7 @@
                             {% for c in conclusoes_tarefa %}
                             <div class="conclusao-item">
                                 <div class="conclusao-topo">
-                                    <a href="{% url 'ver_perfil' c.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="obs-avatar" style="overflow:hidden;text-decoration:none;">
+                                    <a href="{% url 'ver_perfil' c.usuario.id %}" class="obs-avatar" style="overflow:hidden;text-decoration:none;">
                                         {% if c.usuario.foto and c.usuario.foto.name %}
                                             <img src="{{ c.usuario.foto.url }}" alt="{{ c.usuario.nome_exibicao }}" class="avatar-foto-img">
                                         {% else %}
@@ -198,15 +206,13 @@
                                         {% endif %}
                                     </a>
                                     <div class="conclusao-info">
-                                        <a href="{% url 'ver_perfil' c.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="obs-nome link-perfil-usuario">{{ c.usuario.nome_exibicao }}</a>
+                                        <a href="{% url 'ver_perfil' c.usuario.id %}" class="obs-nome link-perfil-usuario">{{ c.usuario.nome_exibicao }}</a>
                                         <span class="obs-data">{{ c.criada_em|date:"d/m/Y H:i" }}</span>
                                     </div>
                                 </div>
                                 {% if c.imagem and c.imagem.name %}
                                 <div class="conclusao-imagem">
-                                    <a href="{{ c.imagem.url }}" target="_blank" title="Clique para abrir imagem original">
-                                        <img src="{{ c.imagem.url }}" alt="Comprovação de {{ c.usuario.nome_exibicao }}" class="foto-conclusao">
-                                    </a>
+                                    <img src="{{ c.imagem.url }}" alt="Comprovação de {{ c.usuario.nome_exibicao }}" class="foto-conclusao img-ampliavel" data-lightbox-src="{{ c.imagem.url }}" data-lightbox-alt="Comprovação de {{ c.usuario.nome_exibicao }}" title="Clique para ampliar" style="cursor: zoom-in;">
                                 </div>
                                 {% endif %}
                                 {% if c.comentario %}
@@ -224,7 +230,7 @@
                     <div class="lista-observacoes">
                         {% for obs in observacoes %}
                         <div class="observacao-item">
-                            <a href="{% url 'ver_perfil' obs.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="obs-avatar" style="overflow:hidden;text-decoration:none;">
+                            <a href="{% url 'ver_perfil' obs.usuario.id %}" class="obs-avatar" style="overflow:hidden;text-decoration:none;">
                                 {% if obs.usuario.foto and obs.usuario.foto.name %}
                                     <img src="{{ obs.usuario.foto.url }}" alt="{{ obs.usuario.nome_exibicao }}" class="avatar-foto-img">
                                 {% else %}
@@ -233,7 +239,7 @@
                             </a>
                             <div class="obs-corpo" style="flex:1;min-width:0;">
                                 <div class="obs-header" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                                    <a href="{% url 'ver_perfil' obs.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="obs-nome link-perfil-usuario">{{ obs.usuario.nome_exibicao }}</a>
+                                    <a href="{% url 'ver_perfil' obs.usuario.id %}" class="obs-nome link-perfil-usuario">{{ obs.usuario.nome_exibicao }}</a>
                                     <span class="obs-data">{{ obs.criada_em|date:"d/m/Y H:i" }}</span>
                                     {% if obs.usuario_id == usuario.id %}
                                     <button type="button" class="btn-editar-inline" data-toggle-edit="form-editar-obs-{{ obs.id }}" style="margin-left:auto;">
@@ -241,12 +247,18 @@
                                     </button>
                                     {% endif %}
                                 </div>
+                                {% if obs.texto %}
                                 <div class="obs-texto">{{ obs.texto|formatar_texto }}</div>
+                                {% endif %}
+                                {% if obs.imagem and obs.imagem.name %}
+                                <div class="midia-anexada-wrap">
+                                    <img src="{{ obs.imagem.url }}" alt="Imagem anexada na observação de {{ obs.usuario.nome_exibicao }}" class="img-midia-anexada img-ampliavel" data-lightbox-src="{{ obs.imagem.url }}" data-lightbox-alt="Observação de {{ obs.usuario.nome_exibicao }}">
+                                </div>
+                                {% endif %}
                                 {% if obs.usuario_id == usuario.id %}
                                 <form action="{% url 'editar_observacao' area_ativa tarefa_selecionada.id obs.id %}" method="POST" class="form-edicao-inline" id="form-editar-obs-{{ obs.id }}" style="display: none;">
                                     {% csrf_token %}
-                                    {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
-                                    <textarea name="texto" maxlength="2000" required>{{ obs.texto }}</textarea>
+                                    <textarea name="texto" maxlength="2000" {% if not obs.imagem %}required{% endif %}>{{ obs.texto }}</textarea>
                                     <div class="acoes-edicao-inline">
                                         <button type="button" class="btn-cancelar-edicao" data-cancel-edit="form-editar-obs-{{ obs.id }}">Cancelar</button>
                                         <button type="submit" class="btn-salvar-edicao">Salvar</button>
@@ -257,7 +269,7 @@
                         </div>
                         {% endfor %}
                     </div>
-                    <form action="{% url 'adicionar_observacao' area_ativa tarefa_selecionada.id %}" method="POST" class="form-observacao">
+                    <form action="{% url 'adicionar_observacao' area_ativa tarefa_selecionada.id %}" method="POST" enctype="multipart/form-data" class="form-observacao" id="form-observacao-tarefa">
                         {% csrf_token %}
                         <div class="obs-input-row">
                             <div class="obs-avatar-eu">
@@ -267,8 +279,19 @@
                                     {{ usuario.inicial_perfil }}
                                 {% endif %}
                             </div>
-                            <input type="text" name="texto" maxlength="2000" placeholder="Escreva uma observação (suporta **negrito**, *itálico*, __sublinhado__)..." class="obs-input" required>
-                            <button type="submit" class="btn-enviar-obs">Enviar Observação</button>
+                            <input type="text" name="texto" id="input-texto-obs" maxlength="2000" placeholder="Escreva uma observação (suporta **negrito**, *itálico*, __sublinhado__)..." class="obs-input">
+                            <div class="obs-enviar-grupo">
+                                <label for="input-img-obs" class="btn-icone-anexar" title="Adicionar imagem" aria-label="Adicionar imagem">
+                                    <img src="{% static 'imgs/icone-add-imagem.png' %}" alt="Adicionar imagem">
+                                </label>
+                                <input type="file" id="input-img-obs" name="imagem" accept="image/*" style="display: none;">
+                                <button type="submit" class="btn-enviar-obs">Enviar Observação</button>
+                            </div>
+                        </div>
+                        <div class="preview-anexo-box" id="preview-anexo-obs" style="margin-left: 44px;">
+                            <img id="img-preview-obs" src="" alt="Pré-visualização da observação">
+                            <span class="preview-anexo-nome" id="nome-preview-obs"></span>
+                            <button type="button" class="btn-remover-anexo" id="btn-remover-anexo-obs">✕ Remover</button>
                         </div>
                         <p class="obs-aviso">⚠ Sua observação será enviada para a tarefa e ficará visível para os responsáveis.</p>
                     </form>
@@ -337,9 +360,63 @@ function previewImagem(input) {
         reader.readAsDataURL(file);
     }
 }
+
+(function inicializarAnexoObservacao() {
+    const inputImgObs = document.getElementById("input-img-obs");
+    const previewObsBox = document.getElementById("preview-anexo-obs");
+    const imgPreviewObs = document.getElementById("img-preview-obs");
+    const nomePreviewObs = document.getElementById("nome-preview-obs");
+    const btnRemoverObs = document.getElementById("btn-remover-anexo-obs");
+    const formObs = document.getElementById("form-observacao-tarefa");
+    const inputTextoObs = document.getElementById("input-texto-obs");
+    let objectUrlObs = null;
+
+    function limparObs() {
+        if (inputImgObs) inputImgObs.value = "";
+        if (previewObsBox) previewObsBox.classList.remove("ativo");
+        if (imgPreviewObs) imgPreviewObs.removeAttribute("src");
+        if (nomePreviewObs) nomePreviewObs.textContent = "";
+        if (objectUrlObs) {
+            URL.revokeObjectURL(objectUrlObs);
+            objectUrlObs = null;
+        }
+    }
+
+    if (inputImgObs) {
+        inputImgObs.addEventListener("change", function () {
+            const file = inputImgObs.files && inputImgObs.files[0];
+            if (!file) {
+                limparObs();
+                return;
+            }
+            if (objectUrlObs) URL.revokeObjectURL(objectUrlObs);
+            objectUrlObs = URL.createObjectURL(file);
+            if (imgPreviewObs) imgPreviewObs.src = objectUrlObs;
+            if (nomePreviewObs) nomePreviewObs.textContent = file.name;
+            if (previewObsBox) previewObsBox.classList.add("ativo");
+        });
+    }
+
+    if (btnRemoverObs) {
+        btnRemoverObs.addEventListener("click", limparObs);
+    }
+
+    if (formObs) {
+        formObs.addEventListener("submit", function (e) {
+            const temTexto = inputTextoObs && inputTextoObs.value.trim().length > 0;
+            const temImg = inputImgObs && inputImgObs.files && inputImgObs.files.length > 0;
+            if (!temTexto && !temImg) {
+                e.preventDefault();
+                if (typeof toast === "function") {
+                    toast("Escreva uma observação ou anexe uma imagem.", "erro");
+                }
+            }
+        });
+    }
+})();
 </script>
 
-<script src="{% static 'js/editor_texto.js' %}"></script>
-<script src="{% static 'js/toast.js' %}"></script>
+<script src="{% static 'js/editor_texto.js' %}?v=20261111"></script>
+<script src="{% static 'js/toast.js' %}?v=20261111"></script>
 </body>
 </html>

@@ -408,6 +408,9 @@
 .chat-acoes-publicacao {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
     margin-top: 12px;
 }
 

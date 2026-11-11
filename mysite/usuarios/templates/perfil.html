@@ -7,8 +7,8 @@
     <title>Perfil — {{ perfil_usuario.nome_exibicao }}</title>
     <link rel="icon" type="image/png" href="{% static 'imgs/favicon.png' %}">
     <link rel="shortcut icon" href="{% static 'imgs/favicon.ico' %}">
-    <link rel="stylesheet" href="{% static 'css/base.css' %}">
-    <link rel="stylesheet" href="{% static 'css/perfil.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261111">
+    <link rel="stylesheet" href="{% static 'css/perfil.css' %}?v=20261111">
 </head>
 <body>
 
@@ -26,14 +26,37 @@
 
         <!-- Card Principal de Identidade do Perfil -->
         <section class="perfil-hero-card">
-            <div class="perfil-banner"></div>
+            <div class="perfil-banner">
+                {% if perfil_usuario.banner and perfil_usuario.banner.name %}
+                    <img src="{{ perfil_usuario.banner.url }}"
+                         alt="Banner de {{ perfil_usuario.nome_exibicao }}"
+                         class="perfil-banner-img img-ampliavel"
+                         data-lightbox-src="{{ perfil_usuario.banner.url }}"
+                         data-lightbox-alt="Banner de {{ perfil_usuario.nome_exibicao }}"
+                         title="Clique para ampliar o banner">
+                {% endif %}
+            </div>
 
             <div class="perfil-corpo">
                 <div class="perfil-topo-linha">
                     <div class="perfil-avatar-wrapper">
-                        <div class="perfil-avatar-grande {{ perfil_usuario.matricula|cor_avatar }}" id="avatar-principal-perfil">
+                        <div class="perfil-avatar-grande {{ perfil_usuario.matricula|cor_avatar }} {% if perfil_usuario.foto and perfil_usuario.foto.name %}avatar-clicavel{% endif %}"
+                             id="avatar-principal-perfil"
+                             {% if perfil_usuario.foto and perfil_usuario.foto.name %}
+                             data-lightbox-src="{{ perfil_usuario.foto.url }}"
+                             data-lightbox-alt="Foto de {{ perfil_usuario.nome_exibicao }}"
+                             data-lightbox-circular="1"
+                             role="button"
+                             tabindex="0"
+                             title="Clique para visualizar a foto em tela cheia"
+                             {% endif %}>
                             {% if perfil_usuario.foto and perfil_usuario.foto.name %}
-                                <img src="{{ perfil_usuario.foto.url }}" alt="{{ perfil_usuario.nome_exibicao }}" class="perfil-foto-img">
+                                <img src="{{ perfil_usuario.foto.url }}"
+                                     alt="{{ perfil_usuario.nome_exibicao }}"
+                                     class="perfil-foto-img img-ampliavel"
+                                     data-lightbox-src="{{ perfil_usuario.foto.url }}"
+                                     data-lightbox-alt="Foto de {{ perfil_usuario.nome_exibicao }}"
+                                     data-lightbox-circular="1">
                             {% else %}
                                 <span>{{ perfil_usuario.inicial_perfil }}</span>
                             {% endif %}
@@ -108,7 +131,6 @@
 
             <form action="{% url 'editar_perfil' %}" method="POST" enctype="multipart/form-data" class="form-editar-perfil">
                 {% csrf_token %}
-                {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
 
                 <div class="edicao-foto-linha">
                     <div class="edicao-avatar-preview {{ perfil_usuario.matricula|cor_avatar }}" id="preview-avatar-edicao">
@@ -120,17 +142,59 @@
                     </div>
 
                     <div class="edicao-foto-controles">
-                        <label for="input-foto-perfil" class="btn-selecionar-foto">
-                            <img src="{% static 'imgs/icone-add-imagem.png' %}" alt="">
-                            <span>Escolher foto de perfil</span>
-                        </label>
-                        <input type="file" id="input-foto-perfil" name="foto" accept="image/*" class="input-hidden" onchange="previsualizarFotoPerfil(this)">
-                        <span class="edicao-foto-dica" id="nome-arquivo-foto">PNG ou JPG. Formato quadrado recomendado.</span>
+                        <div class="edicao-botoes-grupo">
+                            <label for="input-foto-perfil" class="btn-selecionar-foto">
+                                <img src="{% static 'imgs/icone-add-imagem.png' %}" alt="">
+                                <span>Escolher foto de perfil</span>
+                            </label>
+                            <button type="button"
+                                    class="btn-enquadrar-midia"
+                                    id="btn-enquadrar-foto"
+                                    style="{% if not perfil_usuario.foto or not perfil_usuario.foto.name %}display: none;{% endif %}">
+                                ✂ Enquadrar foto
+                            </button>
+                        </div>
+                        <input type="file" id="input-foto-perfil" name="foto" accept="image/*" class="input-hidden">
+                        <span class="edicao-foto-dica" id="nome-arquivo-foto">PNG ou JPG. Ao selecionar, você poderá enquadrar a imagem.</span>
 
                         {% if perfil_usuario.foto and perfil_usuario.foto.name %}
                         <label class="checkbox-remover-foto">
                             <input type="checkbox" name="remover_foto" value="1" id="check-remover-foto" onchange="alternarRemoverFoto(this)">
                             <span>Remover foto atual</span>
+                        </label>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="edicao-banner-linha">
+                    <div class="edicao-banner-preview" id="preview-banner-edicao">
+                        {% if perfil_usuario.banner and perfil_usuario.banner.name %}
+                            <img src="{{ perfil_usuario.banner.url }}" alt="Preview do banner" class="edicao-banner-img">
+                        {% else %}
+                            <span class="edicao-banner-placeholder">Padrão atual</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="edicao-foto-controles">
+                        <div class="edicao-botoes-grupo">
+                            <label for="input-banner-perfil" class="btn-selecionar-foto">
+                                <img src="{% static 'imgs/icone-add-imagem.png' %}" alt="">
+                                <span>Escolher banner de fundo</span>
+                            </label>
+                            <button type="button"
+                                    class="btn-enquadrar-midia"
+                                    id="btn-enquadrar-banner"
+                                    style="{% if not perfil_usuario.banner or not perfil_usuario.banner.name %}display: none;{% endif %}">
+                                ✂ Enquadrar banner
+                            </button>
+                        </div>
+                        <input type="file" id="input-banner-perfil" name="banner" accept="image/*" class="input-hidden">
+                        <span class="edicao-foto-dica" id="nome-arquivo-banner">Opcional (proporção panorâmica). Sem imagem mantém o padrão atual.</span>
+
+                        {% if perfil_usuario.banner and perfil_usuario.banner.name %}
+                        <label class="checkbox-remover-foto">
+                            <input type="checkbox" name="remover_banner" value="1" id="check-remover-banner" onchange="alternarRemoverBanner(this)">
+                            <span>Remover banner atual (usar padrão)</span>
                         </label>
                         {% endif %}
                     </div>
@@ -184,7 +248,7 @@
                         {{ contribuicao_tampinhas_gramas }}g acumulado{{ contribuicao_tampinhas_gramas|pluralize:"s" }} ({{ total_doacoes_registradas }} doaç{{ total_doacoes_registradas|pluralize:"ão,ões" }})
                     </span>
                 </div>
-                <a href="{% url 'tampinhas' %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-ver-ranking">
+                <a href="{% url 'tampinhas' %}" class="link-ver-ranking">
                     Ver ranking →
                 </a>
             </div>
@@ -201,7 +265,7 @@
             <div class="lista-areas-perfil">
                 {% for area_item in areas_perfil %}
                     {% if usuario.tem_acesso_area and area_item.nome in usuario.get_areas_sidebar %}
-                    <a href="{% url 'chat_area' area_item.nome %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="chip-area-perfil chip-clicavel">
+                    <a href="{% url 'chat_area' area_item.nome %}" class="chip-area-perfil chip-clicavel">
                         <img src="{% static area_item.icone %}" alt="">
                         <span>{{ area_item.nome }}</span>
                         {% if area_item.eh_sublider %}
@@ -228,8 +292,41 @@
 </main>
 
 {% if eh_proprio_perfil %}
+<div class="cropper-backdrop" id="modal-cropper-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="cropper-modal">
+        <div class="cropper-header">
+            <h4 id="cropper-titulo">Enquadrar imagem</h4>
+            <button type="button" class="cropper-btn-fechar" id="btn-cropper-fechar" aria-label="Fechar enquadramento">&times;</button>
+        </div>
+        <p class="cropper-dica">Arraste a imagem para posicionar e ajuste o zoom ou rotação abaixo.</p>
+
+        <div class="cropper-palco modo-foto" id="cropper-palco">
+            <canvas id="cropper-canvas" width="560" height="560"></canvas>
+            <div class="cropper-guia guia-circular" id="cropper-guia"></div>
+        </div>
+
+        <div class="cropper-controles">
+            <div class="cropper-zoom-linha">
+                <label for="cropper-zoom">Zoom</label>
+                <input type="range" id="cropper-zoom" min="1" max="3" step="0.02" value="1">
+                <span class="cropper-zoom-val" id="cropper-zoom-valor">1.0x</span>
+            </div>
+            <div class="cropper-tools-linha">
+                <button type="button" class="cropper-tool-btn" id="btn-cropper-rotar">↻ Girar 90°</button>
+                <button type="button" class="cropper-tool-btn" id="btn-cropper-reset">↺ Centralizar</button>
+            </div>
+        </div>
+
+        <div class="cropper-acoes">
+            <button type="button" class="btn-cancelar-edicao" id="btn-cropper-cancelar">Cancelar</button>
+            <button type="button" class="btn-salvar-perfil" id="btn-cropper-aplicar">Aplicar enquadramento</button>
+        </div>
+    </div>
+</div>
+
 <script>
 var fotoOriginalUrl = "{% if perfil_usuario.foto and perfil_usuario.foto.name %}{{ perfil_usuario.foto.url|escapejs }}{% endif %}";
+var bannerOriginalUrl = "{% if perfil_usuario.banner and perfil_usuario.banner.name %}{{ perfil_usuario.banner.url|escapejs }}{% endif %}";
 var inicialUsuarioPerfil = "{{ perfil_usuario.inicial_perfil|escapejs }}";
 
 function alternarEdicaoPerfil() {
@@ -241,29 +338,6 @@ function alternarEdicaoPerfil() {
         secao.scrollIntoView({ behavior: "smooth", block: "nearest" });
         var inputNome = document.getElementById("input-nome-perfil");
         if (inputNome) inputNome.focus();
-    }
-}
-
-function previsualizarFotoPerfil(input) {
-    var previewContainer = document.getElementById("preview-avatar-edicao");
-    var nomeArquivo = document.getElementById("nome-arquivo-foto");
-    var checkRemover = document.getElementById("check-remover-foto");
-    if (input.files && input.files[0]) {
-        var file = input.files[0];
-        if (nomeArquivo) {
-            nomeArquivo.textContent = "✓ Foto selecionada: " + file.name;
-            nomeArquivo.style.color = "#81c784";
-        }
-        if (checkRemover) {
-            checkRemover.checked = false;
-        }
-        var reader = new FileReader();
-        reader.onload = function (e) {
-            if (previewContainer) {
-                previewContainer.innerHTML = '<img src="' + e.target.result + '" alt="Preview" class="perfil-foto-img">';
-            }
-        };
-        reader.readAsDataURL(file);
     }
 }
 
@@ -280,12 +354,63 @@ function alternarRemoverFoto(checkbox) {
             nomeArquivo.textContent = "A foto atual será removida ao salvar.";
             nomeArquivo.style.color = "#f0c97a";
         }
+        if (window.scriptaLimparPreviewCropperFoto) window.scriptaLimparPreviewCropperFoto();
     } else {
-        if (previewContainer && fotoOriginalUrl) {
-            previewContainer.innerHTML = '<img src="' + fotoOriginalUrl + '" alt="Preview" class="perfil-foto-img">';
+        if (previewContainer) {
+            previewContainer.textContent = "";
+            if (fotoOriginalUrl) {
+                var img = document.createElement("img");
+                img.src = fotoOriginalUrl;
+                img.alt = "Preview";
+                img.className = "perfil-foto-img";
+                previewContainer.appendChild(img);
+            } else {
+                previewContainer.textContent = inicialUsuarioPerfil;
+            }
         }
         if (nomeArquivo) {
-            nomeArquivo.textContent = "PNG ou JPG. Formato quadrado recomendado.";
+            nomeArquivo.textContent = "PNG ou JPG. Ao selecionar, você poderá enquadrar a imagem.";
+            nomeArquivo.style.color = "";
+        }
+    }
+}
+
+function alternarRemoverBanner(checkbox) {
+    var nomeArquivo = document.getElementById("nome-arquivo-banner");
+    var inputBanner = document.getElementById("input-banner-perfil");
+    var previewBanner = document.getElementById("preview-banner-edicao");
+    if (checkbox.checked) {
+        if (inputBanner) inputBanner.value = "";
+        if (previewBanner) {
+            previewBanner.textContent = "";
+            var sp = document.createElement("span");
+            sp.className = "edicao-banner-placeholder";
+            sp.textContent = "Padrão atual";
+            previewBanner.appendChild(sp);
+        }
+        if (nomeArquivo) {
+            nomeArquivo.textContent = "O banner atual será removido ao salvar (voltará ao padrão).";
+            nomeArquivo.style.color = "#f0c97a";
+        }
+        if (window.scriptaLimparPreviewCropperBanner) window.scriptaLimparPreviewCropperBanner();
+    } else {
+        if (previewBanner) {
+            previewBanner.textContent = "";
+            if (bannerOriginalUrl) {
+                var img = document.createElement("img");
+                img.src = bannerOriginalUrl;
+                img.alt = "Preview do banner";
+                img.className = "edicao-banner-img";
+                previewBanner.appendChild(img);
+            } else {
+                var spP = document.createElement("span");
+                spP.className = "edicao-banner-placeholder";
+                spP.textContent = "Padrão atual";
+                previewBanner.appendChild(spP);
+            }
+        }
+        if (nomeArquivo) {
+            nomeArquivo.textContent = "Opcional (proporção panorâmica). Sem imagem mantém o padrão atual.";
             nomeArquivo.style.color = "";
         }
     }
@@ -302,8 +427,89 @@ function alternarRemoverFoto(checkbox) {
     atualizar();
 })();
 </script>
+<script src="{% static 'js/perfil_cropper.js' %}?v=20261111"></script>
 {% endif %}
-<script src="{% static 'js/editor_texto.js' %}"></script>
-<script src="{% static 'js/toast.js' %}"></script>
+<script>
+(function () {
+    function abrirVisualizacaoFotoPerfil(src, alt, circular) {
+        if (!src) return;
+        if (typeof window.abrirLightboxImagem === "function") {
+            window.abrirLightboxImagem(src, alt || "Foto de perfil", !!circular);
+            return;
+        }
+        // Fallback auto-contido caso algum script anterior ainda esteja em cache
+        var existente = document.getElementById("scripta-lightbox-overlay");
+        if (existente) existente.remove();
+        var overlay = document.createElement("div");
+        overlay.id = "scripta-lightbox-overlay";
+        overlay.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(5,7,14,0.88);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:24px;";
+        var btnFechar = document.createElement("button");
+        btnFechar.type = "button";
+        btnFechar.innerHTML = "&times;";
+        btnFechar.setAttribute("aria-label", "Fechar visualização");
+        btnFechar.style.cssText = "position:fixed;top:18px;right:22px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,0.28);background:rgba(20,24,44,0.92);color:#fff;font-size:28px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;";
+        var img = document.createElement("img");
+        img.src = src;
+        img.alt = alt || "Foto de perfil";
+        img.style.cssText = circular
+            ? "width:min(78vw,420px);height:min(78vw,420px);object-fit:cover;border-radius:50%;border:3px solid rgba(139,119,252,0.75);box-shadow:0 20px 60px rgba(0,0,0,0.6);"
+            : "max-width:92vw;max-height:86vh;object-fit:contain;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.6);";
+        function fechar() {
+            overlay.remove();
+            document.removeEventListener("keydown", onEsc);
+        }
+        function onEsc(ev) {
+            if (ev.key === "Escape") fechar();
+        }
+        btnFechar.addEventListener("click", fechar);
+        overlay.addEventListener("click", function (ev) {
+            if (ev.target === overlay) fechar();
+        });
+        document.addEventListener("keydown", onEsc);
+        overlay.appendChild(btnFechar);
+        overlay.appendChild(img);
+        document.body.appendChild(overlay);
+    }
+
+    var avatarPerfil = document.getElementById("avatar-principal-perfil");
+    if (avatarPerfil && avatarPerfil.hasAttribute("data-lightbox-src")) {
+        avatarPerfil.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            abrirVisualizacaoFotoPerfil(
+                avatarPerfil.getAttribute("data-lightbox-src"),
+                avatarPerfil.getAttribute("data-lightbox-alt") || "Foto de perfil",
+                true
+            );
+        });
+        avatarPerfil.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                abrirVisualizacaoFotoPerfil(
+                    avatarPerfil.getAttribute("data-lightbox-src"),
+                    avatarPerfil.getAttribute("data-lightbox-alt") || "Foto de perfil",
+                    true
+                );
+            }
+        });
+    }
+
+    var bannerImg = document.querySelector(".perfil-banner-img");
+    if (bannerImg && bannerImg.hasAttribute("data-lightbox-src")) {
+        bannerImg.addEventListener("click", function (e) {
+            if (typeof window.abrirLightboxImagem === "function") return;
+            e.preventDefault();
+            e.stopPropagation();
+            abrirVisualizacaoFotoPerfil(
+                bannerImg.getAttribute("data-lightbox-src"),
+                bannerImg.getAttribute("data-lightbox-alt") || "Banner do perfil",
+                false
+            );
+        });
+    }
+})();
+</script>
+<script src="{% static 'js/editor_texto.js' %}?v=20261111"></script>
+<script src="{% static 'js/toast.js' %}?v=20261111"></script>
 </body>
 </html>

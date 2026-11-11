@@ -19,11 +19,11 @@
 }
 
 .total-geral-tampinhas {
-    font-size: 34px;
+    font-size: 24px;
     font-weight: 700;
     color: #c8bfff;
-    letter-spacing: -0.5px;
-    line-height: 1.1;
+    letter-spacing: -0.3px;
+    line-height: 1.15;
 }
 
 .meta-estabelecida-tampinhas {
@@ -279,6 +279,10 @@
 
 /* ── Responsividade ── */
 @media (max-width: 640px) {
+    .total-geral-tampinhas {
+        font-size: 20px;
+    }
+
     .container-tampinhas {
         width: 100%;
         padding: 0 10px;

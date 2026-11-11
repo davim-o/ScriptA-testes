@@ -83,7 +83,14 @@
     border-radius: 8px;
     padding: 10px 16px;
     gap: 10px;
-    width: 250px;
+    width: 260px;
+    position: relative;
+    z-index: 2;
+    transition: border-color 0.2s;
+}
+
+.search-box:focus-within {
+    border-color: #7a5cff;
 }
 
 .search-box input {

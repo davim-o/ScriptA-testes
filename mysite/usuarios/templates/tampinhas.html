@@ -57,7 +57,7 @@
                     </div>
                     <span class="podio-matricula">
                         {% if segundo %}
-                            <a href="{% url 'ver_perfil' segundo.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">{{ segundo.usuario.nome_exibicao }}</a>
+                            <a href="{% url 'ver_perfil' segundo.usuario.id %}" class="link-perfil-usuario">{{ segundo.usuario.nome_exibicao }}</a>
                         {% else %}—{% endif %}
                     </span>
                     <span class="podio-total total-prata">
@@ -81,7 +81,7 @@
                     </div>
                     <span class="podio-matricula">
                         {% if primeiro %}
-                            <a href="{% url 'ver_perfil' primeiro.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">{{ primeiro.usuario.nome_exibicao }}</a>
+                            <a href="{% url 'ver_perfil' primeiro.usuario.id %}" class="link-perfil-usuario">{{ primeiro.usuario.nome_exibicao }}</a>
                         {% else %}—{% endif %}
                     </span>
                     <span class="podio-total total-ouro">
@@ -105,7 +105,7 @@
                     </div>
                     <span class="podio-matricula">
                         {% if terceiro %}
-                            <a href="{% url 'ver_perfil' terceiro.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">{{ terceiro.usuario.nome_exibicao }}</a>
+                            <a href="{% url 'ver_perfil' terceiro.usuario.id %}" class="link-perfil-usuario">{{ terceiro.usuario.nome_exibicao }}</a>
                         {% else %}—{% endif %}
                     </span>
                     <span class="podio-total total-bronze">
@@ -123,14 +123,14 @@
                 {% for item in demais_participantes %}
                     <div class="item-ranking-linha">
                         <span class="ranking-posicao">{{ item.posicao }}</span>
-                        <a href="{% url 'ver_perfil' item.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="ranking-avatar" style="overflow:hidden;text-decoration:none;color:inherit;">
+                        <a href="{% url 'ver_perfil' item.usuario.id %}" class="ranking-avatar" style="overflow:hidden;text-decoration:none;color:inherit;">
                             {% if item.usuario.foto and item.usuario.foto.name %}
                                 <img src="{{ item.usuario.foto.url }}" alt="{{ item.usuario.nome_exibicao }}" class="avatar-foto-img">
                             {% else %}
                                 {{ item.usuario.inicial_perfil }}
                             {% endif %}
                         </a>
-                        <a href="{% url 'ver_perfil' item.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="ranking-matricula link-perfil-usuario">{{ item.usuario.nome_exibicao }}</a>
+                        <a href="{% url 'ver_perfil' item.usuario.id %}" class="ranking-matricula link-perfil-usuario">{{ item.usuario.nome_exibicao }}</a>
                         <span class="ranking-total">{{ item.total_formatado }}</span>
                     </div>
                 {% empty %}

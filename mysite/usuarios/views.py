@@ -4,18 +4,19 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 # pyrefly: ignore [missing-import]
 from django.contrib.auth.hashers import make_password, check_password
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import os
 import time
 import uuid
-from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode, unquote
+from urllib.parse import urlsplit, unquote
 # pyrefly: ignore [missing-import]
 from django.db import models, IntegrityError, transaction
 from django.db.models import Count, Q, F
 from django.contrib import messages
 from django.core import signing
 from django.core.cache import cache
-from .context_processors import gerar_token_usuario, decodificar_token_usuario
+from django.utils.dateparse import parse_date, parse_time
+from .context_processors import gerar_token_usuario, decodificar_token_usuario, revogar_token_usuario
 from .models import (
     Usuario, Publicacao, Curtida, Tarefa, ParticipacaoTarefa,
     SolicitacaoArea, ObservacaoTarefa, ConclusaoTarefa, DoacaoTampinhas,
@@ -55,6 +56,8 @@ ADMIN_MATRICULA = "admin"
 META_TAMPINHAS_KG = Decimal("40.0")
 LIMITE_CARACTERES_FEED = 3000
 LIMITE_CARACTERES_CHAT = 300
+LIMITE_TITULO_TAREFA = 200
+LIMITE_DESCRICAO_TAREFA = 10000
 EXTENSOES_IMAGEM_PERMITIDAS = (".jpg", ".jpeg", ".png", ".webp", ".gif")
 TAMANHO_MAXIMO_IMAGEM_BYTES = 5 * 1024 * 1024
 
@@ -188,20 +191,24 @@ def filtrar_qs_diretoria(qs, usuario, campo_diretoria="diretoria"):
     return qs
 
 
-def formatar_kg(valor, is_gramas=True):
+def formatar_kg(valor, is_gramas=True, casas=3):
     if valor is None:
         return "0Kg"
     if is_gramas:
         d = Decimal(str(valor)) / Decimal("1000")
     else:
         d = Decimal(str(valor))
-    s = f"{d:.3f}".rstrip("0").rstrip(".")
+    if casas == 1:
+        d = d.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+        s = f"{d:.1f}".rstrip("0").rstrip(".")
+    else:
+        s = f"{d:.3f}".rstrip("0").rstrip(".")
     if not s or s == "-0":
         s = "0"
     return f"{s}Kg"
 
 
-def obter_total_doacoes_kg_formatado(com_unidade=True, diretoria=None):
+def obter_total_doacoes_kg_formatado(com_unidade=True, diretoria=None, casas=1):
     doacoes_qs = DoacaoTampinhas.objects.filter(
         usuario__aprovado=True
     ).exclude(
@@ -220,7 +227,11 @@ def obter_total_doacoes_kg_formatado(com_unidade=True, diretoria=None):
     else:
         d = Decimal(total_gramas) / Decimal("1000")
 
-    s = f"{d:.3f}".rstrip("0").rstrip(".")
+    if casas == 1:
+        d = d.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+        s = f"{d:.1f}".rstrip("0").rstrip(".")
+    else:
+        s = f"{d:.3f}".rstrip("0").rstrip(".")
     if not s or s == "-0":
         s = "0"
     return f"{s}Kg" if com_unidade else s
@@ -313,47 +324,62 @@ def matricula_valida(matricula):
     return True
 
 
+def _invalidar_sessao_atual(request):
+    """
+    Revoga explicitamente o identificador e a versão de sessão/token do usuário atual
+    antes de descartar os cookies, garantindo que nenhum cookie ou token antigo continue válido.
+    """
+    try:
+        if hasattr(request, "session"):
+            uid = request.session.get("usuario")
+            nonce = request.session.get("session_nonce")
+            if nonce:
+                revogar_token_usuario(jti=nonce)
+            if uid:
+                Usuario.objects.filter(id=uid).update(session_version=F("session_version") + 1)
+            request.session.flush()
+    except Exception:
+        pass
+    try:
+        token_req = obter_token_requisicao(request)
+        if token_req:
+            revogar_token_usuario(token=token_req)
+    except Exception:
+        pass
+    if hasattr(request, "_cached_usuario"):
+        delattr(request, "_cached_usuario")
+
+
 def obter_token_requisicao(request):
-    """Extrai o token assinado da aba a partir de POST, GET ou cabeçalho HTTP."""
+    """
+    Extrai um eventual token assinado exclusivamente de cabeçalhos ou POST seguro.
+    Por segurança, nunca aceita token de autenticação via URL (query string GET).
+    """
     token = None
     if request.method == "POST":
         token = request.POST.get("_user_token")
     if not token:
-        token = request.GET.get("_user_token")
-    if not token:
         if hasattr(request, "headers"):
             token = request.headers.get("X-User-Token")
         if not token and hasattr(request, "META"):
-            token = request.META.get("HTTP_X_USER_TOKEN")
+            token = request.META.get("HTTP_X_USER_Token") or request.META.get("HTTP_X_USER_TOKEN")
     return token.strip() if isinstance(token, str) and token.strip() else None
-
-
-def anexar_token_em_url(url_str, token):
-    if not url_str or not token:
-        return url_str
-    try:
-        partes = urlsplit(url_str)
-        # Proteção contra Open Redirect: nunca anexa token de sessão a URLs externas
-        if partes.scheme or partes.netloc:
-            return "/"
-        if partes.path in ("/", "/sair/", "/cadastro/"):
-            return url_str
-        query_params = dict(parse_qsl(partes.query, keep_blank_values=True))
-        query_params["_user_token"] = token
-        nova_query = urlencode(query_params)
-        return urlunsplit(("", "", partes.path, nova_query, partes.fragment))
-    except Exception:
-        return url_str
 
 
 def redirect_autenticado(request, destino, *args, **kwargs):
     """
-    Redireciona preservando o `_user_token` da aba ativa quando presente na requisição,
-    evitando que um redirect (302 -> GET) caia no cookie compartilhado de outra aba,
-    e vincula a notificação recém-emitida exclusivamente ao caminho de destino do redirect.
+    Redireciona de forma segura sem expor nenhum token na URL e vincula a notificação
+    recém-emitida exclusivamente ao caminho de destino do redirect.
     """
     response = redirect(destino, *args, **kwargs)
     if "Location" in response:
+        try:
+            partes_loc = urlsplit(response["Location"])
+            if partes_loc.scheme or partes_loc.netloc:
+                response["Location"] = "/"
+                return response
+        except Exception:
+            pass
         msg_obj = getattr(request, "_ultima_mensagem_obj", None)
         if msg_obj is not None:
             try:
@@ -367,9 +393,6 @@ def redirect_autenticado(request, destino, *args, **kwargs):
                             storage.modified = True
             except Exception:
                 pass
-        token = getattr(request, "_explicit_user_token", None)
-        if token:
-            response["Location"] = anexar_token_em_url(response["Location"], token)
     return response
 
 
@@ -378,27 +401,30 @@ def usuario_logado(request):
         return request._cached_usuario
 
     usuario_id = None
-    token = obter_token_requisicao(request)
-    if token:
-        uid_token = decodificar_token_usuario(token)
-        if uid_token:
-            usuario_id = uid_token
-            request._explicit_user_token = gerar_token_usuario(usuario_id)
-            request._resolved_usuario_id = usuario_id
-            try:
-                if "usuario" not in request.session:
-                    request.session["usuario"] = usuario_id
-                    request.session.modified = True
-            except Exception:
-                pass
+    session_ver = None
+    session_nonce = None
+
+    try:
+        usuario_id = request.session.get("usuario")
+        session_ver = request.session.get("session_ver")
+        session_nonce = request.session.get("session_nonce")
+    except Exception:
+        usuario_id = None
+
+    if session_nonce and cache.get(f"revoked_jti:{session_nonce}"):
+        try:
+            request.session.flush()
+        except Exception:
+            pass
+        request._cached_usuario = None
+        return None
 
     if not usuario_id:
-        try:
-            usuario_id = request.session.get("usuario")
-            if usuario_id:
-                request._resolved_usuario_id = usuario_id
-        except Exception:
-            usuario_id = None
+        token = obter_token_requisicao(request)
+        if token:
+            uid_token = decodificar_token_usuario(token)
+            if uid_token:
+                usuario_id = uid_token
 
     if not usuario_id:
         request._cached_usuario = None
@@ -407,6 +433,13 @@ def usuario_logado(request):
     try:
         u = Usuario.objects.get(id=usuario_id)
         if not u.aprovado and not u.eh_administrador():
+            request._cached_usuario = None
+            return None
+        if session_ver is not None and int(session_ver) != int(u.session_version):
+            try:
+                request.session.flush()
+            except Exception:
+                pass
             request._cached_usuario = None
             return None
         request._cached_usuario = u
@@ -424,15 +457,26 @@ def usuario_logado(request):
 def verificar_suap_matricula(request):
     """
     Endpoint AJAX para identificar a diretoria, curso e nome do aluno a partir da matrícula
-    (e opcionalmente senha via POST) do SUAP durante o preenchimento do cadastro.
+    e senha (ou via classificação de dados obtidos no cliente direto do SUAP) no cadastro.
     """
     matricula = (request.POST.get("matricula") or request.GET.get("matricula") or "").strip()[:30]
-    # Nunca aceita senha via query string (GET) para evitar vazamento em logs de acesso
     senha = request.POST.get("senha") or ""
-    if not matricula:
-        return JsonResponse({"diretoria": None, "curso": "", "nome": ""})
+    suap_curso_cli = (request.POST.get("suap_curso") or "").strip()[:200]
+    suap_dir_cli = (request.POST.get("suap_diretoria") or "").strip()[:100]
+    suap_extras_cli = (request.POST.get("suap_extras") or "").strip()[:1000]
+    suap_nome_cli = (request.POST.get("suap_nome") or "").strip()[:100]
+    suap_verificado_cli = request.POST.get("suap_verificado_cliente") == "1"
 
-    if _verificar_bloqueio_tentativas(request, "suap_check", matricula, limite=15):
+    if not matricula:
+        return JsonResponse({
+            "diretoria": None,
+            "curso": "",
+            "nome": "",
+            "campus": "",
+            "permitir_escolha_manual": False,
+        })
+
+    if _verificar_bloqueio_tentativas(request, "suap_check", matricula, limite=20):
         return JsonResponse({
             "autenticado_suap": False,
             "credenciais_invalidas": False,
@@ -440,35 +484,69 @@ def verificar_suap_matricula(request):
             "nome": "",
             "diretoria": None,
             "curso": "",
+            "campus": "",
+            "permitir_escolha_manual": False,
         }, status=429)
 
     diretoria_mat, curso_mat = identificar_diretoria_e_curso(matricula)
-    if senha and request.method == "POST":
-        dados_suap = consultar_api_suap(matricula, senha, timeout=3.5)
+    if request.method == "POST" and (senha or suap_verificado_cli):
+        dados_suap = consultar_api_suap(matricula, senha, timeout=8.0) if senha else {"offline": True}
         if dados_suap.get("credenciais_invalidas"):
             _registrar_tentativa_falha(request, "suap_check", matricula, janela_segundos=180)
+
+        aut_suap = bool(dados_suap.get("autenticado_suap"))
+        eh_offline = bool(dados_suap.get("offline"))
+        dir_resolvida = dados_suap.get("diretoria")
+        curso_resolvido = dados_suap.get("curso") or ""
+        nome_resolvido = dados_suap.get("nome") or ""
+
+        if eh_offline and suap_verificado_cli:
+            aut_suap = True
+            eh_offline = False
+            dir_cli, curso_cli = identificar_diretoria_e_curso(
+                matricula,
+                curso_suap=suap_curso_cli,
+                extras_texto=suap_extras_cli,
+                diretoria_explicita=suap_dir_cli,
+            )
+            dir_resolvida = dir_cli or dir_resolvida or diretoria_mat
+            curso_resolvido = curso_cli or suap_curso_cli or curso_mat
+            nome_resolvido = suap_nome_cli or nome_resolvido
+        else:
+            dir_resolvida = dir_resolvida or diretoria_mat
+            curso_resolvido = curso_resolvido or curso_mat
+
+        permitir_manual = bool((aut_suap and not dir_resolvida) or (eh_offline and not dir_resolvida))
         return JsonResponse({
-            "autenticado_suap": bool(dados_suap.get("autenticado_suap")),
+            "autenticado_suap": aut_suap,
             "credenciais_invalidas": bool(dados_suap.get("credenciais_invalidas")),
+            "offline": eh_offline,
             "erro": dados_suap.get("erro") or "",
-            "nome": dados_suap.get("nome") or "",
-            "diretoria": dados_suap.get("diretoria") or diretoria_mat,
-            "curso": dados_suap.get("curso") or curso_mat,
+            "matricula_oficial": dados_suap.get("matricula_oficial") or matricula,
+            "nome": nome_resolvido,
+            "diretoria": dir_resolvida,
+            "curso": curso_resolvido,
+            "campus": dados_suap.get("campus") or "",
+            "permitir_escolha_manual": permitir_manual,
         })
 
     return JsonResponse({
         "autenticado_suap": False,
         "credenciais_invalidas": False,
+        "offline": False,
         "erro": "",
+        "matricula_oficial": matricula,
         "nome": "",
         "diretoria": diretoria_mat,
         "curso": curso_mat,
+        "campus": "",
+        "permitir_escolha_manual": False,
     })
 
 
 def cadastro(request):
     limpar_mensagens(request)
-    contexto = {"erro": None, "form": {}}
+    contexto = {"erro": None, "form": {}, "permitir_escolha_manual": False}
     diretoria_param = request.GET.get("diretoria", "").strip().capitalize()
     if diretoria_param in DIRETORIAS:
         contexto["form"]["diretoria"] = diretoria_param
@@ -479,9 +557,17 @@ def cadastro(request):
         diretoria = request.POST.get("diretoria", "").strip()
         areas_selecionadas = [a for a in request.POST.getlist("areas") if a in TODAS_AREAS]
 
+        suap_verificado_cli = request.POST.get("suap_verificado_cliente") == "1"
+        suap_nome_cli = request.POST.get("suap_nome", "").strip()[:100]
+        suap_curso_cli = request.POST.get("suap_curso", "").strip()[:200]
+        suap_dir_cli = request.POST.get("suap_diretoria", "").strip()[:100]
+        suap_extras_cli = request.POST.get("suap_extras", "").strip()[:1000]
+
         erro = None
+        permitir_escolha_manual = False
         dados_suap = {}
         diretoria_suap, curso_suap = identificar_diretoria_e_curso(matricula)
+        matricula_final = matricula
 
         if _verificar_bloqueio_tentativas(request, "cadastro", matricula, limite=10):
             erro = "Muitas tentativas de cadastro em sequência. Aguarde alguns minutos e tente novamente."
@@ -494,26 +580,63 @@ def cadastro(request):
         elif matricula.lower() in MATRICULAS_ADM_FIXAS:
             erro = "Essa matrícula é reservada para a administração."
         elif not senha:
-            erro = "Informe a sua senha do SUAP."
+            erro = "Informe a sua senha."
         elif len(senha) < 6:
             erro = "A senha deve conter no mínimo 6 caracteres."
         elif len(senha) > 128:
             erro = "A senha informada excede o limite permitido."
         elif Usuario.objects.filter(matricula__iexact=matricula).exists():
             erro = "Essa matrícula já está cadastrada."
-        elif diretoria_suap and diretoria and diretoria != diretoria_suap:
-            detalhe_curso = f" ({curso_suap})" if curso_suap else ""
-            erro = (
-                f"A matrícula {matricula} pertence à diretoria {diretoria_suap}{detalhe_curso}, "
-                f"e não à diretoria {diretoria} selecionada."
-            )
-            diretoria = diretoria_suap
         else:
-            dados_suap = consultar_api_suap(matricula, senha)
-            if dados_suap.get("credenciais_invalidas"):
+            # Sempre prioriza consulta direta à API do SUAP no servidor; se proxy bloquear, usa verificação client-side CORS
+            dados_suap = consultar_api_suap(matricula, senha, timeout=8.0)
+            if dados_suap.get("offline") and suap_verificado_cli:
+                dir_cli, curso_cli = identificar_diretoria_e_curso(
+                    matricula,
+                    curso_suap=suap_curso_cli,
+                    extras_texto=suap_extras_cli,
+                    diretoria_explicita=suap_dir_cli,
+                )
+                dados_suap = {
+                    "autenticado_suap": True,
+                    "credenciais_invalidas": False,
+                    "offline": False,
+                    "matricula_oficial": matricula,
+                    "nome": suap_nome_cli,
+                    "diretoria": dir_cli,
+                    "curso": curso_cli or suap_curso_cli,
+                    "campus": "",
+                }
+
+            mat_api = (dados_suap.get("matricula_oficial") or "").strip()[:20]
+            if mat_api:
+                matricula_final = mat_api
+                if matricula_final.lower() != matricula.lower() and Usuario.objects.filter(matricula__iexact=matricula_final).exists():
+                    erro = "Essa matrícula já está cadastrada."
+
+            if erro is None and dados_suap.get("credenciais_invalidas"):
                 _registrar_tentativa_falha(request, "cadastro", matricula)
-                erro = dados_suap.get("erro") or "Matrícula ou senha do SUAP inválida."
-            else:
+                erro = dados_suap.get("erro") or "Matrícula ou senha do SUAP incorreta."
+            elif erro is None and dados_suap.get("autenticado_suap"):
+                diretoria_api = dados_suap.get("diretoria")
+                curso_api = (dados_suap.get("curso") or "").strip()
+                if curso_api:
+                    curso_suap = curso_api
+                if diretoria_api in DIRETORIAS:
+                    diretoria = diretoria_api
+                elif diretoria_suap in DIRETORIAS:
+                    diretoria = diretoria_suap
+                elif diretoria in DIRETORIAS:
+                    pass
+                else:
+                    permitir_escolha_manual = True
+                    detalhe = f" ({curso_api})" if curso_api else ""
+                    erro = (
+                        f"Conta do SUAP autenticada{detalhe}, mas não foi possível vincular automaticamente o curso "
+                        "a uma diretoria. Selecione abaixo sua diretoria."
+                    )
+            elif erro is None:
+                # Modo offline / ambiente sem acesso externo ao SUAP
                 if dados_suap.get("diretoria"):
                     diretoria_suap = dados_suap["diretoria"]
                 if dados_suap.get("curso"):
@@ -523,34 +646,36 @@ def cadastro(request):
                     if diretoria and diretoria != diretoria_suap:
                         detalhe_curso = f" ({curso_suap})" if curso_suap else ""
                         erro = (
-                            f"A matrícula {matricula} pertence à diretoria {diretoria_suap}{detalhe_curso}, "
+                            f"A matrícula {matricula_final} pertence à diretoria {diretoria_suap}{detalhe_curso}, "
                             f"e não à diretoria {diretoria} selecionada."
                         )
                         diretoria = diretoria_suap
                     else:
                         diretoria = diretoria_suap
                 elif diretoria not in DIRETORIAS:
-                    erro = "Não foi possível identificar a diretoria pela matrícula informada. Verifique sua matrícula do SUAP."
+                    permitir_escolha_manual = True
+                    erro = "Não foi possível validar sua diretoria pelo SUAP. Selecione sua diretoria abaixo."
 
-        nome_final = nome or (dados_suap.get("nome") or "").strip() or matricula
+        nome_final = nome or (dados_suap.get("nome") or "").strip() or matricula_final
+        curso_final = (dados_suap.get("curso") or curso_suap or "").strip()
         contexto["form"] = {
             "nome": nome or (dados_suap.get("nome") or "").strip(),
-            "matricula": matricula,
+            "matricula": matricula_final,
             "diretoria": diretoria,
+            "curso": curso_final,
             "areas": areas_selecionadas,
         }
+        contexto["permitir_escolha_manual"] = permitir_escolha_manual
 
         if erro is None:
             try:
                 with transaction.atomic():
-                    # Como a diretoria é identificada automaticamente pela matrícula do SUAP,
-                    # o membro já entra aprovado na sua diretoria; apenas as áreas solicitadas
-                    # aguardam aprovação dos respectivos sub-líderes/líder.
                     novo_usuario = Usuario.objects.create(
                         nome=nome_final[:100],
-                        matricula=matricula,
+                        matricula=matricula_final,
                         senha=make_password(senha),
                         diretoria=diretoria,
+                        curso=curso_final[:150],
                         areas="",
                         aprovado=True,
                     )
@@ -561,7 +686,6 @@ def cadastro(request):
                                 area=area_nome,
                             )
             except IntegrityError:
-                # Cadastro simultâneo com a mesma matrícula
                 erro = "Essa matrícula já está cadastrada."
             else:
                 _limpar_tentativas_falhas(request, "cadastro", matricula)
@@ -575,9 +699,7 @@ def login_usuario(request):
     limpar_mensagens(request)
     garantir_lideres_diretorias()
     if request.method == "GET" and (request.GET.get("trocar") or request.GET.get("sair")):
-        request.session.flush()
-        if hasattr(request, "_cached_usuario"):
-            delattr(request, "_cached_usuario")
+        _invalidar_sessao_atual(request)
 
     erro = None
     if request.method == "POST":
@@ -611,12 +733,20 @@ def login_usuario(request):
             else:
                 senha_valida = check_password(senha, usuario.senha)
                 if not senha_valida and not usuario.eh_administrador():
-                    dados_suap = consultar_api_suap(matricula, senha)
+                    dados_suap = consultar_api_suap(matricula, senha, timeout=6.0)
                     if dados_suap.get("autenticado_suap"):
                         usuario.senha = make_password(senha)
+                        campos_sync = ["senha"]
                         if dados_suap.get("nome") and (not usuario.nome or usuario.nome == usuario.matricula):
                             usuario.nome = dados_suap["nome"][:100]
-                        usuario.save(update_fields=["senha", "nome"])
+                            campos_sync.append("nome")
+                        if dados_suap.get("curso") and not usuario.curso:
+                            usuario.curso = dados_suap["curso"][:150]
+                            campos_sync.append("curso")
+                        if dados_suap.get("diretoria") in DIRETORIAS and not usuario.diretoria:
+                            usuario.diretoria = dados_suap["diretoria"]
+                            campos_sync.append("diretoria")
+                        usuario.save(update_fields=campos_sync)
                         senha_valida = True
 
                 if not senha_valida:
@@ -628,13 +758,13 @@ def login_usuario(request):
                     _limpar_tentativas_falhas(request, "login", matricula)
                     limpar_mensagens(request)
                     request.session.flush()
-                    request.session["usuario"] = usuario.id
                     request.session.cycle_key()
+                    request.session["usuario"] = usuario.id
+                    request.session["session_ver"] = usuario.session_version
+                    request.session["session_nonce"] = uuid.uuid4().hex
                     request.session.modified = True
                     request._cached_usuario = usuario
                     request._resolved_usuario_id = usuario.id
-                    if request.POST.get("_from_browser") == "1":
-                        request._explicit_user_token = gerar_token_usuario(usuario.id)
                     return redirect_autenticado(request, "feed")
     return render(request, "login.html", {"erro": erro, "matricula": matricula if request.method == "POST" else ""})
 
@@ -644,19 +774,28 @@ def feed(request):
     if usuario is None:
         return redirect("login")
     if usuario.diretoria in DIRETORIAS:
-        publicacoes = (
+        publicacoes = list(
             Publicacao.objects.filter(usuario__diretoria__iexact=usuario.diretoria)
-            .select_related("usuario")
+            .select_related("usuario", "resposta_a", "resposta_a__usuario")
             .prefetch_related("curtidas")
             .order_by("-data")
         )
     else:
-        publicacoes = Publicacao.objects.select_related("usuario").prefetch_related("curtidas").order_by("-data")
-    curtidas = Curtida.objects.filter(usuario=usuario).values_list("publicacao_id", flat=True)
+        publicacoes = list(
+            Publicacao.objects.select_related("usuario", "resposta_a", "resposta_a__usuario")
+            .prefetch_related("curtidas")
+            .order_by("-data")
+        )
+    curtidas = set(Curtida.objects.filter(usuario=usuario).values_list("publicacao_id", flat=True))
+    respostas_para_mim = [
+        p for p in publicacoes
+        if p.resposta_a_id and p.resposta_a and p.resposta_a.usuario_id == usuario.id and p.usuario_id != usuario.id
+    ][:5]
     return render(request, "feed.html", {
         "usuario": usuario,
         "publicacoes": publicacoes,
-        "curtidas": curtidas
+        "curtidas": curtidas,
+        "respostas_para_mim": respostas_para_mim,
     })
 
 
@@ -666,8 +805,16 @@ def publicar(request):
         return redirect("login")
     if request.method == "POST":
         texto = request.POST.get("texto", "").strip()
-        if not texto:
-            definir_mensagem(request, messages.error, "Digite uma mensagem antes de publicar no feed.")
+        imagem = request.FILES.get("imagem")
+        resposta_a_id = (request.POST.get("resposta_a") or "").strip()
+        resposta_a_obj = None
+        if resposta_a_id.isdigit():
+            cand = Publicacao.objects.filter(id=int(resposta_a_id)).select_related("usuario").first()
+            if cand and mesma_diretoria_usuarios(usuario, cand.usuario):
+                resposta_a_obj = cand
+
+        if not texto and not imagem:
+            definir_mensagem(request, messages.error, "Escreva uma mensagem ou adicione uma imagem antes de publicar.")
         elif len(texto) > LIMITE_CARACTERES_FEED:
             definir_mensagem(
                 request,
@@ -677,8 +824,18 @@ def publicar(request):
         elif _verificar_bloqueio_tentativas(request, "feed_post", str(usuario.id), limite=12):
             definir_mensagem(request, messages.error, "Você está publicando muito rápido. Aguarde um minuto antes de postar novamente.")
         else:
+            if imagem:
+                img_ok, img_erro = validar_e_sanitizar_imagem(imagem)
+                if not img_ok:
+                    definir_mensagem(request, messages.error, img_erro)
+                    return redirect_autenticado(request, "feed")
             _registrar_tentativa_falha(request, "feed_post", str(usuario.id), janela_segundos=60)
-            Publicacao.objects.create(usuario=usuario, texto=texto)
+            Publicacao.objects.create(
+                usuario=usuario,
+                texto=texto,
+                imagem=imagem if imagem else None,
+                resposta_a=resposta_a_obj,
+            )
     return redirect_autenticado(request, "feed")
 
 
@@ -692,7 +849,7 @@ def editar_publicacao(request, id_publicacao):
             definir_mensagem(request, messages.error, "Você só pode editar as suas próprias publicações.")
             return redirect_autenticado(request, "feed")
         texto = request.POST.get("texto", "").strip()
-        if not texto:
+        if not texto and not (publicacao.imagem and publicacao.imagem.name):
             definir_mensagem(request, messages.error, "O texto da publicação não pode ficar vazio.")
         elif len(texto) > LIMITE_CARACTERES_FEED:
             definir_mensagem(
@@ -796,10 +953,15 @@ def painel_administrativo(request):
         pendentes = filtrar_qs_diretoria(
             Usuario.objects.filter(aprovado=False), usuario, "diretoria"
         ).order_by("matricula")
-        tarefas = filtrar_qs_diretoria(
-            Tarefa.objects.filter(encerrada=False), usuario, "criada_por__diretoria"
+        tarefas_base_adm = filtrar_qs_diretoria(
+            Tarefa.objects.all(), usuario, "criada_por__diretoria"
+        ).prefetch_related("conclusoes", "conclusoes__usuario")
+        tarefas = tarefas_base_adm.filter(encerrada=False).annotate(
+            total_concl=Count("conclusoes", filter=~Q(conclusoes__usuario=F("criada_por")), distinct=True)
         ).order_by("-criada_em")
-        tarefas_concluidas = Tarefa.objects.none()
+        tarefas_concluidas = tarefas_base_adm.filter(encerrada=True).annotate(
+            total_concl=Count("conclusoes", filter=~Q(conclusoes__usuario=F("criada_por")), distinct=True)
+        ).order_by("-criada_em")
         solicitacoes_area = filtrar_qs_diretoria(
             SolicitacaoArea.objects.select_related("usuario"), usuario, "usuario__diretoria"
         ).order_by("area", "solicitado_em")
@@ -822,21 +984,56 @@ def painel_administrativo(request):
     })
 
 
+def _serializar_membro_painel(membro, usuario_atual):
+    eh_admin_membro = membro.eh_administrador()
+    eh_admin_atual = usuario_atual.eh_administrador()
+    areas_lista = membro.get_areas_list()
+    if eh_admin_atual:
+        if eh_admin_membro:
+            subtitulo = f"{membro.matricula} • Líder Geral"
+        elif areas_lista:
+            subtitulo = f"{membro.matricula} • " + ", ".join(areas_lista)
+        else:
+            subtitulo = membro.matricula
+    else:
+        subtitulo = f"{membro.matricula} - {usuario_atual.sublider_de}"
+    curso = membro.curso_exibicao()
+    return {
+        "id": membro.id,
+        "matricula": membro.matricula,
+        "nome": membro.nome_exibicao(),
+        "inicial": membro.inicial_perfil(),
+        "foto_url": membro.foto.url if (membro.foto and membro.foto.name) else "",
+        "sub_lider": bool(membro.sub_lider),
+        "eh_admin": eh_admin_membro,
+        "subtitulo": subtitulo,
+        "busca": f"{membro.nome_exibicao()} {membro.matricula} {membro.diretoria} {curso} {' '.join(areas_lista)}",
+        "pode_remover_sublider": bool(membro.sub_lider and eh_admin_atual),
+        "pode_remover": bool(
+            (eh_admin_atual and not eh_admin_membro)
+            or (usuario_atual.sub_lider and not eh_admin_membro and membro.id != usuario_atual.id)
+        ),
+    }
+
+
 def stats_painel(request):
     usuario = usuario_logado(request)
     if usuario is None or not usuario.tem_acesso_painel():
         return JsonResponse({"erro": "Não autorizado."}, status=403)
     if usuario.sub_lider and not usuario.eh_administrador():
-        total_membros = len(obter_membros_da_area(usuario.sublider_de, diretoria=usuario.diretoria))
+        membros_lista_objs = obter_membros_da_area(usuario.sublider_de, diretoria=usuario.diretoria)
+        total_membros = len(membros_lista_objs)
         total_pendentes = filtrar_qs_diretoria(
             SolicitacaoArea.objects.filter(area=usuario.sublider_de),
             usuario,
             "usuario__diretoria",
         ).count()
     else:
-        total_membros = filtrar_qs_diretoria(
+        membros_qs = filtrar_qs_diretoria(
             Usuario.objects.filter(aprovado=True), usuario, "diretoria"
-        ).count()
+        ).order_by("matricula")
+        membros_lista_objs = list(membros_qs) if request.GET.get("com_membros") == "1" else []
+        total_membros = membros_qs.count()
         pendentes_membros = filtrar_qs_diretoria(
             Usuario.objects.filter(aprovado=False), usuario, "diretoria"
         ).count()
@@ -845,11 +1042,14 @@ def stats_painel(request):
         ).count()
         total_pendentes = pendentes_areas + pendentes_membros
     doacoes_formatado = obter_total_doacoes_kg_formatado(com_unidade=True, diretoria=usuario.diretoria)
-    return JsonResponse({
+    payload = {
         "membros": total_membros,
         "pendentes": total_pendentes,
         "doacoes": doacoes_formatado,
-    })
+    }
+    if request.GET.get("com_membros") == "1":
+        payload["membros_lista"] = [_serializar_membro_painel(m, usuario) for m in membros_lista_objs]
+    return JsonResponse(payload)
 
 
 def registrar_doacao(request):
@@ -867,16 +1067,25 @@ def registrar_doacao(request):
             return redirect_autenticado(request, "painel_administrativo")
         return redirect_autenticado(request, "feed")
 
+    matricula_digitada = (request.POST.get("matricula") or "").strip()
     membro_id = request.POST.get("membro_id")
-    if not membro_id:
-        definir_mensagem(request, messages.error, "Selecione um membro para receber a doação.")
+
+    if not matricula_digitada and not membro_id:
+        definir_mensagem(request, messages.error, "Digite a matrícula do membro para registrar a doação.")
         return redirect_autenticado(request, "painel_administrativo")
 
-    try:
-        membro = Usuario.objects.get(id=membro_id)
-    except (Usuario.DoesNotExist, ValueError):
-        definir_mensagem(request, messages.error, "Membro selecionado não encontrado.")
-        return redirect_autenticado(request, "painel_administrativo")
+    membro = None
+    if matricula_digitada:
+        membro = Usuario.objects.filter(matricula__iexact=matricula_digitada).first()
+        if not membro:
+            definir_mensagem(request, messages.error, f"Nenhum membro encontrado com a matrícula \"{matricula_digitada}\".")
+            return redirect_autenticado(request, "painel_administrativo")
+    else:
+        try:
+            membro = Usuario.objects.get(id=membro_id)
+        except (Usuario.DoesNotExist, ValueError):
+            definir_mensagem(request, messages.error, "Membro selecionado não encontrado.")
+            return redirect_autenticado(request, "painel_administrativo")
 
     if not membro.aprovado or membro.eh_administrador() or not mesma_diretoria_usuarios(usuario, membro):
         definir_mensagem(request, messages.error, "Apenas membros aprovados da sua diretoria podem receber doações.")
@@ -952,7 +1161,7 @@ def definir_meta_tampinhas(request):
         definir_mensagem(request, messages.error, "Informe um valor numérico válido para a meta em Kg.")
         return redirect_autenticado(request, "painel_administrativo")
 
-    if nova_meta <= Decimal("0") or nova_meta > Decimal("100000"):
+    if not nova_meta.is_finite() or nova_meta <= Decimal("0") or nova_meta > Decimal("100000"):
         definir_mensagem(request, messages.error, "A meta deve ser um valor positivo entre 0,1 Kg e 100.000 Kg.")
         return redirect_autenticado(request, "painel_administrativo")
 
@@ -987,7 +1196,7 @@ def tampinhas(request):
         return redirect("login")
 
     meta_kg = obter_meta_tampinhas_kg(diretoria=usuario.diretoria)
-    meta_kg_formatada = formatar_kg(meta_kg, is_gramas=False)
+    meta_kg_formatada = formatar_kg(meta_kg, is_gramas=False, casas=1)
 
     qs_doacoes = filtrar_qs_diretoria(
         DoacaoTampinhas.objects.filter(usuario__aprovado=True).exclude(usuario__matricula="admin"),
@@ -1007,10 +1216,7 @@ def tampinhas(request):
     else:
         total_geral_d = Decimal(total_gramas_geral) / Decimal("1000")
 
-    s_tot = f"{total_geral_d:.3f}".rstrip("0").rstrip(".")
-    if not s_tot or s_tot == "-0":
-        s_tot = "0"
-    total_geral_kg = f"{s_tot}Kg"
+    total_geral_kg = formatar_kg(total_geral_d, is_gramas=False, casas=1)
 
     if meta_kg > 0:
         progresso_porcentagem = min(100.0, float((total_geral_d / meta_kg) * Decimal("100")))
@@ -1034,15 +1240,12 @@ def tampinhas(request):
 
         if tot_g and tot_g > 0:
             d_membro = Decimal(tot_g) / Decimal("1000")
-            s_membro = f"{d_membro:.3f}".rstrip("0").rstrip(".")
-            if not s_membro or s_membro == "-0":
-                s_membro = "0"
             ranking.append({
                 "usuario": m,
                 "matricula": m.matricula,
                 "total_gramas": tot_g,
                 "total_kg": d_membro,
-                "total_formatado": f"{s_membro}Kg",
+                "total_formatado": formatar_kg(tot_g, is_gramas=True, casas=1),
             })
 
     # Ordenação decrescente de doações, desempate por matrícula crescente
@@ -1074,6 +1277,69 @@ def tampinhas(request):
     })
 
 
+def _aplicar_dados_tarefa_post(request, tarefa):
+    """Valida e preenche os campos de uma Tarefa em criação ou edição com tratamento seguro."""
+    tipo = request.POST.get("tipo", tarefa.tipo or "fixa")
+    titulo = request.POST.get("titulo", "").strip()
+    descricao = request.POST.get("descricao", "").replace("\r\n", "\n").rstrip()
+    try:
+        limite = int(request.POST.get("limite_participantes", 2))
+    except (TypeError, ValueError):
+        limite = 0
+
+    if not titulo:
+        return "Informe o título da tarefa."
+    if len(titulo) > LIMITE_TITULO_TAREFA:
+        return f"O título da tarefa deve ter no máximo {LIMITE_TITULO_TAREFA} caracteres."
+    if len(descricao) > LIMITE_DESCRICAO_TAREFA:
+        return f"A descrição da tarefa excede o limite de {LIMITE_DESCRICAO_TAREFA} caracteres."
+    if tipo not in {"fixa", "prolongada"}:
+        return "Selecione um tipo de tarefa válido (Rápida ou Prolongada)."
+    if limite < 1:
+        return "O limite de participantes deve ser de pelo menos 1 pessoa."
+
+    tarefa.titulo = titulo
+    tarefa.tipo = tipo
+    tarefa.descricao = descricao
+    tarefa.limite_participantes = limite
+
+    if tipo == "fixa":
+        data_raw = (request.POST.get("data") or "").strip()
+        hora_raw = (request.POST.get("horario") or "").strip()
+        data_obj = parse_date(data_raw) if data_raw else None
+        hora_obj = parse_time(hora_raw) if hora_raw else None
+        if data_raw and data_obj is None:
+            return "Informe uma data válida para a tarefa."
+        if hora_raw and hora_obj is None:
+            return "Informe um horário válido para a tarefa."
+        tarefa.data = data_obj
+        tarefa.horario = hora_obj
+        tarefa.data_inicio = None
+        tarefa.data_fim = None
+    else:
+        di_raw = (request.POST.get("data_inicio") or "").strip()
+        df_raw = (request.POST.get("data_fim") or "").strip()
+        di_obj = parse_date(di_raw) if di_raw else None
+        df_obj = parse_date(df_raw) if df_raw else None
+        if di_raw and di_obj is None:
+            return "Informe uma data inicial válida para a tarefa."
+        if df_raw and df_obj is None:
+            return "Informe um prazo final válido para a tarefa."
+        if di_obj and df_obj and df_obj < di_obj:
+            return "A data de término (prazo) não pode ser anterior à data inicial."
+        tarefa.data_inicio = di_obj
+        tarefa.data_fim = df_obj
+        tarefa.data = None
+        tarefa.horario = None
+
+    if "imagem" in request.FILES:
+        img_ok, img_erro = validar_e_sanitizar_imagem(request.FILES["imagem"])
+        if not img_ok:
+            return img_erro
+        tarefa.imagem = request.FILES["imagem"]
+    return None
+
+
 def criar_tarefa(request):
     usuario = usuario_logado(request)
     if usuario is None:
@@ -1083,53 +1349,18 @@ def criar_tarefa(request):
             definir_mensagem(request, messages.error, "Apenas o líder ou os sub-líderes podem criar tarefas.")
         return redirect_autenticado(request, "painel_administrativo")
     if request.method == "POST":
-        tipo = request.POST.get("tipo", "fixa")
-        titulo = request.POST.get("titulo", "").strip()
-        try:
-            limite = int(request.POST.get("limite_participantes", 2))
-        except (TypeError, ValueError):
-            limite = 0
-
-        if not titulo:
-            definir_mensagem(request, messages.error, "Informe o título da tarefa.")
-            return redirect_autenticado(request, "painel_administrativo")
-        if len(titulo) > 100:
-            definir_mensagem(request, messages.error, "O título da tarefa deve ter no máximo 100 caracteres.")
-            return redirect_autenticado(request, "painel_administrativo")
-        if tipo not in {"fixa", "prolongada"}:
-            definir_mensagem(request, messages.error, "Selecione um tipo de tarefa válido (Rápida ou Prolongada).")
-            return redirect_autenticado(request, "painel_administrativo")
-        if limite < 1:
-            definir_mensagem(request, messages.error, "O limite de participantes deve ser de pelo menos 1 pessoa.")
-            return redirect_autenticado(request, "painel_administrativo")
-
         area_tarefa = (usuario.sublider_de or request.POST.get("area", "") or "Cenário").strip()
-        tarefa = Tarefa(
-            titulo=titulo,
-            tipo=tipo,
-            descricao=request.POST.get("descricao", "").strip(),
-            limite_participantes=limite,
-            criada_por=usuario,
-            area=area_tarefa
-        )
-        if tipo == "fixa":
-            tarefa.data = request.POST.get("data") or None
-            tarefa.horario = request.POST.get("horario") or None
-        else:
-            tarefa.data_inicio = request.POST.get("data_inicio") or None
-            tarefa.data_fim = request.POST.get("data_fim") or None
-            if tarefa.data_inicio and tarefa.data_fim and tarefa.data_fim < tarefa.data_inicio:
-                definir_mensagem(request, messages.error, "A data de término (prazo) não pode ser anterior à data inicial.")
-                return redirect_autenticado(request, "painel_administrativo")
-        if "imagem" in request.FILES:
-            img_ok, img_erro = validar_e_sanitizar_imagem(request.FILES["imagem"])
-            if not img_ok:
-                definir_mensagem(request, messages.error, img_erro)
-                return redirect_autenticado(request, "painel_administrativo")
-            tarefa.imagem = request.FILES["imagem"]
+        if area_tarefa not in TODAS_AREAS:
+            definir_mensagem(request, messages.error, "Área da tarefa inválida.")
+            return redirect_autenticado(request, "painel_administrativo")
+        tarefa = Tarefa(criada_por=usuario, area=area_tarefa)
+        erro_tarefa = _aplicar_dados_tarefa_post(request, tarefa)
+        if erro_tarefa:
+            definir_mensagem(request, messages.error, erro_tarefa)
+            return redirect_autenticado(request, "painel_administrativo")
         tarefa.save()
         ParticipacaoTarefa.objects.get_or_create(usuario=usuario, tarefa=tarefa)
-        definir_mensagem(request, messages.success, f"Tarefa \"{titulo}\" criada com sucesso!")
+        definir_mensagem(request, messages.success, f"Tarefa \"{tarefa.titulo}\" criada com sucesso!")
     return redirect_autenticado(request, "painel_administrativo")
 
 
@@ -1148,51 +1379,12 @@ def editar_tarefa(request, id_tarefa):
         definir_mensagem(request, messages.error, "Você não possui permissão para editar tarefas de outra diretoria.")
         return redirect_autenticado(request, "painel_administrativo")
     if request.method == "POST":
-        tipo = request.POST.get("tipo", tarefa.tipo)
-        titulo = request.POST.get("titulo", "").strip()
-        try:
-            limite = int(request.POST.get("limite_participantes", 2))
-        except (TypeError, ValueError):
-            limite = 0
-
-        if not titulo:
-            definir_mensagem(request, messages.error, "Informe o título da tarefa.")
+        erro_tarefa = _aplicar_dados_tarefa_post(request, tarefa)
+        if erro_tarefa:
+            definir_mensagem(request, messages.error, erro_tarefa)
             return redirect_autenticado(request, "painel_administrativo")
-        if len(titulo) > 100:
-            definir_mensagem(request, messages.error, "O título da tarefa deve ter no máximo 100 caracteres.")
-            return redirect_autenticado(request, "painel_administrativo")
-        if tipo not in {"fixa", "prolongada"}:
-            definir_mensagem(request, messages.error, "Selecione um tipo de tarefa válido (Rápida ou Prolongada).")
-            return redirect_autenticado(request, "painel_administrativo")
-        if limite < 1:
-            definir_mensagem(request, messages.error, "O limite de participantes deve ser de pelo menos 1 pessoa.")
-            return redirect_autenticado(request, "painel_administrativo")
-
-        tarefa.titulo = titulo
-        tarefa.tipo = tipo
-        tarefa.descricao = request.POST.get("descricao", "").strip()
-        tarefa.limite_participantes = limite
-        if tipo == "fixa":
-            tarefa.data = request.POST.get("data") or None
-            tarefa.horario = request.POST.get("horario") or None
-            tarefa.data_inicio = None
-            tarefa.data_fim = None
-        else:
-            tarefa.data_inicio = request.POST.get("data_inicio") or None
-            tarefa.data_fim = request.POST.get("data_fim") or None
-            tarefa.data = None
-            tarefa.horario = None
-            if tarefa.data_inicio and tarefa.data_fim and tarefa.data_fim < tarefa.data_inicio:
-                definir_mensagem(request, messages.error, "A data de término (prazo) não pode ser anterior à data inicial.")
-                return redirect_autenticado(request, "painel_administrativo")
-        if "imagem" in request.FILES:
-            img_ok, img_erro = validar_e_sanitizar_imagem(request.FILES["imagem"])
-            if not img_ok:
-                definir_mensagem(request, messages.error, img_erro)
-                return redirect_autenticado(request, "painel_administrativo")
-            tarefa.imagem = request.FILES["imagem"]
         tarefa.save()
-        definir_mensagem(request, messages.success, f"Tarefa \"{titulo}\" atualizada com sucesso.")
+        definir_mensagem(request, messages.success, f"Tarefa \"{tarefa.titulo}\" atualizada com sucesso.")
         return redirect_autenticado(request, "painel_administrativo")
     return render(request, "editar_tarefa.html", {"usuario": usuario, "tarefa": tarefa})
 
@@ -1268,7 +1460,7 @@ def pagina_area(request, nome_area):
     usuario = usuario_logado(request)
     if usuario is None:
         return redirect("login")
-    if not usuario.tem_acesso_area(nome_area):
+    if nome_area not in TODAS_AREAS or not usuario.tem_acesso_area(nome_area):
         return redirect_autenticado(request, "feed")
     if request.GET.get("aba") == "chat":
         return chat_area(request, nome_area)
@@ -1302,7 +1494,7 @@ def chat_area(request, nome_area):
     if nome_area not in TODAS_AREAS or not usuario.tem_acesso_area(nome_area):
         return redirect_autenticado(request, "feed")
 
-    mensagens = (
+    mensagens = list(
         filtrar_qs_diretoria(
             MensagemArea.objects.filter(area=nome_area),
             usuario,
@@ -1317,11 +1509,16 @@ def chat_area(request, nome_area):
             usuario=usuario, mensagem__area=nome_area
         ).values_list("mensagem_id", flat=True)
     )
+    respostas_para_mim = [
+        m for m in mensagens
+        if m.resposta_a_id and m.resposta_a and m.resposta_a.usuario_id == usuario.id and m.usuario_id != usuario.id
+    ][:5]
     return render(request, "chat_area.html", {
         "usuario": usuario,
         "nome_area": nome_area,
         "mensagens": mensagens,
         "curtidas": curtidas,
+        "respostas_para_mim": respostas_para_mim,
         "area_ativa": nome_area,
         "pagina_ativa": "",
     })
@@ -1338,6 +1535,7 @@ def publicar_chat_area(request, nome_area):
 
     if request.method == "POST":
         texto = request.POST.get("texto", "").strip()
+        imagem = request.FILES.get("imagem")
         resposta_a_id = (request.POST.get("resposta_a") or "").strip()
         resposta_a_obj = None
         if resposta_a_id.isdigit():
@@ -1346,18 +1544,24 @@ def publicar_chat_area(request, nome_area):
                 usuario,
                 "usuario__diretoria",
             ).first()
-        if not texto:
-            definir_mensagem(request, messages.error, "Digite uma mensagem antes de publicar no chat da área.")
-        elif len(texto) > 300:
-            definir_mensagem(request, messages.error, f"A mensagem excede o limite de 300 caracteres ({len(texto)}/300).")
+        if not texto and not imagem:
+            definir_mensagem(request, messages.error, "Escreva uma mensagem ou anexe uma imagem antes de enviar.")
+        elif len(texto) > LIMITE_CARACTERES_CHAT:
+            definir_mensagem(request, messages.error, f"A mensagem excede o limite de {LIMITE_CARACTERES_CHAT} caracteres ({len(texto)}/{LIMITE_CARACTERES_CHAT}).")
         elif _verificar_bloqueio_tentativas(request, "chat_msg", str(usuario.id), limite=20):
             definir_mensagem(request, messages.error, "Você está enviando mensagens muito rapidamente. Aguarde alguns segundos.")
         else:
+            if imagem:
+                img_ok, img_erro = validar_e_sanitizar_imagem(imagem)
+                if not img_ok:
+                    definir_mensagem(request, messages.error, img_erro)
+                    return redirect_autenticado(request, "chat_area", nome_area=nome_area)
             _registrar_tentativa_falha(request, "chat_msg", str(usuario.id), janela_segundos=60)
             MensagemArea.objects.create(
                 usuario=usuario,
                 area=nome_area,
                 texto=texto,
+                imagem=imagem if imagem else None,
                 resposta_a=resposta_a_obj,
             )
     return redirect_autenticado(request, "chat_area", nome_area=nome_area)
@@ -1399,7 +1603,7 @@ def editar_mensagem_area(request, id_mensagem):
             definir_mensagem(request, messages.error, "Você só pode editar as suas próprias mensagens.")
             return redirect_autenticado(request, "chat_area", nome_area=nome_area)
         texto = request.POST.get("texto", "").strip()
-        if not texto:
+        if not texto and not (mensagem.imagem and mensagem.imagem.name):
             definir_mensagem(request, messages.error, "O texto da mensagem não pode ficar vazio.")
         elif len(texto) > LIMITE_CARACTERES_CHAT:
             definir_mensagem(
@@ -1463,6 +1667,7 @@ def participar_tarefa(request, id_tarefa):
             ParticipacaoTarefa.objects.create(usuario=usuario, tarefa=tarefa)
             definir_mensagem(request, messages.success, f"Você entrou na tarefa \"{tarefa.titulo}\"!")
         return redirect_autenticado(request, "pagina_area", nome_area=tarefa.area)
+    return redirect_autenticado(request, "feed")
 
 
 def cancelar_participacao(request, id_tarefa):
@@ -1481,6 +1686,7 @@ def cancelar_participacao(request, id_tarefa):
             ParticipacaoTarefa.objects.filter(usuario=usuario, tarefa=tarefa).delete()
             definir_mensagem(request, messages.info, f"Participação na tarefa \"{tarefa.titulo}\" cancelada.")
         return redirect_autenticado(request, "pagina_area", nome_area=tarefa.area)
+    return redirect_autenticado(request, "feed")
 
 
 # ─── Minhas Tarefas ───────────────────────────────────────────────────────────
@@ -1494,18 +1700,16 @@ def minhas_tarefas(request, nome_area=None, id_tarefa=None):
         if areas:
             return redirect_autenticado(request, "minhas_tarefas", nome_area=areas[0])
         return redirect_autenticado(request, "feed")
-    if not usuario.tem_acesso_area(nome_area):
+    if nome_area not in TODAS_AREAS or not usuario.tem_acesso_area(nome_area):
         return redirect_autenticado(request, "feed")
 
-    # Tarefas em que o usuário participa + tarefas que ele mesmo criou
-    # (o sub-líder já participa de todas as que cria).
     todas = filtrar_qs_diretoria(
         Tarefa.objects.filter(
             Q(participacoes__usuario=usuario) | Q(criada_por=usuario)
         ).filter(area=nome_area),
         usuario,
         "criada_por__diretoria",
-    ).distinct().order_by("-criada_em")
+    ).prefetch_related("conclusoes", "conclusoes__usuario").distinct().order_by("-criada_em")
 
     # IDs das tarefas que o usuário já concluiu
     ids_concluidos = set(ConclusaoTarefa.objects.filter(
@@ -1579,13 +1783,25 @@ def adicionar_observacao(request, nome_area, id_tarefa):
             definir_mensagem(request, messages.error, "Apenas participantes ou o responsável pela tarefa podem adicionar observações.")
             return redirect_autenticado(request, "minhas_tarefas", nome_area=nome_area)
         texto = request.POST.get("texto", "").strip()
-        if not texto:
-            definir_mensagem(request, messages.error, "Digite o texto da observação antes de enviar.")
+        imagem = request.FILES.get("imagem")
+        if not texto and not imagem:
+            definir_mensagem(request, messages.error, "Escreva uma observação ou anexe uma imagem antes de enviar.")
         elif len(texto) > 2000:
             definir_mensagem(request, messages.error, "A observação deve ter no máximo 2000 caracteres.")
         else:
-            ObservacaoTarefa.objects.create(usuario=usuario, tarefa=tarefa, texto=texto)
+            if imagem:
+                img_ok, img_erro = validar_e_sanitizar_imagem(imagem)
+                if not img_ok:
+                    definir_mensagem(request, messages.error, img_erro)
+                    return redirect_autenticado(request, f"/area/{nome_area}/minhas-tarefas/{id_tarefa}/?aba=observacao")
+            ObservacaoTarefa.objects.create(
+                usuario=usuario,
+                tarefa=tarefa,
+                texto=texto,
+                imagem=imagem if imagem else None,
+            )
         return redirect_autenticado(request, f"/area/{nome_area}/minhas-tarefas/{id_tarefa}/?aba=observacao")
+    return redirect_autenticado(request, f"/area/{nome_area}/minhas-tarefas/{id_tarefa}/?aba=observacao")
 
 
 def editar_observacao(request, nome_area, id_tarefa, id_obs):
@@ -1599,7 +1815,7 @@ def editar_observacao(request, nome_area, id_tarefa, id_obs):
             definir_mensagem(request, messages.error, "Você só pode editar as suas próprias observações.")
             return redirect_autenticado(request, f"/area/{nome_area}/minhas-tarefas/{id_tarefa}/?aba=observacao")
         texto = request.POST.get("texto", "").strip()
-        if not texto:
+        if not texto and not (obs.imagem and obs.imagem.name):
             definir_mensagem(request, messages.error, "O texto da observação não pode ficar vazio.")
         elif len(texto) > 2000:
             definir_mensagem(request, messages.error, "A observação deve ter no máximo 2000 caracteres.")
@@ -1655,6 +1871,7 @@ def concluir_tarefa_usuario(request, nome_area, id_tarefa):
 
         definir_mensagem(request, messages.success, "Conclusão da tarefa enviada com sucesso!")
         return redirect_autenticado(request, f"/area/{nome_area}/minhas-tarefas/{id_tarefa}/?aba=detalhes")
+    return redirect_autenticado(request, f"/area/{nome_area}/minhas-tarefas/{id_tarefa}/?aba=detalhes")
 
 
 # ─── Gerenciamento de áreas ──────────────────────────────────────────────────
@@ -1985,10 +2202,6 @@ def ver_conclusao(request, id_tarefa):
         nome_voltar = "Tarefas"
         aba_ativa_conclusao = "tarefas"
 
-    token_aba = getattr(request, "_explicit_user_token", None) or gerar_token_usuario(usuario.id)
-    if token_aba:
-        url_voltar = anexar_token_em_url(url_voltar, token_aba)
-
     return render(request, "ver_conclusao.html", {
         "usuario": usuario,
         "tarefa": tarefa,
@@ -2076,6 +2289,7 @@ def editar_perfil(request):
         nome = request.POST.get("nome", "").strip()
         bio = request.POST.get("bio", "").strip()
         remover_foto = request.POST.get("remover_foto") == "1"
+        remover_banner = request.POST.get("remover_banner") == "1"
 
         if not nome:
             definir_mensagem(request, messages.error, "O nome de exibição não pode ficar em branco.")
@@ -2093,12 +2307,22 @@ def editar_perfil(request):
                 definir_mensagem(request, messages.error, img_erro)
                 return redirect_autenticado(request, "meu_perfil")
 
+        if "banner" in request.FILES:
+            ban_ok, ban_erro = validar_e_sanitizar_imagem(request.FILES["banner"])
+            if not ban_ok:
+                definir_mensagem(request, messages.error, ban_erro)
+                return redirect_autenticado(request, "meu_perfil")
+
         usuario.nome = nome
         usuario.bio = bio
         if "foto" in request.FILES:
             usuario.foto = request.FILES["foto"]
         elif remover_foto:
             usuario.foto = None
+        if "banner" in request.FILES:
+            usuario.banner = request.FILES["banner"]
+        elif remover_banner:
+            usuario.banner = None
         usuario.save()
         definir_mensagem(request, messages.success, "Perfil atualizado com sucesso!")
 
@@ -2107,9 +2331,7 @@ def editar_perfil(request):
 
 def sair(request):
     limpar_mensagens(request)
-    request.session.flush()
-    if hasattr(request, "_cached_usuario"):
-        delattr(request, "_cached_usuario")
+    _invalidar_sessao_atual(request)
     from django.conf import settings as django_settings
     response = redirect("login")
     response.delete_cookie(django_settings.SESSION_COOKIE_NAME)

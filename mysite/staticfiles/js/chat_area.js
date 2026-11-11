@@ -132,6 +132,72 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
     });
+
+    // 4. Preview de imagem anexada no Chat de Área e validação texto-ou-imagem
+    var inputImgChat = document.getElementById("input-img-chat");
+    var previewAnexoChat = document.getElementById("preview-anexo-chat");
+    var imgPreviewChat = document.getElementById("img-preview-chat");
+    var nomePreviewChat = document.getElementById("nome-preview-chat");
+    var btnRemoverAnexoChat = document.getElementById("btn-remover-anexo-chat");
+    var formChatArea = document.getElementById("form-chat-area");
+    var objectUrlChat = null;
+
+    function limparAnexoChat() {
+        if (inputImgChat) inputImgChat.value = "";
+        if (previewAnexoChat) previewAnexoChat.classList.remove("ativo");
+        if (imgPreviewChat) imgPreviewChat.removeAttribute("src");
+        if (nomePreviewChat) nomePreviewChat.textContent = "";
+        if (objectUrlChat) {
+            URL.revokeObjectURL(objectUrlChat);
+            objectUrlChat = null;
+        }
+    }
+
+    if (inputImgChat) {
+        inputImgChat.addEventListener("change", function () {
+            var file = inputImgChat.files && inputImgChat.files[0];
+            if (!file) {
+                limparAnexoChat();
+                return;
+            }
+            if (objectUrlChat) URL.revokeObjectURL(objectUrlChat);
+            objectUrlChat = URL.createObjectURL(file);
+            if (imgPreviewChat) imgPreviewChat.src = objectUrlChat;
+            if (nomePreviewChat) nomePreviewChat.textContent = file.name;
+            if (previewAnexoChat) previewAnexoChat.classList.add("ativo");
+        });
+    }
+
+    if (btnRemoverAnexoChat) {
+        btnRemoverAnexoChat.addEventListener("click", limparAnexoChat);
+    }
+
+    if (formChatArea) {
+        formChatArea.addEventListener("submit", function (e) {
+            var temTexto = textareaChat && textareaChat.value.trim().length > 0;
+            var temImg = inputImgChat && inputImgChat.files && inputImgChat.files.length > 0;
+            if (!temTexto && !temImg) {
+                e.preventDefault();
+                if (typeof toast === "function") {
+                    toast("Escreva uma mensagem ou selecione uma imagem para enviar.", "erro");
+                }
+            }
+        });
+    }
+
+    // 5. Ir até mensagem citada / resposta recente com flash
+    document.querySelectorAll("[data-scroll-to]").forEach(function (trigger) {
+        trigger.addEventListener("click", function (e) {
+            if (e.target.closest("a")) return;
+            var targetId = trigger.getAttribute("data-scroll-to");
+            var alvo = targetId ? document.getElementById(targetId) : null;
+            if (!alvo) return;
+            alvo.scrollIntoView({ behavior: "smooth", block: "center" });
+            alvo.classList.remove("chat-card-flash-destaque");
+            void alvo.offsetWidth;
+            alvo.classList.add("chat-card-flash-destaque");
+        });
+    });
 });
 
 function getCookieChat(nome) {

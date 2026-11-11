@@ -7,8 +7,8 @@
     <title>{{ nome_area }} — Chat</title>
     <link rel="icon" type="image/png" href="{% static 'imgs/favicon.png' %}">
     <link rel="shortcut icon" href="{% static 'imgs/favicon.ico' %}">
-    <link rel="stylesheet" href="{% static 'css/base.css' %}">
-    <link rel="stylesheet" href="{% static 'css/area.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261111">
+    <link rel="stylesheet" href="{% static 'css/area.css' %}?v=20261111">
 </head>
 <body>
 
@@ -22,18 +22,17 @@
         </div>
 
         <div class="abas">
-            <a href="{% url 'chat_area' nome_area %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba ativa">Chat</a>
-            <a href="{% url 'pagina_area' nome_area %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba">Tarefas</a>
+            <a href="{% url 'chat_area' nome_area %}" class="aba ativa">Chat</a>
+            <a href="{% url 'pagina_area' nome_area %}" class="aba">Tarefas</a>
             {% if not usuario.eh_administrador %}
-            <a href="{% url 'minhas_tarefas' nome_area %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba">Minhas Tarefas</a>
+            <a href="{% url 'minhas_tarefas' nome_area %}" class="aba">Minhas Tarefas</a>
             {% endif %}
         </div>
 
         <!-- Caixa de publicação no chat da área -->
         <section class="chat-nova-mensagem" id="box-nova-mensagem">
-            <form action="{% url 'publicar_chat_area' nome_area %}" method="POST" id="form-chat-area">
+            <form action="{% url 'publicar_chat_area' nome_area %}" method="POST" enctype="multipart/form-data" id="form-chat-area">
                 {% csrf_token %}
-                {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
                 <input type="hidden" name="resposta_a" id="input-resposta-a" value="">
 
                 <div class="chat-preview-resposta" id="preview-resposta-chat" style="display: none;">
@@ -48,7 +47,7 @@
                 </div>
 
                 <div class="chat-topo-publicacao">
-                    <a href="{% url 'meu_perfil' %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="chat-avatar avatar-chat-escuro" title="Meu perfil">
+                    <a href="{% url 'meu_perfil' %}" class="chat-avatar avatar-chat-escuro" title="Meu perfil">
                         {% if usuario.foto and usuario.foto.name %}
                             <img src="{{ usuario.foto.url }}" alt="{{ usuario.nome_exibicao }}" class="avatar-foto-img">
                         {% else %}
@@ -60,24 +59,44 @@
                         id="textarea-chat-area"
                         maxlength="300"
                         data-rich-editor="1"
-                        placeholder="{% if usuario.eh_administrador or not usuario.diretoria %}A equipe vai ganhar!{% else %}A {{ usuario.diretoria }} vai ganhar!{% endif %}"
-                        required></textarea>
+                        placeholder="{% if usuario.eh_administrador or not usuario.diretoria %}A equipe vai ganhar!{% else %}A {{ usuario.diretoria }} vai ganhar!{% endif %}"></textarea>
+                </div>
+
+                <div class="preview-anexo-box" id="preview-anexo-chat">
+                    <img id="img-preview-chat" src="" alt="Pré-visualização do anexo">
+                    <span class="preview-anexo-nome" id="nome-preview-chat"></span>
+                    <button type="button" class="btn-remover-anexo" id="btn-remover-anexo-chat">✕ Remover</button>
                 </div>
 
                 <div class="chat-acoes-publicacao">
+                    <label for="input-img-chat" class="btn-icone-anexar" title="Adicionar imagem" aria-label="Adicionar imagem">
+                        <img src="{% static 'imgs/icone-add-imagem.png' %}" alt="Adicionar imagem">
+                    </label>
+                    <input type="file" id="input-img-chat" name="imagem" accept="image/*" style="display: none;">
                     <button type="submit" class="btn-publicar-chat">Publicar</button>
                 </div>
             </form>
         </section>
 
+        {% if respostas_para_mim %}
+        <div class="barra-respostas-recentes" id="barra-respostas-chat">
+            <strong>↳ Responderam a você ({{ respostas_para_mim|length }}):</strong>
+            {% for resp in respostas_para_mim %}
+                <button type="button" class="pill-ir-resposta" data-scroll-to="mensagem-{{ resp.id }}">
+                    {{ resp.usuario.nome_exibicao }}
+                </button>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <!-- Lista de mensagens do chat da área -->
         <section class="lista-mensagens-chat">
             {% for msg in mensagens %}
-            <article class="chat-card {% if msg.resposta_a %}chat-card-com-resposta{% endif %}" id="mensagem-{{ msg.id }}">
+            <article class="chat-card {% if msg.resposta_a %}chat-card-com-resposta{% endif %} {% if msg.resposta_a_id and msg.resposta_a.usuario_id == usuario.id and msg.usuario_id != usuario.id %}resposta-para-mim{% endif %}" id="mensagem-{{ msg.id }}">
 
                 {% if msg.resposta_a %}
-                <div class="chat-resposta-citacao">
-                    <a href="{% url 'ver_perfil' msg.resposta_a.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="chat-avatar chat-avatar-pequeno {{ msg.resposta_a.usuario.matricula|cor_avatar }}" title="Ver perfil de {{ msg.resposta_a.usuario.nome_exibicao }}">
+                <div class="chat-resposta-citacao" data-scroll-to="mensagem-{{ msg.resposta_a.id }}" title="Clique para ver a mensagem original">
+                    <a href="{% url 'ver_perfil' msg.resposta_a.usuario.id %}" class="chat-avatar chat-avatar-pequeno {{ msg.resposta_a.usuario.matricula|cor_avatar }}" title="Ver perfil de {{ msg.resposta_a.usuario.nome_exibicao }}">
                         {% if msg.resposta_a.usuario.foto and msg.resposta_a.usuario.foto.name %}
                             <img src="{{ msg.resposta_a.usuario.foto.url }}" alt="{{ msg.resposta_a.usuario.nome_exibicao }}" class="avatar-foto-img">
                         {% else %}
@@ -85,14 +104,14 @@
                         {% endif %}
                     </a>
                     <div class="chat-citacao-textos">
-                        <a href="{% url 'ver_perfil' msg.resposta_a.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="chat-citacao-autor link-perfil-usuario">{{ msg.resposta_a.usuario.nome_exibicao }}</a>
-                        <p class="chat-citacao-mensagem">{{ msg.resposta_a.texto }}</p>
+                        <a href="{% url 'ver_perfil' msg.resposta_a.usuario.id %}" class="chat-citacao-autor link-perfil-usuario">{{ msg.resposta_a.usuario.nome_exibicao }}</a>
+                        <p class="chat-citacao-mensagem">{% if msg.resposta_a.texto %}{{ msg.resposta_a.texto }}{% else %}[Imagem anexada]{% endif %}</p>
                     </div>
                 </div>
                 {% endif %}
 
                 <div class="chat-corpo-card">
-                    <a href="{% url 'ver_perfil' msg.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="chat-avatar {{ msg.usuario.matricula|cor_avatar }}" title="Ver perfil de {{ msg.usuario.nome_exibicao }}">
+                    <a href="{% url 'ver_perfil' msg.usuario.id %}" class="chat-avatar {{ msg.usuario.matricula|cor_avatar }}" title="Ver perfil de {{ msg.usuario.nome_exibicao }}">
                         {% if msg.usuario.foto and msg.usuario.foto.name %}
                             <img src="{{ msg.usuario.foto.url }}" alt="{{ msg.usuario.nome_exibicao }}" class="avatar-foto-img">
                         {% else %}
@@ -102,18 +121,28 @@
 
                     <div class="chat-conteudo-principal">
                         <div class="chat-cabecalho-linha">
-                            <a href="{% url 'ver_perfil' msg.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">
+                            <a href="{% url 'ver_perfil' msg.usuario.id %}" class="link-perfil-usuario" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                                 <h3 class="chat-autor">{{ msg.usuario.nome_exibicao }}</h3>
+                                {% if msg.resposta_a_id and msg.resposta_a.usuario_id == usuario.id and msg.usuario_id != usuario.id %}
+                                <span class="badge-respondeu-voce">↳ Respondeu a você</span>
+                                {% endif %}
                             </a>
                         </div>
 
+                        {% if msg.texto %}
                         <div class="chat-texto">{{ msg.texto|formatar_texto }}</div>
+                        {% endif %}
+
+                        {% if msg.imagem and msg.imagem.name %}
+                        <div class="midia-anexada-wrap">
+                            <img src="{{ msg.imagem.url }}" alt="Imagem enviada por {{ msg.usuario.nome_exibicao }}" class="img-midia-anexada img-ampliavel" data-lightbox-src="{{ msg.imagem.url }}" data-lightbox-alt="Chat — {{ msg.usuario.nome_exibicao }}">
+                        </div>
+                        {% endif %}
 
                         {% if msg.usuario_id == usuario.id %}
                         <form action="{% url 'editar_mensagem_area' msg.id %}" method="POST" class="form-edicao-inline" id="form-editar-msg-{{ msg.id }}" style="display: none; margin-bottom: 12px;">
                             {% csrf_token %}
-                            {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
-                            <textarea name="texto" maxlength="300" required>{{ msg.texto }}</textarea>
+                            <textarea name="texto" maxlength="300" {% if not msg.imagem %}required{% endif %}>{{ msg.texto }}</textarea>
                             <div class="acoes-edicao-inline">
                                 <button type="button" class="btn-cancelar-edicao" data-cancel-edit="form-editar-msg-{{ msg.id }}">Cancelar</button>
                                 <button type="submit" class="btn-salvar-edicao">Salvar</button>
@@ -138,7 +167,7 @@
                                 data-inicial="{{ msg.usuario.inicial_perfil }}"
                                 data-foto="{% if msg.usuario.foto and msg.usuario.foto.name %}{{ msg.usuario.foto.url }}{% endif %}"
                                 data-cor="{{ msg.usuario.matricula|cor_avatar }}"
-                                data-texto="{{ msg.texto|truncatechars:140 }}">
+                                data-texto="{% if msg.texto %}{{ msg.texto|truncatechars:140 }}{% else %}[Imagem anexada]{% endif %}">
                                 <svg class="icone-responder-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="9 17 4 12 9 7"></polyline>
                                     <path d="M20 18v-2a4 4 0 0 0-4-4H4"></path>
@@ -175,8 +204,8 @@
     </div>
 </main>
 
-<script src="{% static 'js/editor_texto.js' %}"></script>
-<script src="{% static 'js/chat_area.js' %}"></script>
-<script src="{% static 'js/toast.js' %}"></script>
+<script src="{% static 'js/editor_texto.js' %}?v=20261111"></script>
+<script src="{% static 'js/chat_area.js' %}?v=20261111"></script>
+<script src="{% static 'js/toast.js' %}?v=20261111"></script>
 </body>
 </html>

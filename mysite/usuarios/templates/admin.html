@@ -53,7 +53,7 @@
                 {% for pendente in pendentes %}
                 <div class="item-linha">
                     <div class="info-principal">
-                        <a href="{% url 'ver_perfil' pendente.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="avatar avatar-roxo" style="overflow:hidden;text-decoration:none;color:white;">
+                        <a href="{% url 'ver_perfil' pendente.id %}" class="avatar avatar-roxo" style="overflow:hidden;text-decoration:none;color:white;">
                             {% if pendente.foto and pendente.foto.name %}
                                 <img src="{{ pendente.foto.url }}" alt="{{ pendente.nome_exibicao }}" class="avatar-foto-img">
                             {% else %}
@@ -61,7 +61,7 @@
                             {% endif %}
                         </a>
                         <div class="textos">
-                            <h3><a href="{% url 'ver_perfil' pendente.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">{{ pendente.nome_exibicao }}</a></h3>
+                            <h3><a href="{% url 'ver_perfil' pendente.id %}" class="link-perfil-usuario">{{ pendente.nome_exibicao }}</a></h3>
                             <p>{{ pendente.diretoria }} • Matrícula: {{ pendente.matricula }}</p>
                         </div>
                     </div>
@@ -96,7 +96,7 @@
                 {% for sol in solicitacoes_area %}
                 <div class="item-linha">
                     <div class="info-principal">
-                        <a href="{% url 'ver_perfil' sol.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="avatar avatar-roxo" style="overflow:hidden;text-decoration:none;color:white;">
+                        <a href="{% url 'ver_perfil' sol.usuario.id %}" class="avatar avatar-roxo" style="overflow:hidden;text-decoration:none;color:white;">
                             {% if sol.usuario.foto and sol.usuario.foto.name %}
                                 <img src="{{ sol.usuario.foto.url }}" alt="{{ sol.usuario.nome_exibicao }}" class="avatar-foto-img">
                             {% else %}
@@ -104,7 +104,7 @@
                             {% endif %}
                         </a>
                         <div class="textos">
-                            <h3><a href="{% url 'ver_perfil' sol.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">{{ sol.usuario.nome_exibicao }}</a></h3>
+                            <h3><a href="{% url 'ver_perfil' sol.usuario.id %}" class="link-perfil-usuario">{{ sol.usuario.nome_exibicao }}</a></h3>
                             <p>{{ sol.usuario.diretoria }} • Matrícula: {{ sol.usuario.matricula }} — Área: {{ sol.area }}</p>
                         </div>
                     </div>
@@ -179,7 +179,7 @@
                 {% for sol in solicitacoes_area %}
                 <div class="item-linha">
                     <div class="info-principal">
-                        <a href="{% url 'ver_perfil' sol.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="avatar avatar-roxo" style="overflow:hidden;text-decoration:none;color:white;">
+                        <a href="{% url 'ver_perfil' sol.usuario.id %}" class="avatar avatar-roxo" style="overflow:hidden;text-decoration:none;color:white;">
                             {% if sol.usuario.foto and sol.usuario.foto.name %}
                                 <img src="{{ sol.usuario.foto.url }}" alt="{{ sol.usuario.nome_exibicao }}" class="avatar-foto-img">
                             {% else %}
@@ -187,21 +187,19 @@
                             {% endif %}
                         </a>
                         <div class="textos">
-                            <h3><a href="{% url 'ver_perfil' sol.usuario.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">{{ sol.usuario.nome_exibicao }}</a></h3>
+                            <h3><a href="{% url 'ver_perfil' sol.usuario.id %}" class="link-perfil-usuario">{{ sol.usuario.nome_exibicao }}</a></h3>
                             <p>{{ sol.usuario.diretoria }} • Matrícula: {{ sol.usuario.matricula }} — Área: {{ sol.area }}</p>
                         </div>
                     </div>
                     <div class="acoes">
                         <form action="{% url 'aprovar_solicitacao_area' sol.id %}" method="POST">
                             {% csrf_token %}
-                            {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
                             <button type="submit" class="btn-icon" title="Aprovar entrada">
                                 <img src="{% static 'imgs/icone-check-verde.png' %}" alt="Aprovar">
                             </button>
                         </form>
                         <form action="{% url 'recusar_solicitacao_area' sol.id %}" method="POST" onsubmit="return confirm('Deseja recusar esta solicitação?')">
                             {% csrf_token %}
-                            {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
                             <button type="submit" class="btn-icon" title="Recusar entrada">
                                 <img src="{% static 'imgs/icone-cross-vermelho.png' %}" alt="Recusar">
                             </button>
@@ -224,14 +222,14 @@
                 </div>
                 <div class="search-box">
                     <img src="{% static 'imgs/icone-search.png' %}" alt="">
-                    <input type="text" id="search-membros" placeholder="Pesquisar membros">
+                    <input type="search" id="search-membros" placeholder="Pesquisar por nome, matrícula ou área..." autocomplete="off" aria-label="Pesquisar membros">
                 </div>
             </div>
-            <div class="lista-itens">
+            <div class="lista-itens" id="lista-membros-painel" data-vazio-texto="{% if usuario.eh_administrador %}Nenhum membro aprovado ainda.{% else %}Nenhum membro vinculado a esta área ainda.{% endif %}" data-sublider-area="{{ usuario.sublider_de|default:'' }}">
                 {% for membro in membros %}
-                <div class="item-linha">
+                <div class="item-linha" data-membro-id="{{ membro.id }}" data-busca="{{ membro.nome_exibicao }} {{ membro.matricula }} {{ membro.diretoria }} {{ membro.curso_exibicao }} {{ membro.get_areas_list|join:' ' }}">
                     <div class="info-principal">
-                        <a href="{% url 'ver_perfil' membro.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="avatar avatar-verde" style="overflow:hidden;text-decoration:none;color:white;">
+                        <a href="{% url 'ver_perfil' membro.id %}" class="avatar avatar-verde" style="overflow:hidden;text-decoration:none;color:white;">
                             {% if membro.foto and membro.foto.name %}
                                 <img src="{{ membro.foto.url }}" alt="{{ membro.nome_exibicao }}" class="avatar-foto-img">
                             {% else %}
@@ -240,13 +238,12 @@
                         </a>
                         <div class="textos">
                             <div class="nome-badges">
-                                <h3><a href="{% url 'ver_perfil' membro.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="link-perfil-usuario">{{ membro.nome_exibicao }}</a></h3>
+                                <h3><a href="{% url 'ver_perfil' membro.id %}" class="link-perfil-usuario">{{ membro.nome_exibicao }}</a></h3>
                                 {% if membro.sub_lider %}
                                     <span class="badge-sublider">Sub-Líder</span>
                                     {% if usuario.eh_administrador %}
                                     <form action="{% url 'remover_sublider' membro.id %}" method="POST" class="form-inline">
                                         {% csrf_token %}
-                                        {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
                                         <button type="submit" class="btn-lixeira">
                                             <img src="{% static 'imgs/icone-lixeira.png' %}" alt="Remover cargo">
                                         </button>
@@ -265,13 +262,11 @@
                         {% if usuario.eh_administrador and not membro.eh_administrador %}
                         <form action="{% url 'remover_membro' membro.id %}" method="POST" onsubmit="return confirm('Deseja realmente remover este membro?');">
                             {% csrf_token %}
-                            {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
                             <button type="submit" class="btn-remover">Remover</button>
                         </form>
                         {% elif usuario.sub_lider and not membro.eh_administrador and membro.id != usuario.id %}
                         <form action="{% url 'remover_membro' membro.id %}" method="POST" onsubmit="return confirm('Deseja realmente remover este membro da área {{ usuario.sublider_de }}?');">
                             {% csrf_token %}
-                            {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
                             <button type="submit" class="btn-remover">Remover</button>
                         </form>
                         {% endif %}
@@ -293,15 +288,23 @@
 
             <form class="form-doacao" action="{% url 'registrar_doacao' %}" method="POST" id="form-registrar-doacao">
                 {% csrf_token %}
-                {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
                 <div class="form-group">
-                    <label for="select-membro-doacao">Selecionar Membro</label>
-                    <select name="membro_id" id="select-membro-doacao" class="select-doacao" required>
-                        <option value="" disabled selected>Selecione um membro...</option>
+                    <label for="input-matricula-doacao">Matrícula do membro</label>
+                    <input
+                        type="text"
+                        name="matricula"
+                        id="input-matricula-doacao"
+                        class="input-doacao"
+                        list="lista-matriculas-doacao"
+                        placeholder="Digite a matrícula (ex: 20241011110001)"
+                        autocomplete="off"
+                        required>
+                    <datalist id="lista-matriculas-doacao">
                         {% for membro_item in membros_elegiveis_doacao %}
-                            <option value="{{ membro_item.id }}">{{ membro_item.nome_exibicao }} ({{ membro_item.matricula }}) - {{ membro_item.diretoria }}</option>
+                            <option value="{{ membro_item.matricula }}">{{ membro_item.nome_exibicao }} — {{ membro_item.diretoria }}</option>
                         {% endfor %}
-                    </select>
+                    </datalist>
+                    <span class="hint-doacao" id="info-membro-doacao">Digite a matrícula ou escolha nas sugestões da sua diretoria.</span>
                 </div>
 
                 <div class="form-group" style="margin-top: 16px;">
@@ -324,7 +327,6 @@
 
             <form class="form-doacao" action="{% url 'definir_meta_tampinhas' %}" method="POST" id="form-meta-tampinhas">
                 {% csrf_token %}
-                {% if user_token %}<input type="hidden" name="_user_token" value="{{ user_token }}">{% endif %}
                 <div class="form-group">
                     <label for="input-meta-kg">Meta de arrecadação em quilogramas (Kg)</label>
                     <input
@@ -362,7 +364,7 @@
                 <div class="form-tarefa-grid">
                     <div class="form-group">
                         <label>Título</label>
-                        <input type="text" name="titulo" placeholder="Nome da tarefa" required>
+                        <input type="text" name="titulo" maxlength="200" placeholder="Nome da tarefa" required>
                     </div>
                     <div class="form-group">
                         <label>Tipo de tarefa</label>
@@ -412,7 +414,7 @@
                 <div class="form-tarefa-grid">
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label>Descrição</label>
-                        <textarea name="descricao" data-rich-editor="1" maxlength="2000" placeholder="Detalhes da tarefa..." rows="4" style="background: #111323; border: 1px solid #2d3150; border-radius: 8px; padding: 12px 16px; color: #9ca4c9; font-size: 14px; outline: none; width: 100%; resize: vertical;"></textarea>
+                        <textarea name="descricao" data-rich-editor="1" maxlength="10000" placeholder="Detalhes da tarefa..." rows="5" style="background: #111323; border: 1px solid #2d3150; border-radius: 8px; padding: 12px 16px; color: #9ca4c9; font-size: 14px; line-height: 1.6; outline: none; width: 100%; min-height: 130px; resize: vertical; white-space: pre-wrap; font-family: inherit;"></textarea>
                     </div>
                     <div class="form-group">
                         <label>Limite de participantes</label>
@@ -476,7 +478,7 @@
                     <div class="tarefa-acoes">
                         <span class="contador-participantes" data-status-url="{% url 'status_tarefa' tarefa.id %}" style="color: #9ca4c9; font-size: 13px; font-weight: 500;">{{ tarefa.total_concl|default:0 }}/{{ tarefa.limite_participantes }} concluíram</span>
                         <div style="display: flex; gap: 10px; margin-left: auto;">
-                            <a href="{% url 'editar_tarefa' tarefa.id %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="btn-editar">Editar</a>
+                            <a href="{% url 'editar_tarefa' tarefa.id %}" class="btn-editar">Editar</a>
                             <form action="{% url 'encerrar_tarefa' tarefa.id %}" method="POST" class="form-inline" onsubmit="return confirm('Deseja encerrar esta tarefa?')">
                                 {% csrf_token %}
                                 <button type="submit" class="btn-encerrar">Encerrar</button>
@@ -489,7 +491,9 @@
                 {% endfor %}
             </div>
         </section>
+        {% endif %}
 
+        {% if usuario.sub_lider or tarefas_concluidas %}
         <!-- ── Tarefas concluídas ── -->
         <section class="painel-card">
             <div class="card-header">
@@ -525,9 +529,7 @@
                         {% for conc in tarefa.conclusoes.all %}
                             {% if conc.imagem and conc.imagem.name %}
                             <div class="conclusao-preview-card">
-                                <a href="{{ conc.imagem.url }}" target="_blank" title="Entrega de {{ conc.usuario.nome_exibicao }}">
-                                    <img src="{{ conc.imagem.url }}" alt="Entrega de {{ conc.usuario.nome_exibicao }}" class="img-conclusao-thumb">
-                                </a>
+                                <img src="{{ conc.imagem.url }}" alt="Entrega de {{ conc.usuario.nome_exibicao }}" class="img-conclusao-thumb img-ampliavel" data-lightbox-src="{{ conc.imagem.url }}" data-lightbox-alt="Entrega de {{ conc.usuario.nome_exibicao }}" title="Clique para ampliar entrega de {{ conc.usuario.nome_exibicao }}" style="cursor: zoom-in;">
                                 <span class="conclusao-autor">{{ conc.usuario.nome_exibicao }}</span>
                             </div>
                             {% endif %}
@@ -537,11 +539,13 @@
                     <div class="tarefa-acoes">
                         <span class="badge-concluida contador-conclusoes" data-status-url="{% url 'status_tarefa' tarefa.id %}">✓ Concluída por {{ tarefa.total_concl|default:0 }}/{{ tarefa.limite_participantes }}</span>
                         <div style="display: flex; gap: 10px; margin-left: auto; align-items: center;">
-                            <a href="{% url 'ver_conclusao' tarefa.id %}?origem=painel{% if user_token %}&_user_token={{ user_token|urlencode }}{% endif %}" class="btn-ver-entrega">Ver entrega</a>
+                            <a href="{% url 'ver_conclusao' tarefa.id %}?origem=painel" class="btn-ver-entrega">Ver entrega</a>
+                            {% if usuario.sub_lider %}
                             <form action="{% url 'excluir_tarefa_concluida' tarefa.id %}" method="POST" class="form-inline" onsubmit="return confirm('Deseja realmente excluir esta tarefa concluída?');">
                                 {% csrf_token %}
                                 <button type="submit" class="btn-excluir-tarefa-concluida">Excluir</button>
                             </form>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -550,7 +554,6 @@
                 {% endfor %}
             </div>
         </section>
-
         {% endif %}
 
     </div>
@@ -623,69 +626,287 @@ if (typeof flatpickr !== "undefined") {
 }
 
 (function() {
-    var input = document.getElementById("search-membros");
-    if (!input) return;
-    var secaoMembros = input.closest(".painel-card");
-    if (!secaoMembros) return;
-    
-    function removeAccents(str) {
-        return (str || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    function normalizarTexto(str) {
+        var base = (str || "").toLowerCase();
+        if (typeof base.normalize === "function") {
+            base = base.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        }
+        return base.replace(/\s+/g, " ").trim();
     }
 
-    var listaItens = secaoMembros.querySelector(".lista-itens");
-    if (!listaItens) return;
+    function obterCsrfToken() {
+        var name = "csrftoken=";
+        var parts = (document.cookie || "").split(";");
+        for (var i = 0; i < parts.length; i++) {
+            var item = parts[i].trim();
+            if (item.indexOf(name) === 0) {
+                return decodeURIComponent(item.substring(name.length));
+            }
+        }
+        var hidden = document.querySelector("input[name='csrfmiddlewaretoken']");
+        return hidden ? hidden.value : "";
+    }
 
-    var msgSemResultados = document.createElement("p");
-    msgSemResultados.className = "sem-itens";
-    msgSemResultados.textContent = "Nenhum membro encontrado.";
-    msgSemResultados.style.display = "none";
-    listaItens.appendChild(msgSemResultados);
+    var inputBusca = document.getElementById("search-membros");
+    var listaItens = document.getElementById("lista-membros-painel");
+    var msgSemResultados = null;
 
-    input.addEventListener("input", function() {
-        var termo = removeAccents(this.value.toLowerCase().trim());
+    if (listaItens) {
+        msgSemResultados = document.createElement("p");
+        msgSemResultados.className = "sem-itens";
+        msgSemResultados.id = "msg-sem-membros-busca";
+        msgSemResultados.textContent = "Nenhum membro encontrado para a pesquisa.";
+        msgSemResultados.style.display = "none";
+        listaItens.appendChild(msgSemResultados);
+    }
+
+    function filtrarMembros() {
+        if (!listaItens) return;
         var linhas = listaItens.querySelectorAll(".item-linha");
+        var termo = normalizarTexto(inputBusca ? inputBusca.value : "");
+        var tokens = termo ? termo.split(" ").filter(Boolean) : [];
         var visiveis = 0;
 
         linhas.forEach(function(item) {
-            var texto = removeAccents(item.textContent.toLowerCase());
-            if (!termo || texto.includes(termo)) {
-                item.style.display = "";
-                visiveis++;
-            } else {
-                item.style.display = "none";
-            }
+            var texto = normalizarTexto((item.getAttribute("data-busca") || "") + " " + (item.textContent || ""));
+            var bate = tokens.length === 0 || tokens.every(function(t) { return texto.indexOf(t) !== -1; });
+            item.hidden = !bate;
+            item.style.display = bate ? "" : "none";
+            if (bate) visiveis++;
         });
 
-        if (linhas.length > 0) {
-            msgSemResultados.style.display = (visiveis === 0) ? "block" : "none";
+        if (msgSemResultados) {
+            msgSemResultados.style.display = (linhas.length > 0 && visiveis === 0) ? "block" : "none";
         }
-    });
-})();
+    }
 
-// Atualização de contadores de membros e doações em tempo real
-function atualizarStatsPainel() {
-    if (document.hidden) return;
-    fetch("{% url 'stats_painel' %}")
-        .then(function(res) {
-            if (res.ok) return res.json();
-            throw new Error("Erro ao consultar stats");
+    if (inputBusca) {
+        ["input", "keyup", "search", "change"].forEach(function(ev) {
+            inputBusca.addEventListener(ev, filtrarMembros);
+        });
+    }
+
+    // Datalist lookup para doação por matrícula digitada
+    var inputMatriculaDoacao = document.getElementById("input-matricula-doacao");
+    var datalistDoacao = document.getElementById("lista-matriculas-doacao");
+    var infoMembroDoacao = document.getElementById("info-membro-doacao");
+
+    function atualizarInfoMatriculaDoacao() {
+        if (!inputMatriculaDoacao || !infoMembroDoacao) return;
+        var mat = (inputMatriculaDoacao.value || "").trim();
+        if (!mat) {
+            infoMembroDoacao.textContent = "Digite a matrícula ou escolha nas sugestões da sua diretoria.";
+            infoMembroDoacao.style.color = "";
+            return;
+        }
+        var encontrado = "";
+        if (datalistDoacao) {
+            var opts = datalistDoacao.querySelectorAll("option");
+            for (var i = 0; i < opts.length; i++) {
+                if ((opts[i].value || "").trim() === mat) {
+                    encontrado = opts[i].textContent || opts[i].label || "";
+                    break;
+                }
+            }
+        }
+        if (encontrado) {
+            infoMembroDoacao.textContent = "✓ Membro encontrado: " + encontrado;
+            infoMembroDoacao.style.color = "#81c784";
+        } else {
+            infoMembroDoacao.textContent = "Matrícula informada: " + mat + " (será validada ao registrar).";
+            infoMembroDoacao.style.color = "#9ca4c9";
+        }
+    }
+
+    if (inputMatriculaDoacao) {
+        ["input", "change"].forEach(function(ev) {
+            inputMatriculaDoacao.addEventListener(ev, atualizarInfoMatriculaDoacao);
+        });
+    }
+
+    function criarBotaoFormPost(actionUrl, confirmMsg, btnClass, btnText, iconSrc, iconAlt) {
+        var form = document.createElement("form");
+        form.action = actionUrl;
+        form.method = "POST";
+        if (!btnText && iconSrc) form.className = "form-inline";
+        if (confirmMsg) {
+            form.addEventListener("submit", function(e) {
+                if (!confirm(confirmMsg)) e.preventDefault();
+            });
+        }
+        var csrfInput = document.createElement("input");
+        csrfInput.type = "hidden";
+        csrfInput.name = "csrfmiddlewaretoken";
+        csrfInput.value = obterCsrfToken();
+        form.appendChild(csrfInput);
+
+        var btn = document.createElement("button");
+        btn.type = "submit";
+        btn.className = btnClass;
+        if (iconSrc) {
+            var ic = document.createElement("img");
+            ic.src = iconSrc;
+            ic.alt = iconAlt || "";
+            btn.appendChild(ic);
+        } else {
+            btn.textContent = btnText;
+        }
+        form.appendChild(btn);
+        return form;
+    }
+
+    var ultimaAssinaturaMembros = null;
+
+    function renderizarMembrosPainel(lista) {
+        if (!listaItens || !Array.isArray(lista)) return;
+        var novaAssinatura = JSON.stringify(lista);
+        if (novaAssinatura === ultimaAssinaturaMembros) return;
+        ultimaAssinaturaMembros = novaAssinatura;
+
+        listaItens.textContent = "";
+        var subliderArea = listaItens.getAttribute("data-sublider-area") || "";
+
+        if (lista.length === 0) {
+            var vazioP = document.createElement("p");
+            vazioP.className = "sem-itens";
+            vazioP.textContent = listaItens.getAttribute("data-vazio-texto") || "Nenhum membro encontrado.";
+            listaItens.appendChild(vazioP);
+        } else {
+            lista.forEach(function(m) {
+                var linha = document.createElement("div");
+                linha.className = "item-linha";
+                linha.setAttribute("data-membro-id", String(m.id));
+                linha.setAttribute("data-busca", m.busca || "");
+
+                var infoPrincipal = document.createElement("div");
+                infoPrincipal.className = "info-principal";
+
+                var avatarLink = document.createElement("a");
+                avatarLink.href = "/perfil/" + m.id + "/";
+                avatarLink.className = "avatar avatar-verde";
+                avatarLink.style.overflow = "hidden";
+                avatarLink.style.textDecoration = "none";
+                avatarLink.style.color = "white";
+                if (m.foto_url) {
+                    var imgAvatar = document.createElement("img");
+                    imgAvatar.src = m.foto_url;
+                    imgAvatar.alt = m.nome || "";
+                    imgAvatar.className = "avatar-foto-img";
+                    avatarLink.appendChild(imgAvatar);
+                } else {
+                    avatarLink.textContent = m.inicial || "?";
+                }
+                infoPrincipal.appendChild(avatarLink);
+
+                var textos = document.createElement("div");
+                textos.className = "textos";
+
+                var nomeBadges = document.createElement("div");
+                nomeBadges.className = "nome-badges";
+
+                var h3 = document.createElement("h3");
+                var nomeLink = document.createElement("a");
+                nomeLink.href = "/perfil/" + m.id + "/";
+                nomeLink.className = "link-perfil-usuario";
+                nomeLink.textContent = m.nome || m.matricula || "";
+                h3.appendChild(nomeLink);
+                nomeBadges.appendChild(h3);
+
+                if (m.sub_lider) {
+                    var badge = document.createElement("span");
+                    badge.className = "badge-sublider";
+                    badge.textContent = "Sub-Líder";
+                    nomeBadges.appendChild(badge);
+                    if (m.pode_remover_sublider) {
+                        nomeBadges.appendChild(
+                            criarBotaoFormPost(
+                                "/painel-administrativo/remover-sublider/" + m.id + "/",
+                                "",
+                                "btn-lixeira",
+                                "",
+                                "{% static 'imgs/icone-lixeira.png' %}",
+                                "Remover cargo"
+                            )
+                        );
+                    }
+                }
+                textos.appendChild(nomeBadges);
+
+                var pSub = document.createElement("p");
+                pSub.textContent = m.subtitulo || "";
+                textos.appendChild(pSub);
+                infoPrincipal.appendChild(textos);
+                linha.appendChild(infoPrincipal);
+
+                var acoes = document.createElement("div");
+                acoes.className = "acoes";
+                if (m.pode_remover) {
+                    var confirmTxt = subliderArea
+                        ? ("Deseja realmente remover este membro da área " + subliderArea + "?")
+                        : "Deseja realmente remover este membro?";
+                    acoes.appendChild(
+                        criarBotaoFormPost(
+                            "/painel-administrativo/remover-membro/" + m.id + "/",
+                            confirmTxt,
+                            "btn-remover",
+                            "Remover"
+                        )
+                    );
+                }
+                linha.appendChild(acoes);
+                listaItens.appendChild(linha);
+            });
+        }
+
+        if (msgSemResultados) {
+            listaItens.appendChild(msgSemResultados);
+        }
+        filtrarMembros();
+    }
+
+    // Atualização em tempo real do contador de membros, pendentes, doações e lista de membros
+    var consultaEmAndamento = false;
+    function atualizarStatsPainel() {
+        if (document.hidden || consultaEmAndamento) return;
+        consultaEmAndamento = true;
+        fetch("{% url 'stats_painel' %}?com_membros=1&_=" + Date.now(), {
+            cache: "no-store",
+            credentials: "same-origin"
         })
-        .then(function(dados) {
-            if (dados.membros !== undefined) {
-                var el = document.getElementById("stat-membros");
-                if (el) el.textContent = dados.membros;
-            }
-            if (dados.pendentes !== undefined) {
-                var el = document.getElementById("stat-pendentes");
-                if (el) el.textContent = dados.pendentes;
-            }
-            if (dados.doacoes !== undefined) {
-                var el = document.getElementById("stat-doacoes");
-                if (el) el.textContent = dados.doacoes;
-            }
-        })
-        .catch(function(err) {});
-}
+            .then(function(res) {
+                if (res.ok) return res.json();
+                throw new Error("Erro ao consultar stats");
+            })
+            .then(function(dados) {
+                if (dados.membros !== undefined) {
+                    var elM = document.getElementById("stat-membros");
+                    if (elM) elM.textContent = dados.membros;
+                }
+                if (dados.pendentes !== undefined) {
+                    var elP = document.getElementById("stat-pendentes");
+                    if (elP) elP.textContent = dados.pendentes;
+                }
+                if (dados.doacoes !== undefined) {
+                    var elD = document.getElementById("stat-doacoes");
+                    if (elD) elD.textContent = dados.doacoes;
+                }
+                if (Array.isArray(dados.membros_lista)) {
+                    renderizarMembrosPainel(dados.membros_lista);
+                }
+            })
+            .catch(function() {})
+            .finally(function() {
+                consultaEmAndamento = false;
+            });
+    }
+
+    window.addEventListener("focus", atualizarStatsPainel);
+    document.addEventListener("visibilitychange", function() {
+        if (!document.hidden) atualizarStatsPainel();
+    });
+    setTimeout(atualizarStatsPainel, 1200);
+    setInterval(atualizarStatsPainel, 4000);
+})();
 
 // Atualização de status de tarefas
 function atualizarContadores() {
@@ -696,7 +917,7 @@ function atualizarContadores() {
     elementos.forEach(function(elemento, index) {
         setTimeout(function() {
             if (document.hidden) return;
-            fetch(elemento.dataset.statusUrl)
+            fetch(elemento.dataset.statusUrl + "?_=" + Date.now(), { cache: "no-store" })
                 .then(function(response) {
                     if (!response.ok) return null;
                     return response.json();
@@ -713,13 +934,12 @@ function atualizarContadores() {
                         elemento.textContent = "✓ Concluída por " + dados.concluidos + "/" + dados.limite;
                     }
                 })
-                .catch(function(err) {});
+                .catch(function() {});
         }, index * 150);
     });
 }
 
-setInterval(atualizarStatsPainel, 15000);
-setInterval(atualizarContadores, 20000);
+setInterval(atualizarContadores, 15000);
 </script>
 
 <script src="{% static 'js/editor_texto.js' %}"></script>

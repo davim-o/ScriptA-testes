@@ -17,11 +17,11 @@ header {
     display: flex;
     align-items: center;
     position: relative;
-    padding: 24px clamp(24px, 5vw, 60px);
+    padding: 26px clamp(24px, 5vw, 64px);
 }
 
 header img {
-    height: 72px;
+    height: clamp(72px, 5.5vw, 88px);
     width: auto;
     object-fit: contain;
 }
@@ -31,7 +31,7 @@ h1 {
     left: 50%;
     transform: translateX(-50%);
     color: white;
-    font-size: clamp(1.45rem, 2.2vw, 1.85rem);
+    font-size: clamp(1.75rem, 2.5vw, 2.3rem);
     font-weight: 700;
     margin: 0;
     letter-spacing: 0.3px;
@@ -41,12 +41,11 @@ h1 {
 main {
     flex: 1;
     width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 10px clamp(20px, 4vw, 60px) 40px;
+    margin: 0;
+    padding: 12px clamp(28px, 6vw, 88px) 44px;
     display: grid;
-    grid-template-columns: 1fr 400px;
-    gap: clamp(36px, 5vw, 70px);
+    grid-template-columns: 1fr minmax(390px, 430px);
+    gap: clamp(28px, 4vw, 64px);
     align-items: center;
 }
 
@@ -56,15 +55,15 @@ main {
     flex-wrap: nowrap;
     align-items: center;
     justify-content: center;
-    gap: clamp(14px, 2vw, 24px);
+    gap: clamp(12px, 2vw, 26px);
     margin: 0 auto;
     width: 100%;
 }
 
 .mascote-item {
     position: relative;
-    width: clamp(75px, 7.5vw, 98px);
-    height: clamp(75px, 7.5vw, 98px);
+    width: clamp(82px, 9vw, 134px);
+    height: clamp(82px, 9vw, 134px);
     flex-shrink: 0;
     transition: transform 0.25s ease, filter 0.25s ease;
     filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45));
@@ -202,8 +201,8 @@ main {
 
 form {
     width: 100%;
-    max-width: 400px;
-    padding: 30px 24px;
+    max-width: 430px;
+    padding: 34px 28px;
     color: white;
     border-radius: 18px;
     background-color: #0c1022;
@@ -363,7 +362,7 @@ footer {
     header {
         justify-content: center;
         gap: 14px;
-        padding-bottom: 10px;
+        padding: 18px 20px 8px;
     }
 
     h1 {
@@ -374,9 +373,9 @@ footer {
     main {
         grid-template-columns: 1fr;
         max-width: 480px;
-        gap: 20px;
-        margin-top: 6px;
-        padding-bottom: 30px;
+        gap: 10px;
+        margin: 4px auto 0;
+        padding: 4px 16px 28px;
         justify-items: center;
     }
 
@@ -385,13 +384,13 @@ footer {
         flex-wrap: nowrap;
         justify-content: center;
         gap: clamp(10px, 3vw, 22px);
-        margin: 0 auto;
+        margin: 0 auto -2px;
         width: 100%;
     }
 
     .mascote-item {
-        width: clamp(60px, 18.5vw, 86px);
-        height: clamp(60px, 18.5vw, 86px);
+        width: clamp(64px, 18.5vw, 88px);
+        height: clamp(64px, 18.5vw, 88px);
     }
 
     form {
@@ -402,24 +401,24 @@ footer {
 @media (max-width: 480px) {
     header {
         gap: 12px;
-        padding: 16px 16px 8px;
+        padding: 14px 16px 4px;
     }
 
     header img {
-        width: 52px;
-        height: 52px;
+        width: 56px;
+        height: 56px;
     }
 
     h1 {
-        font-size: clamp(1.25rem, 5.5vw, 1.55rem);
+        font-size: clamp(1.35rem, 5.5vw, 1.7rem);
         white-space: normal;
     }
 
     main {
         width: calc(100% - 24px);
-        gap: 16px;
-        margin-bottom: 20px;
-        padding: 6px 0 24px;
+        gap: 6px;
+        margin-bottom: 16px;
+        padding: 2px 0 20px;
     }
 
     form {
@@ -428,10 +427,11 @@ footer {
 
     .imagens {
         gap: clamp(8px, 2.5vw, 14px);
+        margin-bottom: 0;
     }
 
     .mascote-item {
-        width: clamp(56px, 19vw, 74px);
-        height: clamp(56px, 19vw, 74px);
+        width: clamp(58px, 19vw, 76px);
+        height: clamp(58px, 19vw, 76px);
     }
 }

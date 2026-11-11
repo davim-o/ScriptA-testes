@@ -1,4 +1,4 @@
-{% load static %}
+{% load static usuarios_extras %}
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -22,10 +22,10 @@
         </div>
 
         <div class="abas">
-            <a href="{% url 'chat_area' nome_area %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba">Chat</a>
-            <a href="{% url 'pagina_area' nome_area %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba ativa">Tarefas</a>
+            <a href="{% url 'chat_area' nome_area %}" class="aba">Chat</a>
+            <a href="{% url 'pagina_area' nome_area %}" class="aba ativa">Tarefas</a>
             {% if not usuario.eh_administrador %}
-            <a href="{% url 'minhas_tarefas' nome_area %}{% if user_token %}?_user_token={{ user_token|urlencode }}{% endif %}" class="aba">Minhas Tarefas</a>
+            <a href="{% url 'minhas_tarefas' nome_area %}" class="aba">Minhas Tarefas</a>
             {% endif %}
         </div>
 
@@ -39,6 +39,12 @@
                             <span>{{ tarefa.total_participantes }}/{{ tarefa.limite_participantes }}</span>
                         </div>
                     </div>
+
+                    {% if tarefa.descricao %}
+                    <div class="tarefa-descricao-area" style="font-size: 13.5px; color: #b8c1e3; line-height: 1.55; margin: 4px 0 8px; white-space: normal; word-break: break-word;">
+                        {{ tarefa.descricao|formatar_texto }}
+                    </div>
+                    {% endif %}
 
                     <div class="tarefa-detalhes">
                         {% if tarefa.tipo == "fixa" %}
@@ -56,10 +62,10 @@
 
                         <div class="tarefa-acao">
                             {% if usuario.eh_administrador %}
-                                <a href="{% url 'ver_conclusao' tarefa.id %}?origem=tarefas{% if user_token %}&_user_token={{ user_token|urlencode }}{% endif %}" class="btn-ver-conclusao">Visualizar</a>
+                                <a href="{% url 'ver_conclusao' tarefa.id %}?origem=tarefas" class="btn-ver-conclusao">Visualizar</a>
                             {% elif tarefa.id in ids_concluidos %}
                                 <span class="txt-concluida">Concluída</span>
-                                <a href="{% url 'ver_conclusao' tarefa.id %}?origem=tarefas{% if user_token %}&_user_token={{ user_token|urlencode }}{% endif %}" class="btn-ver-conclusao">Ver entrega</a>
+                                <a href="{% url 'ver_conclusao' tarefa.id %}?origem=tarefas" class="btn-ver-conclusao">Ver entrega</a>
                             {% elif tarefa.id in participando %}
                                 <span class="btn-participando" aria-label="Você está participando desta tarefa">Participando</span>
                             {% elif tarefa.tem_vaga %}

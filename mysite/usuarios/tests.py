@@ -1,13 +1,45 @@
 from decimal import Decimal
+import struct
+import zlib
+from unittest.mock import patch
 from django.contrib.auth.hashers import make_password
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
 from .models import (
     ParticipacaoTarefa, Tarefa, Usuario, DoacaoTampinhas,
-    MensagemArea, CurtidaMensagemArea, SolicitacaoArea, Publicacao, MetaTampinhas
+    MensagemArea, CurtidaMensagemArea, SolicitacaoArea, Publicacao, MetaTampinhas,
+    ObservacaoTarefa, TarefaConclusao,
 )
+from .context_processors import gerar_token_usuario, decodificar_token_usuario
+from .suap import identificar_diretoria_e_curso, _extrair_info_dados_suap
+from .templatetags.usuarios_extras import formatar_texto
 from .views import formatar_kg, META_TAMPINHAS_KG
+
+
+def _png_1x1_valido():
+    def _chunk(tag, data):
+        return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
+    ihdr = struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0)
+    idat = zlib.compress(b"\x00\xff\x00\x00")
+    return b"\x89PNG\r\n\x1a\n" + _chunk(b"IHDR", ihdr) + _chunk(b"IDAT", idat) + _chunk(b"IEND", b"")
+
+
+PNG_1X1_VALIDO = _png_1x1_valido()
+
+
+def _mock_suap_offline(*args, **kwargs):
+    return {
+        "sucesso": False,
+        "autenticado_suap": False,
+        "credenciais_invalidas": False,
+        "nome": None,
+        "diretoria": None,
+        "curso": None,
+        "campus": None,
+        "erro": None,
+    }
 
 
 class LoginRoutesTests(TestCase):
@@ -40,6 +72,7 @@ class LoginRoutesTests(TestCase):
         self.assertContains(response, "Matrícula ou senha inválida.")
 
 
+@patch("usuarios.views.consultar_api_suap", side_effect=_mock_suap_offline)
 class CadastroTests(TestCase):
     dados = {
         "matricula": "202499",
@@ -47,12 +80,12 @@ class CadastroTests(TestCase):
         "diretoria": "Diaren",
     }
 
-    def test_area_and_nome_are_optional(self):
+    def test_area_and_nome_are_optional(self, mock_suap):
         response = self.client.post(reverse("cadastro"), self.dados)
         self.assertRedirects(response, reverse("login"))
         self.assertTrue(Usuario.objects.filter(matricula="202499").exists())
 
-    def test_wrong_diretoria_for_suap_matricula_notifies_user(self):
+    def test_wrong_diretoria_for_suap_matricula_notifies_user(self, mock_suap):
         response = self.client.post(
             reverse("cadastro"),
             {
@@ -64,7 +97,7 @@ class CadastroTests(TestCase):
         self.assertContains(response, "pertence à diretoria Diatinf")
         self.assertFalse(Usuario.objects.filter(matricula="20241011110029").exists())
 
-    def test_duplicate_matricula_is_rejected(self):
+    def test_duplicate_matricula_is_rejected(self, mock_suap):
         dados = {**self.dados, "areas": ["Cenário"]}
         self.client.post(reverse("cadastro"), dados)
         response = self.client.post(reverse("cadastro"), dados)
@@ -410,7 +443,7 @@ class TampinhasRankingAndPresentationTests(TestCase):
         self.assertEqual(response.context["total_geral_kg"], "50Kg")
 
 
-class MultiTabSessionIsolationTests(TestCase):
+class TokenAndLogoutSecurityTests(TestCase):
     def setUp(self):
         self.senha = "Senha123"
         self.admin = Usuario.objects.create(
@@ -430,22 +463,42 @@ class MultiTabSessionIsolationTests(TestCase):
             sublider_de="Tampinhas",
         )
 
-    def test_clicking_painel_administrativo_keeps_202409_even_if_cookie_is_admin(self):
-        from .context_processors import gerar_token_usuario
+    def test_token_is_not_exposed_in_url_or_html_and_query_token_is_rejected(self):
+        resp_login = self.client.post(
+            reverse("login"),
+            {"matricula": "admin", "senha": self.senha},
+        )
+        self.assertEqual(resp_login.status_code, 302)
+        self.assertNotIn("_user_token", resp_login["Location"])
 
-        token_202409 = gerar_token_usuario(self.sublider_202409.id)
-        # Simula que o cookie de sessão compartilhado do navegador foi sobrescrito pelo admin em outra aba
-        self.client.post(reverse("login"), {"matricula": "admin", "senha": self.senha})
-
-        # Aba do perfil 202409 clica em "Painel administrativo" (GET com _user_token da aba)
+        token_202409 = gerar_token_usuario(self.sublider_202409.id, self.sublider_202409.session_version)
+        # Mesmo enviando _user_token na querystring, não deve trocar o usuário autenticado na sessão
         response = self.client.get(
             reverse("painel_administrativo"),
             {"_user_token": token_202409},
         )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context["usuario"].matricula, "202409")
-        self.assertContains(response, "Registrar doação")
-        self.assertNotContains(response, "Promover Sub-Líderes")
+        self.assertEqual(response.context["usuario"].matricula, "admin")
+        self.assertNotContains(response, "_user_token")
+
+    def test_logout_revokes_session_and_invalidates_prior_token(self):
+        self.client.post(reverse("login"), {"matricula": "202409", "senha": self.senha})
+        self.sublider_202409.refresh_from_db()
+        session = self.client.session
+        token_antes = gerar_token_usuario(
+            self.sublider_202409.id,
+            self.sublider_202409.session_version,
+            session.get("session_nonce", ""),
+        )
+        self.assertIsNotNone(decodificar_token_usuario(token_antes))
+
+        resp_sair = self.client.get(reverse("sair"))
+        self.assertRedirects(resp_sair, reverse("login"))
+
+        # Após logout, sessão e token anterior ficam inválidos
+        self.assertIsNone(decodificar_token_usuario(token_antes))
+        resp_protegido = self.client.get(reverse("painel_administrativo"))
+        self.assertRedirects(resp_protegido, reverse("login"))
 
 
 class ChatAreaTests(TestCase):
@@ -542,7 +595,8 @@ class PerfilTests(TestCase):
         )
         DoacaoTampinhas.objects.create(usuario=self.membro, quantidade_gramas=1500)
 
-    def test_cadastro_saves_nome(self):
+    @patch("usuarios.views.consultar_api_suap", side_effect=_mock_suap_offline)
+    def test_cadastro_saves_nome(self, mock_suap):
         response = self.client.post(reverse("cadastro"), {
             "nome": "Cirilo Jr.",
             "matricula": "202488",
@@ -813,6 +867,283 @@ class SubliderPanelAndMetaTampinhasTests(TestCase):
         self.assertContains(resp_ranking, "20Kg")
         self.assertContains(resp_ranking, "80Kg")
         self.assertContains(resp_ranking, "width: 25.00%;")
+
+
+class SuapAndPasswordTests(TestCase):
+    def test_classificacao_diretoria_cnat_courses(self):
+        self.assertEqual(identificar_diretoria_e_curso("20241001", "Técnico Integrado em Administração")[0], "Diatinf")
+        self.assertEqual(identificar_diretoria_e_curso("20241002", "Informática para Internet")[0], "Diatinf")
+        self.assertEqual(identificar_diretoria_e_curso("20241003", "Controle Ambiental")[0], "Diaren")
+        self.assertEqual(identificar_diretoria_e_curso("20241004", "Técnico em Geologia")[0], "Diaren")
+        self.assertEqual(identificar_diretoria_e_curso("20241005", "Mineração")[0], "Diaren")
+        self.assertEqual(identificar_diretoria_e_curso("20241009", "Saneamento Ambiental")[0], "Diaren")
+        self.assertEqual(identificar_diretoria_e_curso("20241006", "Edificações")[0], "Diacon")
+        self.assertEqual(identificar_diretoria_e_curso("20241007", "Eletrotécnica")[0], "Diacin")
+        self.assertEqual(identificar_diretoria_e_curso("20241008", "Mecânica Industrial")[0], "Diacin")
+        self.assertEqual(identificar_diretoria_e_curso("20241010", "Técnico em Petróleo e Gás")[0], "Diacin")
+        self.assertEqual(identificar_diretoria_e_curso("20241011", "Técnico em Segurança do Trabalho")[0], "Diacin")
+
+        # Matrícula sem suposição fixa de curso não deve chutar Diacin nem nenhuma outra diretoria
+        dir_2024, _ = identificar_diretoria_e_curso("20241013010032")
+        self.assertIsNone(dir_2024)
+
+        # Disciplina genérica Informática Básica no boletim não pode sobrepor curso técnico de Edificações
+        dir_bol, _ = identificar_diretoria_e_curso(
+            "20251099990001",
+            extras_texto="Informática Básica | Desenho Técnico e Edificações | Construção de Edifícios",
+        )
+        self.assertEqual(dir_bol, "Diacon")
+
+        info = _extrair_info_dados_suap({
+            "nome_usual": "Ana Costa",
+            "vinculo": {"curso": "Controle Ambiental", "campus": "CNAT"},
+        })
+        self.assertEqual(info["nome"], "Ana Costa")
+        self.assertEqual(info["curso"], "Controle Ambiental")
+        self.assertEqual(info["campus"], "CNAT")
+
+    @patch("usuarios.suap._em_ambiente_teste", return_value=False)
+    @patch("usuarios.suap._fazer_requisicao_json")
+    def test_consultar_api_suap_identifica_aluno_via_ensino_meus_dados_aluno(self, mock_req, mock_teste):
+        from .suap import consultar_api_suap
+
+        def fake_suap(url, method="GET", headers=None, payload=None, timeout=6.0):
+            if url.endswith("/api/token/pair") and method == "POST":
+                return 200, {"access": "tok_alu", "refresh": "ref"}
+            if "/api/rh/eu/" in url:
+                return 200, {
+                    "identificacao": "20241013010032",
+                    "nome_usual": "Maria Souza",
+                    "campus": "CNAT",
+                    "tipo_usuario": "Aluno",
+                }
+            if "/api/rh/meus-vinculos/" in url:
+                return 200, {"results": []}
+            if "/api/ensino/meus-dados-aluno/" in url:
+                return 200, {"curso": "Técnico de Nível Médio em Mecânica Integrado", "matriz": "2025"}
+            return 404, None
+
+        mock_req.side_effect = fake_suap
+        res = consultar_api_suap("20241013010032", "SenhaSuap123")
+        self.assertTrue(res["autenticado_suap"])
+        self.assertEqual(res["diretoria"], "Diacin")
+        self.assertIn("Mecânica", res["curso"])
+        self.assertEqual(res["nome"], "Maria Souza")
+
+    @patch("usuarios.views.consultar_api_suap")
+    def test_cadastro_uses_suap_data_diretoria_and_same_password(self, mock_suap):
+        mock_suap.return_value = {
+            "autenticado_suap": True,
+            "credenciais_invalidas": False,
+            "offline": False,
+            "matricula_oficial": "20241099000011",
+            "nome": "Aluno Teste Diaren",
+            "diretoria": "Diaren",
+            "curso": "Técnico em Controle Ambiental",
+            "campus": "CNAT",
+        }
+        resp = self.client.post(reverse("cadastro"), {
+            "matricula": "20241099000011",
+            "senha": "MinhaSenhaSuap99",
+            "diretoria": "Diatinf",  # Diretoria real do SUAP (Diaren) deve prevalecer
+        })
+        self.assertRedirects(resp, reverse("login"))
+        user = Usuario.objects.get(matricula="20241099000011")
+        self.assertEqual(user.diretoria, "Diaren")
+        self.assertEqual(user.curso, "Técnico em Controle Ambiental")
+        self.assertEqual(user.nome, "Aluno Teste Diaren")
+        # Mesmo usuário consegue logar com a mesma senha do SUAP
+        resp_login = self.client.post(reverse("login"), {
+            "matricula": "20241099000011",
+            "senha": "MinhaSenhaSuap99",
+        })
+        self.assertRedirects(resp_login, reverse("feed"))
+
+    @patch("usuarios.views.consultar_api_suap")
+    def test_cadastro_aceita_dados_suap_cors_quando_backend_offline(self, mock_suap):
+        mock_suap.return_value = {
+            "autenticado_suap": False,
+            "credenciais_invalidas": False,
+            "offline": True,
+            "erro": "Proxy bloqueado",
+        }
+        resp = self.client.post(reverse("cadastro"), {
+            "matricula": "20241013010032",
+            "senha": "SenhaAluno123",
+            "diretoria": "Diatinf",  # Deve ser sobrescrita pelo curso real validado no servidor
+            "suap_verificado_cliente": "1",
+            "suap_nome": "Lucas Mendes",
+            "suap_curso": "Técnico de Nível Médio em Controle Ambiental",
+        })
+        self.assertRedirects(resp, reverse("login"))
+        user = Usuario.objects.get(matricula="20241013010032")
+        self.assertEqual(user.diretoria, "Diaren")
+        self.assertEqual(user.nome, "Lucas Mendes")
+
+    @patch("usuarios.views.consultar_api_suap")
+    def test_cadastro_rejects_invalid_suap_credentials(self, mock_suap):
+        mock_suap.return_value = {
+            "sucesso": False,
+            "autenticado_suap": False,
+            "credenciais_invalidas": True,
+            "nome": None,
+            "diretoria": None,
+            "curso": None,
+            "campus": None,
+            "erro": "Matrícula ou senha do SUAP incorreta.",
+        }
+        resp = self.client.post(reverse("cadastro"), {
+            "matricula": "20241099000022",
+            "senha": "SenhaErradaSuap",
+            "diretoria": "Diaren",
+        })
+        self.assertContains(resp, "Matrícula ou senha do SUAP incorreta.")
+        self.assertFalse(Usuario.objects.filter(matricula="20241099000022").exists())
+
+
+class FeedReplyAndMediaTests(TestCase):
+    def setUp(self):
+        self.senha = "Senha123"
+        self.autor = Usuario.objects.create(
+            matricula="202471",
+            nome="Alice",
+            senha=make_password(self.senha),
+            diretoria="Diaren",
+            areas="Cenário",
+            aprovado=True,
+        )
+        self.outro = Usuario.objects.create(
+            matricula="202472",
+            nome="Bruno",
+            senha=make_password(self.senha),
+            diretoria="Diatinf",
+            areas="Cenário",
+            aprovado=True,
+        )
+
+    def test_feed_reply_and_image_upload(self):
+        self.client.post(reverse("login"), {"matricula": self.autor.matricula, "senha": self.senha})
+        img_pub = SimpleUploadedFile("foto_feed.png", PNG_1X1_VALIDO, content_type="image/png")
+        resp = self.client.post(reverse("publicar"), {"texto": "", "imagem": img_pub})
+        self.assertRedirects(resp, reverse("feed"))
+        pub_orig = Publicacao.objects.first()
+        self.assertIsNotNone(pub_orig)
+        self.assertTrue(bool(pub_orig.imagem))
+
+        # Outro usuário responde à publicação
+        self.client.post(reverse("login"), {"matricula": self.outro.matricula, "senha": self.senha})
+        self.client.post(reverse("publicar"), {"texto": "Muito bom!", "resposta_a": str(pub_orig.id)})
+
+        # Autor original vê destaque de resposta para ele
+        self.client.post(reverse("login"), {"matricula": self.autor.matricula, "senha": self.senha})
+        resp_feed = self.client.get(reverse("feed"))
+        self.assertEqual(len(resp_feed.context["respostas_para_mim"]), 1)
+        self.assertContains(resp_feed, "Respondeu a você")
+        self.assertContains(resp_feed, "Responderam a você")
+
+    def test_chat_area_and_observacao_image_upload(self):
+        self.client.post(reverse("login"), {"matricula": self.autor.matricula, "senha": self.senha})
+        img_chat = SimpleUploadedFile("chat.png", PNG_1X1_VALIDO, content_type="image/png")
+        resp_chat = self.client.post(
+            reverse("publicar_chat_area", args=["Cenário"]),
+            {"texto": "Foto no chat", "imagem": img_chat},
+        )
+        self.assertRedirects(resp_chat, reverse("chat_area", args=["Cenário"]))
+        msg = MensagemArea.objects.first()
+        self.assertIsNotNone(msg)
+        self.assertTrue(bool(msg.imagem))
+
+        tarefa = Tarefa.objects.create(
+            titulo="Tarefa Obs",
+            descricao="Desc",
+            limite_participantes=3,
+            criada_por=self.outro,
+            area="Cenário",
+        )
+        ParticipacaoTarefa.objects.create(usuario=self.autor, tarefa=tarefa)
+        img_obs = SimpleUploadedFile("obs.png", PNG_1X1_VALIDO, content_type="image/png")
+        resp_obs = self.client.post(
+            reverse("adicionar_observacao", args=["Cenário", tarefa.id]),
+            {"texto": "", "imagem": img_obs},
+        )
+        self.assertEqual(resp_obs.status_code, 302)
+        obs = ObservacaoTarefa.objects.filter(tarefa=tarefa).first()
+        self.assertIsNotNone(obs)
+        self.assertTrue(bool(obs.imagem))
+
+
+class TaskLimitsFormattingAndTampinhasPrecisionTests(TestCase):
+    def setUp(self):
+        self.senha = "Senha123"
+        self.sublider = Usuario.objects.create(
+            matricula="202481",
+            senha=make_password(self.senha),
+            diretoria="Diatinf",
+            areas="Tampinhas",
+            aprovado=True,
+            sub_lider=True,
+            sublider_de="Tampinhas",
+        )
+        self.membro = Usuario.objects.create(
+            matricula="202482",
+            nome="Carla",
+            senha=make_password(self.senha),
+            diretoria="Diatinf",
+            areas="Tampinhas",
+            aprovado=True,
+        )
+
+    def test_create_task_allows_large_title_and_description_with_line_breaks(self):
+        self.client.post(reverse("login"), {"matricula": self.sublider.matricula, "senha": self.senha})
+        titulo_grande = "T" * 160
+        desc_grande = "Linha 1\n\n  Linha 3 com recuo\n" + ("A" * 3000)
+        resp = self.client.post(reverse("criar_tarefa"), {
+            "titulo": titulo_grande,
+            "tipo": "prolongada",
+            "descricao": desc_grande,
+            "limite_participantes": "5",
+        })
+        self.assertRedirects(resp, reverse("painel_administrativo"))
+        tarefa = Tarefa.objects.get(titulo=titulo_grande)
+        self.assertEqual(len(tarefa.descricao), len(desc_grande))
+        html_fmt = str(formatar_texto("Linha 1\n\n  Linha 3"))
+        self.assertIn("<br>", html_fmt)
+        self.assertIn("&nbsp;&nbsp;Linha 3", html_fmt)
+
+    def test_registrar_doacao_by_typed_matricula_and_ranking_one_decimal(self):
+        self.client.post(reverse("login"), {"matricula": self.sublider.matricula, "senha": self.senha})
+        resp = self.client.post(reverse("registrar_doacao"), {
+            "matricula": self.membro.matricula,
+            "quantidade": "1255",
+        })
+        self.assertRedirects(resp, reverse("painel_administrativo"))
+        self.assertTrue(DoacaoTampinhas.objects.filter(usuario=self.membro, quantidade_gramas=1255).exists())
+
+        resp_rank = self.client.get(reverse("tampinhas"))
+        # 1.255 Kg arredondado para 1 casa decimal no ranking e total geral => 1.3Kg
+        self.assertEqual(resp_rank.context["total_geral_kg"], "1.3Kg")
+        self.assertContains(resp_rank, "1.3Kg")
+
+    def test_editar_perfil_upload_and_remove_banner(self):
+        self.client.post(reverse("login"), {"matricula": self.membro.matricula, "senha": self.senha})
+        banner = SimpleUploadedFile("banner.png", PNG_1X1_VALIDO, content_type="image/png")
+        resp = self.client.post(reverse("editar_perfil"), {
+            "nome": "Carla Atualizada",
+            "bio": "Bio",
+            "banner": banner,
+        })
+        self.assertRedirects(resp, reverse("meu_perfil"))
+        self.membro.refresh_from_db()
+        self.assertTrue(bool(self.membro.banner and self.membro.banner.name))
+
+        self.client.post(reverse("editar_perfil"), {
+            "nome": "Carla Atualizada",
+            "bio": "Bio",
+            "remover_banner": "1",
+        })
+        self.membro.refresh_from_db()
+        self.assertFalse(bool(self.membro.banner and self.membro.banner.name))
+
 
 
 

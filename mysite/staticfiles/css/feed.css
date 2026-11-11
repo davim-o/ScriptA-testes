@@ -42,11 +42,16 @@
 .acoes-publicacao {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
     margin-top: 12px;
 }
 
-.acoes-publicacao button {
-    width: 100px;
+.acoes-publicacao .btn-publicar-feed {
+    width: auto;
+    min-width: 112px;
+    padding: 0 22px;
     height: 36px;
     border: none;
     border-radius: 6px;
@@ -57,8 +62,92 @@
     transition: .2s;
 }
 
-.acoes-publicacao button:hover {
+.acoes-publicacao .btn-publicar-feed:hover {
     background: #8a7cff;
+}
+
+.feed-preview-resposta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #221f48;
+    border: 1px solid #3d367a;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+}
+
+.feed-preview-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+}
+
+.avatar-pequeno-feed {
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 13px !important;
+    flex-shrink: 0;
+}
+
+.feed-citacao-textos {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+.feed-citacao-autor {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.feed-citacao-mensagem {
+    font-size: 12px;
+    color: #cfd4ec;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.btn-cancelar-resposta-feed {
+    background: transparent;
+    border: none;
+    color: #a4acd4;
+    font-size: 15px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    line-height: 1;
+    transition: background 0.2s, color 0.2s;
+}
+
+.btn-cancelar-resposta-feed:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.feed-resposta-citacao {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #221f48;
+    border: 1px solid #38326e;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.feed-resposta-citacao:hover {
+    border-color: #7766ef;
 }
 
 
@@ -140,6 +229,34 @@
     flex: 1;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.acoes-esquerda-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.btn-responder-feed {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: #8c84ff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.btn-responder-feed:hover {
+    background: rgba(119, 102, 239, 0.14);
+    color: #b4afff;
 }
 
 

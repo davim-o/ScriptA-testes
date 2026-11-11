@@ -7,8 +7,8 @@
     <title>ScriptA</title>
     <link rel="icon" type="image/png" href="{% static 'imgs/favicon.png' %}">
     <link rel="shortcut icon" href="{% static 'imgs/favicon.ico' %}">
-    <link rel="stylesheet" href="{% static 'css/cadastro.css' %}">
-    <link rel="stylesheet" href="{% static 'css/mascotes_card.css' %}">
+    <link rel="stylesheet" href="{% static 'css/cadastro.css' %}?v=20261111">
+    <link rel="stylesheet" href="{% static 'css/mascotes_card.css' %}?v=20261111">
 </head>
 
 <body>
@@ -69,19 +69,24 @@
 
     <form method="POST" id="form-cadastro">
         {% csrf_token %}
+        <input type="hidden" name="suap_verificado_cliente" id="suapVerificadoCliente" value="0">
+        <input type="hidden" name="suap_nome" id="suapNomeCliente" value="">
+        <input type="hidden" name="suap_curso" id="suapCursoCliente" value="">
+        <input type="hidden" name="suap_diretoria" id="suapDiretoriaCliente" value="">
+        <input type="hidden" name="suap_extras" id="suapExtrasCliente" value="">
 
         <section class="formula">
 
             <div class="mat">
                 <p>Matrícula</p>
-                <input type="text" id="matricula-cadastro" name="matricula" placeholder="Matrícula do SUAP"
+                <input type="text" id="matricula-cadastro" name="matricula" placeholder="Matrícula"
                        value="{{ form.matricula }}" maxlength="20" required>
             </div>
 
             <div class="senha">
                 <p>Senha</p>
                 <div class="campo-senha">
-                    <input type="password" id="senha" name="senha" placeholder="Senha do SUAP" required>
+                    <input type="password" id="senha" name="senha" placeholder="Senha" required>
                     <button type="button" class="btn-toggle-senha" id="toggle-senha-cadastro" aria-label="Mostrar senha" title="Mostrar/ocultar senha">
                         <svg class="icone-olho-aberto" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -93,14 +98,27 @@
                         </svg>
                     </button>
                 </div>
+                <span class="suap-status-msg" id="suapStatusMsg" style="display:none;"></span>
             </div>
 
             <div class="diretoria">
                 <p>Diretoria</p>
                 <input type="text" name="diretoria" id="diretoriaSelecionada"
                        value="{{ form.diretoria }}"
-                       placeholder="Preenchida pela matrícula"
-                       readonly tabindex="-1" class="input-diretoria-auto">
+                       placeholder="Identificada pelo SUAP"
+                       readonly tabindex="-1" class="input-diretoria-auto"
+                       {% if permitir_escolha_manual %}style="display:none;"{% endif %}>
+                <select id="diretoriaManualSelect" class="select-diretoria-manual"
+                        style="{% if not permitir_escolha_manual %}display:none;{% endif %}">
+                    <option value="">Selecione sua diretoria...</option>
+                    <option value="Diatinf" {% if form.diretoria == "Diatinf" %}selected{% endif %}>Diatinf</option>
+                    <option value="Diaren" {% if form.diretoria == "Diaren" %}selected{% endif %}>Diaren</option>
+                    <option value="Diacon" {% if form.diretoria == "Diacon" %}selected{% endif %}>Diacon</option>
+                    <option value="Diacin" {% if form.diretoria == "Diacin" %}selected{% endif %}>Diacin</option>
+                </select>
+                <span class="dica-suap-campo" id="cursoSuapExibicao" {% if not form.curso %}style="display:none;"{% endif %}>
+                    {% if form.curso %}Curso: {{ form.curso }}{% endif %}
+                </span>
             </div>
 
             <div class="areas">
@@ -147,10 +165,10 @@
     const SETA_BAIXO = "{% static 'imgs/seta-baixo.png' %}";
     const SETA_CIMA = "{% static 'imgs/seta-cima.png' %}";
 </script>
-<script src="{% static 'js/mascotes.js' %}"></script>
-<script src="{% static 'js/cadastro.js' %}"></script>
+<script src="{% static 'js/mascotes.js' %}?v=20261111"></script>
+<script src="{% static 'js/cadastro.js' %}?v=20261111"></script>
 
 
-<script src="{% static 'js/toast.js' %}"></script>
+<script src="{% static 'js/toast.js' %}?v=20261111"></script>
 </body>
 </html>

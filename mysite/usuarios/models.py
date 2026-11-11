@@ -12,7 +12,10 @@ class Usuario(models.Model):
     sublider_de=models.CharField(max_length=50, null=True, blank=True)
     doacao_tampinhas=models.FloatField(default=0)
     foto=models.ImageField(upload_to="perfis/", null=True, blank=True)
+    banner=models.ImageField(upload_to="banners/", null=True, blank=True)
     bio=models.TextField(blank=True, default="")
+    curso=models.CharField(max_length=150, blank=True, default="")
+    session_version=models.PositiveIntegerField(default=1)
 
     def nome_exibicao(self):
         if self.nome and self.nome.strip():
@@ -71,6 +74,8 @@ class Usuario(models.Model):
     def curso_exibicao(self):
         if self.eh_administrador():
             return ""
+        if self.curso and self.curso.strip():
+            return self.curso.strip()
         from .suap import identificar_diretoria_e_curso
         _, curso = identificar_diretoria_e_curso(self.matricula)
         return curso or ""
@@ -108,7 +113,15 @@ class Usuario(models.Model):
 class Publicacao(models.Model):
 
     usuario=models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="publicacoes")
-    texto=models.TextField()
+    texto=models.TextField(blank=True, default="")
+    imagem=models.ImageField(upload_to="feed/", null=True, blank=True)
+    resposta_a=models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="respostas",
+    )
     data=models.DateTimeField(auto_now_add=True)
     editado=models.BooleanField(default=False)
 
@@ -210,7 +223,8 @@ class ObservacaoTarefa(models.Model):
 
     usuario=models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="observacoes")
     tarefa=models.ForeignKey(Tarefa, on_delete=models.CASCADE, related_name="observacoes")
-    texto=models.TextField()
+    texto=models.TextField(blank=True, default="")
+    imagem=models.ImageField(upload_to="observacoes/", null=True, blank=True)
     criada_em=models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -248,7 +262,8 @@ class DoacaoTampinhas(models.Model):
 class MensagemArea(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="mensagens_area")
     area = models.CharField(max_length=50)
-    texto = models.TextField()
+    texto = models.TextField(blank=True, default="")
+    imagem = models.ImageField(upload_to="chat/", null=True, blank=True)
     resposta_a = models.ForeignKey(
         "self",
         on_delete=models.SET_NULL,
